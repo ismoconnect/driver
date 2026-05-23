@@ -869,14 +869,28 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   Suivi de votre demande
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-2">
-                  {/* Step 1: Examen Théorique */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mt-2">
+                  {/* Step 1: Affiliation Candidat */}
+                  <div className="bg-slate-950/50 border border-emerald-500/30 p-5 rounded-2xl relative flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300">
+                    <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                      ✓ Complété
+                    </span>
+                    <div>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 1</span>
+                      <h4 className="text-white font-bold text-sm">Affiliation Candidat</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
+                        Compte candidat créé avec succès et affilié officiellement à notre réseau.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Examen Théorique */}
                   <div className="bg-slate-950/50 border border-emerald-500/30 p-5 rounded-2xl relative flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300">
                     <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
                       ✓ Validé
                     </span>
                     <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 1</span>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 2</span>
                       <h4 className="text-white font-bold text-sm">Examen Théorique</h4>
                       <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         Dispense académique validée et enregistrée auprès des services administratifs.
@@ -884,7 +898,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
                   </div>
 
-                  {/* Step 2: Permis Provisoire */}
+                  {/* Step 3: Permis Provisoire */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between transition-all duration-300 ${
                     applicationStatus === 'processing' || applicationStatus === 'completed'
                       ? 'bg-slate-950/50 border border-emerald-500/30 hover:border-emerald-500/50' 
@@ -898,7 +912,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       {applicationStatus === 'processing' || applicationStatus === 'completed' ? '✓ Émis' : '● Action requise'}
                     </span>
                     <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 2</span>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 3</span>
                       <h4 className="text-white font-bold text-sm">Permis Provisoire</h4>
                       <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'processing' || applicationStatus === 'completed'
@@ -908,7 +922,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
                   </div>
 
-                  {/* Step 3: Test de Perception de Risque */}
+                  {/* Step 4: Test de Perception de Risque */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
                     applicationStatus === 'completed'
                       ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
@@ -928,7 +942,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <span className="absolute top-4 right-4 text-xs">🔒</span>
                     )}
                     <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 3</span>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 5</span>
                       <h4 className="text-white font-bold text-sm">Perception de Risque</h4>
                       <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'completed'
@@ -940,7 +954,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
                   </div>
 
-                  {/* Step 4: Examen Pratique */}
+                  {/* Step 5: Examen Pratique */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
                     applicationStatus === 'completed'
                       ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
@@ -960,7 +974,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <span className="absolute top-4 right-4 text-xs">🔒</span>
                     )}
                     <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 4</span>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 6</span>
                       <h4 className="text-white font-bold text-sm">Examen Pratique</h4>
                       <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'completed'
@@ -972,7 +986,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
                   </div>
 
-                  {/* Step 5: Permis Définitif */}
+                  {/* Step 6: Permis Définitif */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
                     applicationStatus === 'completed'
                       ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
