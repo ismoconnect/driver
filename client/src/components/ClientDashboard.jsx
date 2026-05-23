@@ -869,46 +869,46 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   Suivi de votre demande
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-2">
-                  {/* Step 1 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-2">
+                  {/* Step 1: Examen Théorique */}
                   <div className="bg-slate-950/50 border border-emerald-500/30 p-5 rounded-2xl relative flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300">
-                    <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                      ✓ Complété
+                    <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                      ✓ Validé
                     </span>
                     <div>
-                      <span className="text-slate-500 font-bold text-xs uppercase tracking-widest block mb-2">Étape 1</span>
-                      <h4 className="text-white font-bold text-sm">Analyse du Profil</h4>
-                      <p className="text-white/65 text-xs mt-2 leading-relaxed">
-                        Éligibilité validée pour notre filière d'obtention sans examen.
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 1</span>
+                      <h4 className="text-white font-bold text-sm">Examen Théorique</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
+                        Dispense académique validée et enregistrée auprès des services administratifs.
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 2 */}
+                  {/* Step 2: Permis Provisoire */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between transition-all duration-300 ${
                     applicationStatus === 'processing' || applicationStatus === 'completed'
                       ? 'bg-slate-950/50 border border-emerald-500/30 hover:border-emerald-500/50' 
                       : 'bg-white/5 border border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]'
                   }`}>
-                    <span className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                    <span className={`absolute top-4 right-4 text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
                       applicationStatus === 'processing' || applicationStatus === 'completed'
-                        ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
+                        ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400' 
                         : 'bg-brand-orange/15 border border-brand-orange/30 text-brand-orange animate-pulse'
                     }`}>
-                      {applicationStatus === 'processing' || applicationStatus === 'completed' ? '✓ Soumis' : '● Action requise'}
+                      {applicationStatus === 'processing' || applicationStatus === 'completed' ? '✓ Émis' : '● Action requise'}
                     </span>
                     <div>
-                      <span className="text-slate-500 font-bold text-xs uppercase tracking-widest block mb-2">Étape 2</span>
-                      <h4 className="text-white font-bold text-sm">Constitution du Dossier</h4>
-                      <p className="text-white/65 text-xs mt-2 leading-relaxed">
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 2</span>
+                      <h4 className="text-white font-bold text-sm">Permis Provisoire</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'processing' || applicationStatus === 'completed'
-                          ? "Pièces justificatives reçues et enregistrées en base de données." 
-                          : "Formulaire administratif, pièces d'identité et signature à soumettre."}
+                          ? "Homologation officielle de votre équivalence enregistrée." 
+                          : "Formulaire, pièces d'identité et signature requis pour l'émission."}
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 3 */}
+                  {/* Step 3: Test de Perception de Risque */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
                     applicationStatus === 'completed'
                       ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
@@ -917,49 +917,81 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         : 'bg-slate-950/20 border-white/5 opacity-50'
                   }`}>
                     {applicationStatus === 'completed' ? (
-                      <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                        ✓ Terminé
+                      <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                        ✓ Dispense
                       </span>
                     ) : applicationStatus === 'processing' ? (
-                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[10px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
+                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
                         ⌛ En cours
                       </span>
                     ) : (
                       <span className="absolute top-4 right-4 text-xs">🔒</span>
                     )}
                     <div>
-                      <span className="text-slate-500 font-bold text-xs uppercase tracking-widest block mb-2">Étape 3</span>
-                      <h4 className="text-white font-bold text-sm">Suivi Officiel</h4>
-                      <p className="text-white/65 text-xs mt-2 leading-relaxed">
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 3</span>
+                      <h4 className="text-white font-bold text-sm">Perception de Risque</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'completed'
-                          ? "Dossier validé et validé par l'administration." 
+                          ? "Certificat légal de dispense validé par l'administration." 
                           : applicationStatus === 'processing' 
-                            ? "Transmission et enregistrement légal auprès des instances belges." 
-                            : "Débloqué après finalisation de la constitution de votre dossier."}
+                            ? "Traitement et validation de votre dispense du test de perception." 
+                            : "Débloqué après soumission de votre dossier administratif."}
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 4 */}
+                  {/* Step 4: Examen Pratique */}
+                  <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
+                    applicationStatus === 'completed'
+                      ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
+                      : applicationStatus === 'processing'
+                        ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
+                        : 'bg-slate-950/20 border-white/5 opacity-50'
+                  }`}>
+                    {applicationStatus === 'completed' ? (
+                      <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                        ✓ Certifié
+                      </span>
+                    ) : applicationStatus === 'processing' ? (
+                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
+                        ⌛ En cours
+                      </span>
+                    ) : (
+                      <span className="absolute top-4 right-4 text-xs">🔒</span>
+                    )}
+                    <div>
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 4</span>
+                      <h4 className="text-white font-bold text-sm">Examen Pratique</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
+                        {applicationStatus === 'completed'
+                          ? "Dispense d'examen pratique finalisée et officiellement enregistrée." 
+                          : applicationStatus === 'processing' 
+                            ? "Enregistrement légal de dispense de conduite en cours de validation." 
+                            : "Débloqué après validation de la constitution du dossier."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 5: Permis Définitif */}
                   <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
                     applicationStatus === 'completed'
                       ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
                       : 'bg-slate-950/20 border-white/5 opacity-50'
                   }`}>
                     {applicationStatus === 'completed' ? (
-                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[10px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
+                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
                         ⌛ À retirer
                       </span>
                     ) : (
                       <span className="absolute top-4 right-4 text-xs">🔒</span>
                     )}
                     <div>
-                      <span className="text-slate-500 font-bold text-xs uppercase tracking-widest block mb-2">Étape 4</span>
-                      <h4 className="text-white font-bold text-sm">Édition & Livraison</h4>
-                      <p className="text-white/65 text-xs mt-2 leading-relaxed">
+                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Résultat</span>
+                      <h4 className="text-white font-bold text-sm">Permis Définitif</h4>
+                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
                         {applicationStatus === 'completed'
-                          ? "Votre permis est prêt ! Veuillez vous présenter à votre commune pour le retrait."
-                          : "Impression physique du permis officiel et retrait auprès de votre commune."}
+                          ? "Votre permis officiel est prêt ! Veuillez vous présenter à votre commune pour le retrait."
+                          : "Impression sécurisée et livraison finale du titre de permis physique en commune."}
                       </p>
                     </div>
                   </div>
