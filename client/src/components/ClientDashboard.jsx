@@ -34,6 +34,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [signupPhone, setSignupPhone] = useState('');
 
   // Dashboard state
+  const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // overview, wizard, chat, documents
   const [wizardStep, setWizardStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -1426,17 +1427,68 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     )}
 
-                    {/* STEP 4: MANDAT DE LÉGALITÉ */}
+                    {/* STEP 4: FRAIS ADMINISTRATIFS & MANDAT */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
-                        <div className="bg-brand-orange/10 border border-brand-orange/20 rounded-2xl p-6">
-                          <h4 className="font-bold text-sm sm:text-base text-brand-orange flex items-center gap-2">
-                            🛡️ Clause de non-examen & Légalité
+                      <div className="grid grid-cols-1 gap-6 animate-[bubbleIn_0.4s_ease-out]">
+                        
+                        {/* Legal Reminder Box */}
+                        <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-5">
+                          <h4 className="font-bold text-sm text-brand-orange flex items-center gap-2">
+                            🛡️ Mandat de Constitution Officielle
                           </h4>
-                          <p className="text-xs sm:text-sm text-white/85 leading-relaxed mt-3">
-                            En validant cette étape, vous donnez mandat à notre équipe administrative pour constituer votre dossier d'équivalence. Aucun examen théorique ou pratique ne vous sera demandé. La procédure est entièrement réalisée par voie légale et les permis générés sont officiels et physiques.
+                          <p className="text-[11px] text-white/70 leading-relaxed mt-2">
+                            En validant cette étape, vous donnez officiellement mandat de représentation administrative à nos services agréés pour le traitement, le suivi et l'enregistrement de votre dossier d'équivalence légale de permis de conduire auprès du SPF Mobilité en Belgique. Aucun examen théorique ou pratique ne vous sera demandé.
                           </p>
                         </div>
+
+                        {/* Pricing Invoice Box */}
+                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6">
+                          <h4 className="font-bold text-sm text-white flex items-center gap-2 mb-4">
+                            💳 Détail des Frais d'Exécution & Enregistrement
+                          </h4>
+                          
+                          <div className="space-y-3.5 text-xs">
+                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
+                              <span>Frais de dossier, analyse et constitution administrative :</span>
+                              <span className="font-semibold text-white">120,00 €</span>
+                            </div>
+                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
+                              <span>Droits de timbre fiscal & frais d'enregistrement officiels :</span>
+                              <span className="font-semibold text-white">110,00 €</span>
+                            </div>
+                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
+                              <span>Support plastique sécurisé officiel & édition prioritaire :</span>
+                              <span className="font-semibold text-white">59,00 €</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 text-sm font-bold text-brand-orange">
+                              <span>Montant Total de la prestation (TVA incluse) :</span>
+                              <span className="text-lg bg-brand-orange/15 px-3 py-1 rounded border border-brand-orange/20">289,00 €</span>
+                            </div>
+                          </div>
+
+                          {/* Important payment instruction note */}
+                          <div className="mt-5 bg-white/[0.03] border border-white/5 rounded-xl p-4 flex gap-3">
+                            <span className="text-base flex-shrink-0 mt-0.5">💡</span>
+                            <p className="text-[10px] text-white/60 leading-relaxed">
+                              <strong>Information importante concernant le règlement :</strong> Aucun paiement n'est requis immédiatement à cette étape. Suite à la soumission de votre dossier, nos conseillers analysent vos pièces sous 12h. Dès validation finale de votre admissibilité légale, vous recevrez vos instructions sécurisées pour procéder au paiement et lancer la production de votre permis.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mandate & Agreement Checkbox */}
+                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
+                          <input 
+                            type="checkbox"
+                            checked={paymentAccepted}
+                            onChange={(e) => setPaymentAccepted(e.target.checked)}
+                            className="mt-1 w-4 h-4 rounded border-white/20 text-brand-orange focus:ring-brand-orange bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                          />
+                          <span className="text-[11px] text-white/80 leading-normal select-none">
+                            Je certifie sur l'honneur l'exactitude de mes informations fournies et je m'engage à régler le montant total de <strong>289,00 €</strong> dès confirmation de mon admissibilité légale par mon conseiller afin d'initier la production physique et la livraison de mon permis de conduire. <span className="text-brand-orange font-bold">(Requis pour soumettre)</span>
+                          </span>
+                        </label>
+
                       </div>
                     )}
                   </div>
@@ -1466,7 +1518,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     ) : (
                       <button
                         type="submit"
-                        className="px-8 py-3 rounded-full bg-brand-orange hover:bg-brand-orange-dark text-xs sm:text-sm font-bold transition-all duration-300 shadow-md shadow-brand-orange/30 cursor-pointer"
+                        disabled={!paymentAccepted}
+                        className={`px-8 py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 shadow-md flex items-center gap-2 ${
+                          paymentAccepted 
+                            ? 'bg-brand-orange hover:bg-brand-orange-dark shadow-brand-orange/30 text-white cursor-pointer hover:scale-[1.02]' 
+                            : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+                        }`}
                       >
                         Soumettre ma Demande Officielle ➔
                       </button>
