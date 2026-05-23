@@ -358,7 +358,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
       await setDoc(doc(db, 'leads', user.uid), leadData);
       setIsSubmitted(true);
-      setActiveTab('overview');
       
       // Add success message to chat from advisor
       setTimeout(() => {
@@ -1050,34 +1049,69 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           {activeTab === 'wizard' && (
             <div className="flex-1 flex flex-col justify-between relative z-10 animate-[bubbleIn_0.5s_ease-out]">
               {isSubmitted ? (
-                // SUCCESS STATE
-                <div className="flex-1 flex flex-col items-center justify-center text-center max-w-lg mx-auto py-8">
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-                    🎉
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
-                    Votre demande est sauvegardée dans Firestore !
-                  </h2>
-                  <p className="text-white/60 text-sm mt-3 leading-relaxed">
-                    Merci {formData.firstName}. Vos pièces justificatives ont bien été téléversées sur notre serveur et sauvegardées dans la base de données de votre compte candidat. Votre conseiller dédié **Jean-Pierre Dumont** examine votre demande.
-                  </p>
-                  
-                  <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-5 w-full mt-8 text-left">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-3">Données synchronisées</h4>
-                    <ul className="text-xs space-y-2.5 text-white/80">
-                      <li>• **Nom complet** : {formData.firstName} {formData.lastName}</li>
-                      <li>• **Numéro de Registre National** : {formData.nationalRegister || "Non spécifié"}</li>
-                      <li>• **Catégorie** : Permis B ({formData.transmission})</li>
-                      <li>• **Fichiers** : {Object.values(uploads).filter(Boolean).length} documents synchronisés</li>
-                    </ul>
+                // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
+                <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
+                  {/* Premium Success Badge */}
+                  <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    Analyse du Profil Complétée
                   </div>
 
-                  <button
-                    onClick={() => setActiveTab('overview')}
-                    className="mt-8 px-8 py-3 rounded-full text-xs sm:text-sm font-semibold bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300"
-                  >
-                    Accéder au suivi en temps réel
-                  </button>
+                  {/* Icon with complex glow */}
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl scale-125" />
+                    <div className="relative w-20 h-20 rounded-full bg-slate-900 border-2 border-emerald-500 flex items-center justify-center text-4xl shadow-2xl">
+                      ✅
+                    </div>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                    RÉSULTAT : ADMISSIBLE ! 🎉
+                  </h2>
+                  <p className="text-white/60 text-sm mt-3 leading-relaxed max-w-md">
+                    Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! L'analyse de votre profil confirme à 100% votre éligibilité pour notre filière d'obtention légale sans examen. Votre dossier est désormais entièrement constitué et enregistré de manière sécurisée.
+                  </p>
+                  
+                  {/* Results Details Card */}
+                  <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6 w-full mt-8 text-left relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
+                      <span>📋</span> Détails du dossier enregistré
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-2.5">
+                        <p className="text-white/50">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
+                        <p className="text-white/50">Registre National : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
+                      </div>
+                      <div className="space-y-2.5">
+                        <p className="text-white/50">Permis souhaité : <span className="text-brand-orange font-semibold">Catégorie B ({formData.transmission})</span></p>
+                        <p className="text-white/50">Pièces justificatives : <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 téléversées</span></p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[11px]">
+                      <span className="text-white/40">Statut du dossier :</span>
+                      <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
+                        Constitution & Envoi en cours
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center">
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
+                    >
+                      Suivre mon dossier en temps réel ➔
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('chat')}
+                      className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
+                    >
+                      Contacter mon conseiller
+                    </button>
+                  </div>
                 </div>
               ) : (
                 // ACTIVE WIZARD STATE
