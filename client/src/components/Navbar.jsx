@@ -1,0 +1,153 @@
+import React, { useState, useEffect } from 'react';
+
+const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
+  const [scrolled, setScrolled] = useState(forceScrolled || false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (forceScrolled) {
+      setScrolled(true);
+      return;
+    }
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [forceScrolled]);
+
+  const links = [
+    { label: 'Accueil', href: '#' },
+    { label: 'Services', href: '#services' },
+  ];
+
+  return (
+    <>
+      <nav
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-400 ${
+          scrolled
+            ? 'bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm shadow-slate-900/50'
+            : 'bg-transparent border-b border-transparent'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-20 items-center">
+
+            {/* Logo */}
+            <a href="#" onClick={(e) => { if (onGoHome) { e.preventDefault(); onGoHome(); } }} className="flex-shrink-0 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-brand-orange flex items-center justify-center shadow-md shadow-brand-orange/20">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
+                </svg>
+              </div>
+              <span className={`text-xl font-display font-bold tracking-wider transition-colors duration-300 text-white`}>
+                MON <span className="text-brand-orange">PERMIS</span>
+              </span>
+            </a>
+
+            {/* Desktop links */}
+            <div className="hidden md:flex items-center space-x-8">
+              {links.map(link => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => { if (onGoHome) onGoHome(); }}
+
+                  className={`text-sm font-medium transition-colors duration-300 hover:text-brand-orange text-white/80`}
+                >
+                  {link.label}
+                </a>
+              ))}
+              <a
+                href="#contact"
+                onClick={() => { if (onGoHome) onGoHome(); }}
+                className="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-brand-orange/30 overflow-hidden"
+              >
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                Nous contacter
+              </a>
+
+              {user ? (
+                <button
+                  onClick={() => onOpenDashboard('login')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold border cursor-pointer transition-all duration-300 hover:scale-[1.03] border-white/30 text-white hover:border-white hover:bg-white/10`}
+                >
+                  👤 Mon Espace
+                </button>
+              ) : (
+                <div className="flex items-center gap-4 border-l border-white/20 pl-6 ml-2">
+                  <button
+                    onClick={() => onOpenDashboard('login')}
+                    className="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-brand-orange/30 overflow-hidden cursor-pointer"
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                    Connexion
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden flex flex-col gap-1.5 p-2 rounded-lg"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label="Menu"
+            >
+              <span className={`block w-5 h-0.5 rounded transition-all duration-300 bg-white ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`block w-5 h-0.5 rounded transition-all duration-300 bg-white ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block w-5 h-0.5 rounded transition-all duration-300 bg-white ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        <div className={`md:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-64' : 'max-h-0'}`}>
+          <div className="bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-6 py-4 flex flex-col gap-4">
+            {links.map(link => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="text-white/80 font-medium text-sm hover:text-brand-orange transition-colors py-1"
+              >
+                {link.label}
+              </a>
+            ))}
+            <a
+              href="#contact"
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-center bg-brand-orange text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-orange-dark transition-colors"
+            >
+              Nous contacter
+            </a>
+
+            {user ? (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenDashboard('login');
+                }}
+                className="w-full text-center border border-white/30 text-white hover:border-white hover:bg-white/10 px-6 py-3 rounded-full text-sm font-bold transition-colors cursor-pointer"
+              >
+                👤 Mon Espace client
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenDashboard('login');
+                  }}
+                  className="w-full text-center bg-brand-orange text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-brand-orange-dark transition-colors cursor-pointer"
+                >
+                  Connexion
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+    </>
+  );
+};
+
+export default Navbar;

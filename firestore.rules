@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Vérifie si l'utilisateur connecté est un administrateur agréé
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ── Collection "users" ──────────────────────────────────────────────────
+    // Créée à l'inscription. Chaque utilisateur lit/écrit son profil, les admins peuvent tout lire/écrire.
+    match /users/{userId} {
+      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+    }
+
+    // ── Collection "leads" ──────────────────────────────────────────────────
+    // Dossier permis de conduire. Accessible par le propriétaire et par les administrateurs.
+    match /leads/{userId} {
+      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+    }
+
+    // ── Sous-collection messages ─────────────────────────────────────────────
+    match /leads/{userId}/messages/{messageId} {
+      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+    }
+
+    // ── Collection "admins" ──────────────────────────────────────────────────
+    // Lecture seule par l'admin concerné. Écriture via Admin SDK uniquement.
+    match /admins/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if false;
+    }
+
+    // Bloquer tout le reste par défaut
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

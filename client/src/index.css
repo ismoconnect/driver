@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-dark: #0f172a;
+  --color-brand-light: #ffffff;
+  --color-brand-bg-light: #f8fafc;
+  
+  /* DRIDE Theme - Orange Palette mapping */
+  --color-brand-orange: #ff9800;
+  --color-brand-orange-dark: #e65100;
+  --color-brand-orange-light: #ffb74d;
+  
+  /* Map old gold variables to orange for automatic site-wide theme propagation */
+  --color-brand-gold: #ff9800;
+  --color-brand-gold-light: #ffb74d;
+  --color-brand-gold-dark: #e65100;
+  
+  /* Teal accents remain for rich secondary depth */
+  --color-brand-teal: #0d9488;
+  --color-brand-teal-light: #14b8a6;
+  --color-brand-teal-dark: #0f766e;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+}
+
+@layer utilities {
+  .clip-triangle {
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+}
+
+/* Animations premium */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-1.5deg);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-reverse 7s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s ease-in-out infinite;
+}
+
+/* Effets verre et lueur clairs adaptables */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.glass-card-gold {
+  background: rgba(255, 152, 0, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 152, 0, 0.18);
+  box-shadow: 0 10px 30px rgba(255, 152, 0, 0.04);
+}
+
+.glass-card-teal {
+  background: rgba(13, 148, 136, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(13, 148, 136, 0.18);
+  box-shadow: 0 10px 30px rgba(13, 148, 136, 0.04);
+}
+
+.text-glow-gold {
+  text-shadow: 0 2px 10px rgba(255, 152, 0, 0.15);
+}
+
+.text-glow-teal {
+  text-shadow: 0 2px 10px rgba(13, 148, 136, 0.15);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  color: #0f172a;
+}
