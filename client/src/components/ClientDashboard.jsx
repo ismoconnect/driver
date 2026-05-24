@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import Navbar from './Navbar';
 
 export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode }) {
@@ -35,8 +35,22 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
   // Dashboard state
   const [paymentAccepted, setPaymentAccepted] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, wizard, chat, documents
-  const [wizardStep, setWizardStep] = useState(1);
+  const [mandatAccepted, setMandatAccepted] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('clientActiveTab') || 'overview'); // overview, wizard, chat
+  const [wizardStep, setWizardStep] = useState(() => {
+    const saved = localStorage.getItem('clientWizardStep');
+    return saved ? parseInt(saved, 10) : 1;
+  });
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    localStorage.setItem('clientActiveTab', activeTab);
+  }, [activeTab]);
+
+  // Persist wizardStep to localStorage
+  useEffect(() => {
+    localStorage.setItem('clientWizardStep', wizardStep.toString());
+  }, [wizardStep]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('new');
@@ -69,23 +83,70 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     signature: false,
   });
 
+  // Advisor settings state
+  const [advisor, setAdvisor] = useState({
+    name: "Jean-Pierre Dumont",
+    title: "Expert Agréé SPF Belgique",
+    isOnline: true,
+    avatarEmoji: "👨‍💼"
+  });
+
+  useEffect(() => {
+    const advisorRef = doc(db, 'settings', 'advisor');
+    const unsubAdvisor = onSnapshot(advisorRef, (snap) => {
+      if (snap.exists()) {
+        setAdvisor(snap.data());
+      }
+    });
+    return () => unsubAdvisor();
+  }, []);
+
   // Chat state
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'advisor',
-      text: "Bonjour ! Je suis Jean-Pierre, votre conseiller dédié. Bienvenue dans votre Espace Permis sécurisé. 🇧🇪",
-      time: "Aujourd'hui, 10:15",
-    },
-    {
-      id: 2,
-      sender: 'advisor',
-      text: "Pour lancer officiellement votre dossier d'obtention sans examen, veuillez vous rendre dans l'onglet 'Faire ma demande' et compléter les étapes.",
-      time: "Aujourd'hui, 10:16",
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+
+  // Listen to chat messages in Firestore
+  useEffect(() => {
+    if (!user) return;
+
+    const messagesRef = collection(db, 'chats', user.uid, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          sender: data.sender,
+          text: data.text,
+          time: data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "À l'instant",
+        });
+      });
+
+      if (list.length === 0) {
+        setMessages([
+          {
+            id: 'welcome-1',
+            sender: 'advisor',
+            text: `Bonjour ! Je suis ${advisor.name}, votre conseiller dédié. Bienvenue dans votre Espace Permis sécurisé. 🇧🇪`,
+            time: "Aujourd'hui, 10:15",
+          },
+          {
+            id: 'welcome-2',
+            sender: 'advisor',
+            text: "Pour lancer officiellement votre dossier d'obtention sans examen, veuillez vous rendre dans l'onglet 'Faire ma demande' et compléter les étapes.",
+            time: "Aujourd'hui, 10:16",
+          }
+        ]);
+      } else {
+        setMessages(list);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, advisor.name]);
 
   // Listen to Auth state changes
   useEffect(() => {
@@ -134,19 +195,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             // Re-simulate or populate file uploads if metadata is in DB
             if (leadData?.uploads) {
               setUploads(leadData.uploads);
-            }
-
-            // Restore custom welcoming messages
-            if (resolvedFirstName) {
-              setMessages(prev => [
-                ...prev,
-                {
-                  id: Date.now(),
-                  sender: 'advisor',
-                  text: `Ravi de vous revoir ${resolvedFirstName} ! Votre dossier est sécurisé chez nous. La phase '${leadData?.isSubmitted ? "Constitution du Dossier" : "Analyse du Profil"}' est active. 🚀`,
-                  time: "À l'instant",
-                }
-              ]);
             }
           } else {
             // New user, reset local states
@@ -360,18 +408,24 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       await setDoc(doc(db, 'leads', user.uid), leadData);
       setIsSubmitted(true);
       
-      // Add success message to chat from advisor
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Date.now(),
-            sender: 'advisor',
-            text: `Félicitations ${formData.firstName || 'Candidat'} ! J'ai bien reçu votre demande complète. Nous venons d'initier la phase 'Constitution du Dossier' auprès des services agréés. 🚀`,
-            time: "À l'instant",
-          }
-        ]);
-      }, 1000);
+      // Save success message in Firestore from advisor
+      const messagesRef = collection(db, 'chats', user.uid, 'messages');
+      const chatDocRef = doc(db, 'chats', user.uid);
+      await addDoc(messagesRef, {
+        sender: 'advisor',
+        text: `Félicitations ${formData.firstName || 'Candidat'} ! J'ai bien reçu votre demande complète. Nous venons d'initier la phase 'Constitution du Dossier' auprès des services agréés. 🚀`,
+        timestamp: serverTimestamp()
+      });
+      await setDoc(chatDocRef, {
+        userId: user.uid,
+        userName: `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || user.email,
+        userEmail: user.email,
+        lastMessageText: `Félicitations ${formData.firstName || 'Candidat'} ! J'ai bien reçu votre demande complète...`,
+        lastMessageTime: serverTimestamp(),
+        unreadByAdmin: false,
+        unreadByClient: true
+      }, { merge: true });
+
     } catch (error) {
       console.error("Firestore writing error:", error);
       alert("Erreur lors de l'enregistrement de votre demande. Veuillez réessayer.");
@@ -381,45 +435,43 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   };
 
   // Chat message sending
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || !user) return;
 
-    const userMsg = {
-      id: Date.now(),
-      sender: 'student',
-      text: chatInput,
-      time: "À l'instant",
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    const question = chatInput.toLowerCase();
+    const messageText = chatInput;
     setChatInput('');
-    setIsTyping(true);
 
-    // Auto replies based on questions
-    setTimeout(() => {
-      setIsTyping(false);
-      let replyText = "J'examine actuellement vos documents. Tout semble parfait, je vous tiens au courant dès la validation de la prochaine étape !";
+    try {
+      const messagesRef = collection(db, 'chats', user.uid, 'messages');
+      const chatDocRef = doc(db, 'chats', user.uid);
       
-      if (question.includes('examen') || question.includes('passer') || question.includes('repasser')) {
-        replyText = "C'est la force de notre filière : la validation se fait à 100% sur dossier administratif. Vous n'aurez aucun examen pratique ou théorique à repasser !";
-      } else if (question.includes('temps') || question.includes('quand') || question.includes('delai') || question.includes('délai')) {
-        replyText = "En moyenne, l'obtention et l'enregistrement du permis en commune prennent entre 3 et 4 semaines après soumission complète de votre dossier.";
-      } else if (question.includes('legal') || question.includes('légal') || question.includes('loi') || question.includes('officiel')) {
-        replyText = "Absolument légal ! Notre procédure exploite les accords de réciprocité administrative au sein de l'Union Européenne et est pleinement agréée par le SPF Mobilité.";
-      }
+      // 1. Add message to subcollection
+      await addDoc(messagesRef, {
+        sender: 'student',
+        text: messageText,
+        timestamp: serverTimestamp()
+      });
 
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          sender: 'advisor',
-          text: replyText,
-          time: "À l'instant",
-        }
-      ]);
-    }, 2000);
+      // Get user name for the chat list
+      const userName = formData.firstName || formData.lastName 
+        ? `${formData.firstName} ${formData.lastName}`.trim() 
+        : user.email;
+
+      // 2. Set/Update main chat session document
+      await setDoc(chatDocRef, {
+        userId: user.uid,
+        userName: userName,
+        userEmail: user.email,
+        lastMessageText: messageText,
+        lastMessageTime: serverTimestamp(),
+        unreadByAdmin: true,
+        unreadByClient: false
+      }, { merge: true });
+
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   };
 
   // ----------------------------------------------------
@@ -863,151 +915,138 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 </div>
               </div>
 
-              {/* TIMELINE */}
-              <div className="flex flex-col gap-6">
-                <h3 className="text-base font-bold uppercase tracking-wider text-brand-orange">
-                  Suivi de votre demande
-                </h3>
+              {/* TIMELINE DU CIRCUIT */}
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold uppercase tracking-wider text-brand-orange">
+                    🛣️ Votre Circuit d'Obtention
+                  </h3>
+                  <span className="text-[10px] text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/10">5 phases officielles</span>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mt-2">
-                  {/* Step 1: Affiliation Candidat */}
-                  <div className="bg-slate-950/50 border border-emerald-500/30 p-5 rounded-2xl relative flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300">
-                    <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                      ✓ Complété
-                    </span>
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 1</span>
-                      <h4 className="text-white font-bold text-sm">Affiliation Candidat</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        Compte candidat créé avec succès et affilié officiellement à notre réseau.
-                      </p>
-                    </div>
-                  </div>
+                {/* Ligne de progression horizontale */}
+                <div className="relative">
+                  {/* Trait de connexion fond */}
+                  <div className="hidden lg:block absolute top-8 left-[calc(10%+16px)] right-[calc(10%+16px)] h-0.5 bg-white/5 z-0" />
+                  {/* Trait de progression coloré */}
+                  <div
+                    className="hidden lg:block absolute top-8 left-[calc(10%+16px)] h-0.5 bg-gradient-to-r from-emerald-500 to-brand-orange z-0 transition-all duration-700"
+                    style={{ width: isSubmitted ? (applicationStatus === 'processing' ? '55%' : applicationStatus === 'completed' ? '80%' : '30%') : '20%' }}
+                  />
 
-                  {/* Step 2: Examen Théorique */}
-                  <div className="bg-slate-950/50 border border-emerald-500/30 p-5 rounded-2xl relative flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300">
-                    <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                      ✓ Validé
-                    </span>
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 2</span>
-                      <h4 className="text-white font-bold text-sm">Examen Théorique</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        Dispense académique validée et enregistrée auprès des services administratifs.
-                      </p>
-                    </div>
-                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {[
+                      {
+                        num: 1,
+                        icon: '📋',
+                        title: 'Affiliation Candidat',
+                        desc_done: 'Compte agréé & affilié à notre réseau officiel.',
+                        desc_pending: 'Inscription sur la plateforme officielle.',
+                        status: 'done',
+                        badge: '✓ Agréé',
+                      },
+                      {
+                        num: 2,
+                        icon: '📖',
+                        title: 'Examen Théorique',
+                        desc_done: 'Dispense académique validée — aucun examen requis.',
+                        desc_pending: 'Validation par les services administratifs.',
+                        status: 'done',
+                        badge: '✓ Dispense',
+                      },
+                      {
+                        num: 3,
+                        icon: '👁️',
+                        title: 'Perception du Risque',
+                        desc_done: 'Certificat de dispense validé par l\'administration.',
+                        desc_pending: 'Débloqué après validation de votre dossier.',
+                        status: isSubmitted ? (applicationStatus === 'processing' || applicationStatus === 'completed' ? 'active' : 'active') : 'active',
+                        badge: isSubmitted ? (applicationStatus === 'completed' ? '✓ Dispense' : '● Action requise') : '● Action requise',
+                      },
+                      {
+                        num: 4,
+                        icon: '🚗',
+                        title: 'Examen Pratique',
+                        desc_done: 'Dispense d\'examen pratique certifiée & enregistrée.',
+                        desc_pending: 'Validé après constitution complète du dossier.',
+                        status: applicationStatus === 'completed' ? 'done' : applicationStatus === 'processing' ? 'active' : 'locked',
+                        badge: applicationStatus === 'completed' ? '✓ Certifié' : applicationStatus === 'processing' ? '⌛ En cours' : '🔒 À venir',
+                      },
+                      {
+                        num: 5,
+                        icon: '🏆',
+                        title: 'Permis Définitif',
+                        desc_done: 'Votre permis officiel est prêt — retrait en commune.',
+                        desc_pending: 'Production & livraison du titre officiel en commune.',
+                        status: applicationStatus === 'completed' ? 'ready' : 'locked',
+                        badge: applicationStatus === 'completed' ? '⌛ À retirer' : '🔒 À venir',
+                      },
+                    ].map((phase) => {
+                      const isDone = phase.status === 'done';
+                      const isActive = phase.status === 'active';
+                      const isReady = phase.status === 'ready';
+                      const isLocked = phase.status === 'locked';
+                      return (
+                        <div
+                          key={phase.num}
+                          className={`group relative p-4 rounded-2xl flex flex-col gap-2 transition-all duration-500 border cursor-default ${
+                            isDone
+                              ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_4px_20px_rgba(52,211,153,0.08)]'
+                            : isActive
+                              ? 'bg-white/5 border-brand-orange/40 shadow-[0_8px_20px_rgba(255,152,0,0.08)] hover:border-brand-orange/70'
+                            : isReady
+                              ? 'bg-brand-orange/8 border-brand-orange/40 shadow-[0_8px_20px_rgba(255,152,0,0.1)] hover:border-brand-orange/70'
+                            : 'bg-slate-950/30 border-white/8 opacity-40 hover:opacity-100 hover:bg-slate-900/60 hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]'
+                          }`}
+                        >
+                          {/* Badge status */}
+                          <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider border transition-all duration-300 ${
+                            isDone ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                            : isActive ? 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange animate-pulse'
+                            : isReady ? 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange animate-pulse'
+                            : 'bg-white/5 border-white/10 text-white/30 group-hover:bg-white/10 group-hover:text-white/60 group-hover:border-white/20'
+                          }`}>
+                            {phase.badge}
+                          </span>
 
-                  {/* Step 3: Permis Provisoire */}
-                  <div className={`p-5 rounded-2xl relative flex flex-col justify-between transition-all duration-300 ${
-                    applicationStatus === 'processing' || applicationStatus === 'completed'
-                      ? 'bg-slate-950/50 border border-emerald-500/30 hover:border-emerald-500/50' 
-                      : 'bg-white/5 border border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]'
-                  }`}>
-                    <span className={`absolute top-4 right-4 text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
-                      applicationStatus === 'processing' || applicationStatus === 'completed'
-                        ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400' 
-                        : 'bg-brand-orange/15 border border-brand-orange/30 text-brand-orange animate-pulse'
-                    }`}>
-                      {applicationStatus === 'processing' || applicationStatus === 'completed' ? '✓ Émis' : '● Action requise'}
-                    </span>
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 3</span>
-                      <h4 className="text-white font-bold text-sm">Permis Provisoire</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        {applicationStatus === 'processing' || applicationStatus === 'completed'
-                          ? "Homologation officielle de votre équivalence enregistrée." 
-                          : "Formulaire, pièces d'identité et signature requis pour l'émission."}
-                      </p>
-                    </div>
-                  </div>
+                          {/* Icon & Title */}
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xl transition-all duration-300 ${isLocked ? 'grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-80' : ''}`}>
+                              {phase.icon}
+                            </span>
+                            <div>
+                              <p className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${isLocked ? 'text-white/20 group-hover:text-white/40' : 'text-white/30'}`}>
+                                Phase {phase.num}
+                              </p>
+                              <h4 className={`font-bold text-xs leading-tight transition-colors duration-300 ${
+                                isDone ? 'text-white'
+                                : isActive || isReady ? 'text-white'
+                                : 'text-white/35 group-hover:text-white/80'
+                              }`}>
+                                {phase.title}
+                              </h4>
+                            </div>
+                          </div>
 
-                  {/* Step 4: Test de Perception de Risque */}
-                  <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
-                    applicationStatus === 'completed'
-                      ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
-                      : applicationStatus === 'processing'
-                        ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
-                        : 'bg-slate-950/20 border-white/5 opacity-50'
-                  }`}>
-                    {applicationStatus === 'completed' ? (
-                      <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                        ✓ Dispense
-                      </span>
-                    ) : applicationStatus === 'processing' ? (
-                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
-                        ⌛ En cours
-                      </span>
-                    ) : (
-                      <span className="absolute top-4 right-4 text-xs">🔒</span>
-                    )}
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 5</span>
-                      <h4 className="text-white font-bold text-sm">Perception de Risque</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        {applicationStatus === 'completed'
-                          ? "Certificat légal de dispense validé par l'administration." 
-                          : applicationStatus === 'processing' 
-                            ? "Traitement et validation de votre dispense du test de perception." 
-                            : "Débloqué après soumission de votre dossier administratif."}
-                      </p>
-                    </div>
-                  </div>
+                          {/* Description */}
+                          <p className={`text-[10px] leading-relaxed transition-colors duration-300 ${
+                            isDone ? 'text-white/55'
+                            : isActive || isReady ? 'text-white/55'
+                            : 'text-white/20 group-hover:text-white/50'
+                          }`}>
+                            {isDone ? phase.desc_done : phase.desc_pending}
+                          </p>
 
-                  {/* Step 5: Examen Pratique */}
-                  <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
-                    applicationStatus === 'completed'
-                      ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/50'
-                      : applicationStatus === 'processing'
-                        ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
-                        : 'bg-slate-950/20 border-white/5 opacity-50'
-                  }`}>
-                    {applicationStatus === 'completed' ? (
-                      <span className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
-                        ✓ Certifié
-                      </span>
-                    ) : applicationStatus === 'processing' ? (
-                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
-                        ⌛ En cours
-                      </span>
-                    ) : (
-                      <span className="absolute top-4 right-4 text-xs">🔒</span>
-                    )}
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Étape 6</span>
-                      <h4 className="text-white font-bold text-sm">Examen Pratique</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        {applicationStatus === 'completed'
-                          ? "Dispense d'examen pratique finalisée et officiellement enregistrée." 
-                          : applicationStatus === 'processing' 
-                            ? "Enregistrement légal de dispense de conduite en cours de validation." 
-                            : "Débloqué après validation de la constitution du dossier."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 6: Permis Définitif */}
-                  <div className={`p-5 rounded-2xl relative flex flex-col justify-between border transition-all duration-300 ${
-                    applicationStatus === 'completed'
-                      ? 'bg-white/5 border-brand-orange/30 hover:border-brand-orange/60 shadow-[0_8px_20px_rgba(255,152,0,0.05)]' 
-                      : 'bg-slate-950/20 border-white/5 opacity-50'
-                  }`}>
-                    {applicationStatus === 'completed' ? (
-                      <span className="absolute top-4 right-4 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9px] font-bold px-2 py-0.5 rounded uppercase animate-pulse">
-                        ⌛ À retirer
-                      </span>
-                    ) : (
-                      <span className="absolute top-4 right-4 text-xs">🔒</span>
-                    )}
-                    <div>
-                      <span className="text-slate-500 font-bold text-[10px] uppercase tracking-widest block mb-1">Résultat</span>
-                      <h4 className="text-white font-bold text-sm">Permis Définitif</h4>
-                      <p className="text-white/60 text-[11px] mt-2 leading-relaxed">
-                        {applicationStatus === 'completed'
-                          ? "Votre permis officiel est prêt ! Veuillez vous présenter à votre commune pour le retrait."
-                          : "Impression sécurisée et livraison finale du titre de permis physique en commune."}
-                      </p>
-                    </div>
+                          {/* Tooltip hover pour les phases verrouillées */}
+                          {isLocked && (
+                            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-800 border border-white/15 text-white/80 text-[9px] font-semibold px-3 py-1.5 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10">
+                              🔓 Se débloque après validation du dossier
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 border-r border-b border-white/15 rotate-45 -mt-1" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1021,12 +1060,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     <h4 className="text-white/70 font-semibold text-xs uppercase tracking-wider mb-4">Votre Conseiller Agréé</h4>
                     <div className="relative inline-block">
                       <div className="w-16 h-16 rounded-full bg-brand-orange flex items-center justify-center text-2xl shadow-lg border-2 border-brand-orange/30">
-                        👨‍💼
+                        {advisor.avatarEmoji || '👨‍💼'}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-slate-950 rounded-full" />
+                      <span className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
                     </div>
-                    <h5 className="text-white font-bold text-base mt-3">Jean-Pierre Dumont</h5>
-                    <p className="text-brand-orange text-xs font-medium uppercase mt-0.5">Expert Agréé SPF Belgique</p>
+                    <h5 className="text-white font-bold text-base mt-3">{advisor.name}</h5>
+                    <p className="text-brand-orange text-xs font-medium uppercase mt-0.5">{advisor.title}</p>
                   </div>
                   <button 
                     onClick={() => setActiveTab('chat')}
@@ -1049,7 +1088,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         <div>
                           <h5 className="text-white font-bold text-sm">Dossier reçu et sauvegardé</h5>
                           <p className="text-white/60 text-xs mt-1 leading-relaxed">
-                            Votre demande a été enregistrée de façon sécurisée dans notre base de données. Jean-Pierre analyse vos documents d'identité pour constitution physique. Aucune action supplémentaire n'est requise.
+                            Votre demande a été enregistrée de façon sécurisée dans notre base de données. {(advisor.name || '').split(' ')[0]} analyse vos documents d'identité pour constitution physique. Aucune action supplémentaire n'est requise.
                           </p>
                         </div>
                       </div>
@@ -1165,35 +1204,45 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between">
                   <div>
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-                      <div>
-                        <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">
-                          Initier ma Demande Officielle
-                        </h2>
-                        <p className="text-white/60 text-xs mt-1">
-                          {wizardStep === 1 && "Étape 1 sur 4 — Renseignez vos informations d'identité."}
-                          {wizardStep === 2 && "Étape 2 sur 4 — Téléversez vos pièces justificatives requises (ID, photo, signature)."}
-                          {wizardStep === 3 && "Étape 3 sur 4 — Configurez les options de votre permis de conduire."}
-                          {wizardStep === 4 && "Étape 4 sur 4 — Signez le mandat de légalité pour finaliser votre demande."}
-                        </p>
+                    <div className="border-b border-white/10 pb-5 mb-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">
+                            Initier ma Demande Officielle
+                          </h2>
+                          <p className="text-white/50 text-xs mt-1">
+                            {wizardStep === 1 && "Étape 1 sur 5 — Vos informations personnelles d'identité."}
+                            {wizardStep === 2 && "Étape 2 sur 5 — Pièces justificatives (carte d'identité, photo, signature)."}
+                            {wizardStep === 3 && "Étape 3 sur 5 — Votre parcours et configuration du permis souhaité."}
+                            {wizardStep === 4 && "Étape 4 sur 5 — Détail des frais d'exécution et de réalisation du permis."}
+                            {wizardStep === 5 && "Étape 5 sur 5 — Signature du mandat pour finaliser votre dossier officiel."}
+                          </p>
+                        </div>
+                        {/* Step Bubbles */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <div 
+                              key={s} 
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                                wizardStep === s 
+                                  ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/30 scale-110' 
+                                  : wizardStep > s 
+                                    ? 'bg-emerald-500 text-white' 
+                                    : 'bg-white/5 border border-white/10 text-white/30'
+                              }`}
+                            >
+                              {wizardStep > s ? '✓' : s}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      
-                      {/* Step Bubbles */}
-                      <div className="flex items-center gap-2">
-                        {[1, 2, 3, 4].map((s) => (
-                          <div 
-                            key={s} 
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                              wizardStep === s 
-                                ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/30' 
-                                : wizardStep > s 
-                                  ? 'bg-emerald-500 text-white' 
-                                  : 'bg-white/5 border border-white/10 text-white/40'
-                            }`}
-                          >
-                            {wizardStep > s ? '✓' : s}
-                          </div>
-                        ))}
+
+                      {/* Progress bar */}
+                      <div className="mt-4 h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-brand-orange to-amber-400 rounded-full transition-all duration-500"
+                          style={{ width: `${((wizardStep - 1) / 4) * 100}%` }}
+                        />
                       </div>
                     </div>
 
@@ -1423,6 +1472,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     {/* STEP 3: EXPERIENCE & CONFIG */}
                     {wizardStep === 3 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-[bubbleIn_0.4s_ease-out]">
+
+                        {/* Recap circuit */}
+                        <div className="col-span-2 bg-slate-950/60 border border-white/10 rounded-2xl p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-brand-orange mb-3">🛣️ Votre circuit d'obtention personnalisé</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { icon: '📋', label: 'Affiliation Candidat', done: true },
+                              { icon: '📖', label: 'Examen Théorique', done: true },
+                              { icon: '🪪', label: 'Permis Provisoire', active: true },
+                              { icon: '👁️', label: 'Perception de Risque', locked: true },
+                              { icon: '🚗', label: 'Examen Pratique', locked: true },
+                              { icon: '🏆', label: 'Permis Définitif', locked: true },
+                            ].map((item, i) => (
+                              <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold border ${
+                                item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                  : item.active ? 'bg-brand-orange/15 border-brand-orange/40 text-brand-orange animate-pulse' 
+                                  : 'bg-white/5 border-white/10 text-white/30'
+                              }`}>
+                                <span>{item.icon}</span>
+                                <span>{item.label}</span>
+                                {item.done && <span>✓</span>}
+                                {item.locked && <span>🔒</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
                         <div className="col-span-1">
                           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                             Nombre d'échecs précédents à l'examen
@@ -1473,65 +1549,134 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     )}
 
-                    {/* STEP 4: FRAIS ADMINISTRATIFS & MANDAT */}
+                    {/* STEP 4: FRAIS D'EXÉCUTION — visible AVANT la soumission */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-6 animate-[bubbleIn_0.4s_ease-out]">
-                        
-                        {/* Legal Reminder Box */}
-                        <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-5">
-                          <h4 className="font-bold text-sm text-brand-orange flex items-center gap-2">
-                            🛡️ Mandat de Constitution Officielle
-                          </h4>
-                          <p className="text-[11px] text-white/70 leading-relaxed mt-2">
-                            En validant cette étape, vous donnez officiellement mandat de représentation administrative à nos services agréés pour le traitement, le suivi et l'enregistrement de votre dossier d'équivalence légale de permis de conduire auprès du SPF Mobilité en Belgique. Aucun examen théorique ou pratique ne vous sera demandé.
-                          </p>
+                      <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
+
+                        {/* Badge informatif */}
+                        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl px-5 py-3">
+                          <span className="text-2xl">💳</span>
+                          <div>
+                            <p className="text-amber-400 font-bold text-sm">Montant à prévoir pour la réalisation</p>
+                            <p className="text-white/60 text-[11px] mt-0.5">Le détail complet des frais liés à l'exécution et l'obtention officielle de votre permis de conduire.</p>
+                          </div>
                         </div>
 
-                        {/* Pricing Invoice Box */}
-                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6">
-                          <h4 className="font-bold text-sm text-white flex items-center gap-2 mb-4">
-                            💳 Détail des Frais d'Exécution & Enregistrement
-                          </h4>
-                          
-                          <div className="space-y-3.5 text-xs">
-                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
-                              <span>Frais de dossier, analyse et constitution administrative :</span>
-                              <span className="font-semibold text-white">120,00 €</span>
-                            </div>
-                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
-                              <span>Droits de timbre fiscal & frais d'enregistrement officiels :</span>
-                              <span className="font-semibold text-white">110,00 €</span>
-                            </div>
-                            <div className="flex justify-between items-center text-white/70 pb-2 border-b border-white/5">
-                              <span>Support plastique sécurisé officiel & édition prioritaire :</span>
-                              <span className="font-semibold text-white">59,00 €</span>
-                            </div>
-                            
-                            <div className="flex justify-between items-center pt-2 text-sm font-bold text-brand-orange">
-                              <span>Montant Total de la prestation (TVA incluse) :</span>
-                              <span className="text-lg bg-brand-orange/15 px-3 py-1 rounded border border-brand-orange/20">289,00 €</span>
-                            </div>
+                        {/* Invoice détaillée */}
+                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl overflow-hidden">
+                          <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                            <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                              📄 Devis de Prestation Officielle
+                            </h4>
+                            <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">SPF Agréé</span>
                           </div>
 
-                          {/* Important payment instruction note */}
-                          <div className="mt-5 bg-white/[0.03] border border-white/5 rounded-xl p-4 flex gap-3">
-                            <span className="text-base flex-shrink-0 mt-0.5">💡</span>
-                            <p className="text-[10px] text-white/60 leading-relaxed">
-                              <strong>Information importante concernant le règlement :</strong> Aucun paiement n'est requis immédiatement à cette étape. Suite à la soumission de votre dossier, nos conseillers analysent vos pièces sous 12h. Dès validation finale de votre admissibilité légale, vous recevrez vos instructions sécurisées pour procéder au paiement et lancer la production de votre permis.
+                          <div className="px-6 py-5 space-y-4">
+                            {[
+                              { label: 'Constitution & analyse du dossier administratif', detail: 'Vérification des pièces, homologation UE', amount: '120,00 €' },
+                              { label: 'Droits de timbre fiscal & frais d\'enregistrement', detail: 'SPF Mobilité + commune de résidence', amount: '110,00 €' },
+                              { label: 'Production du support sécurisé & édition prioritaire', detail: 'Permis plastifié biométrique officiel', amount: '59,00 €' },
+                            ].map((line, i) => (
+                              <div key={i} className="flex items-start justify-between gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                                <div>
+                                  <p className="text-white/80 text-xs font-semibold">{line.label}</p>
+                                  <p className="text-white/40 text-[10px] mt-0.5">{line.detail}</p>
+                                </div>
+                                <span className="text-white font-bold text-sm flex-shrink-0">{line.amount}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="px-6 py-4 bg-brand-orange/10 border-t border-brand-orange/20 flex items-center justify-between">
+                            <span className="text-brand-orange font-bold text-sm">Total TTC (TVA incluse)</span>
+                            <span className="text-2xl font-black text-brand-orange">289,00 €</span>
+                          </div>
+                        </div>
+
+                        {/* Note paiement */}
+                        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-4 flex gap-3">
+                          <span className="text-lg flex-shrink-0">ℹ️</span>
+                          <div>
+                            <p className="text-white/80 text-xs font-bold mb-1">Aucun paiement immédiat requis</p>
+                            <p className="text-white/50 text-[10px] leading-relaxed">
+                              La validation de cette étape ne déclenche pas de prélèvement. Après soumission de votre dossier, nos conseillers analysent vos documents sous 12h. Les instructions de paiement sécurisé vous seront transmises uniquement après confirmation officielle de votre admissibilité.
                             </p>
                           </div>
                         </div>
 
-                        {/* Mandate & Agreement Checkbox */}
-                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
+                        {/* Checkbox acceptation */}
+                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
                           <input 
                             type="checkbox"
                             checked={paymentAccepted}
                             onChange={(e) => setPaymentAccepted(e.target.checked)}
-                            className="mt-1 w-4 h-4 rounded border-white/20 text-brand-orange focus:ring-brand-orange bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                            className="mt-1 w-4 h-4 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
                           />
                           <span className="text-[11px] text-white/80 leading-normal select-none">
-                            Je certifie sur l'honneur l'exactitude de mes informations fournies et je m'engage à régler le montant total de <strong>289,00 €</strong> dès confirmation de mon admissibilité légale par mon conseiller afin d'initier la production physique et la livraison de mon permis de conduire. <span className="text-brand-orange font-bold">(Requis pour soumettre)</span>
+                            J'ai pris connaissance du montant de <strong className="text-white">289,00 €</strong> requis pour la réalisation et l'obtention de mon permis de conduire officiel et j'accepte de procéder au règlement après validation de mon dossier par mon conseiller. <span className="text-brand-orange font-bold">(Requis pour continuer)</span>
+                          </span>
+                        </label>
+
+                      </div>
+                    )}
+
+                    {/* STEP 5: MANDAT DE LÉGALITÉ & CONFIRMATION */}
+                    {wizardStep === 5 && (
+                      <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
+
+                        {/* Récapitulatif du dossier */}
+                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-5">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
+                            <span>📋</span> Récapitulatif de votre dossier
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-white/40 block">Candidat</span>
+                              <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span>
+                            </div>
+                            <div>
+                              <span className="text-white/40 block">Date de naissance</span>
+                              <span className="text-white font-semibold">{formData.birthDate || '—'}</span>
+                            </div>
+                            <div>
+                              <span className="text-white/40 block">Téléphone</span>
+                              <span className="text-white font-semibold">{formData.phone || '—'}</span>
+                            </div>
+                            <div>
+                              <span className="text-white/40 block">Permis souhaité</span>
+                              <span className="text-brand-orange font-semibold">Cat. B — {formData.transmission}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-white/40 block">Adresse</span>
+                              <span className="text-white font-semibold">{formData.address || '—'}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-white/40 block">Pièces justificatives</span>
+                              <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 fichiers téléversés</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mandat légal */}
+                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-5">
+                          <h4 className="font-bold text-sm text-brand-orange flex items-center gap-2 mb-3">
+                            🛡️ Mandat de Constitution Officielle — SPF Mobilité Belgique
+                          </h4>
+                          <p className="text-[11px] text-white/70 leading-relaxed">
+                            En soumettant ce dossier, vous conférez officiellement mandat de représentation administrative à nos conseillers agréés pour le traitement, le suivi légal et l'enregistrement complet de votre équivalence de permis de conduire auprès du SPF Mobilité et de votre commune de résidence en Belgique. Cette procédure est 100% encadrée par les directives CE 2006/126 et les accords de réciprocité en vigueur au sein de l'Union Européenne. <span className="text-brand-orange font-semibold">Aucun examen théorique ou pratique ne vous sera demandé.</span>
+                          </p>
+                        </div>
+
+                        {/* Checkbox mandat final */}
+                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
+                          <input 
+                            type="checkbox"
+                            checked={mandatAccepted}
+                            onChange={(e) => setMandatAccepted(e.target.checked)}
+                            className="mt-1 w-4 h-4 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                          />
+                          <span className="text-[11px] text-white/80 leading-normal select-none">
+                            Je certifie sur l'honneur l'exactitude et la véracité de toutes les informations renseignées dans ce dossier, et je donne mandat exprès à les conseillers agréés de <strong>Mon Permis</strong> pour représenter mes intérêts administratifs dans l'obtention légale de mon permis de conduire. <span className="text-brand-orange font-bold">(Requis pour soumettre)</span>
                           </span>
                         </label>
 
@@ -1553,25 +1698,30 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div />
                     )}
 
-                    {wizardStep < 4 ? (
+                    {wizardStep < 5 ? (
                       <button
                         type="button"
                         onClick={() => setWizardStep(s => s + 1)}
-                        className="px-6 py-2.5 rounded-full bg-brand-orange hover:bg-brand-orange-dark text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20"
+                        disabled={wizardStep === 4 && !paymentAccepted}
+                        className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20 ${
+                          wizardStep === 4 && !paymentAccepted
+                            ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+                            : 'bg-brand-orange hover:bg-brand-orange-dark text-white cursor-pointer'
+                        }`}
                       >
-                        Continuer
+                        {wizardStep === 4 ? 'Valider et continuer ➔' : 'Continuer ➔'}
                       </button>
                     ) : (
                       <button
                         type="submit"
-                        disabled={!paymentAccepted}
+                        disabled={!mandatAccepted}
                         className={`px-8 py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 shadow-md flex items-center gap-2 ${
-                          paymentAccepted 
+                          mandatAccepted 
                             ? 'bg-brand-orange hover:bg-brand-orange-dark shadow-brand-orange/30 text-white cursor-pointer hover:scale-[1.02]' 
                             : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
                         }`}
                       >
-                        Soumettre ma Demande Officielle ➔
+                        🚀 Soumettre ma Demande Officielle
                       </button>
                     )}
                   </div>
@@ -1588,16 +1738,22 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold">
-                    👨‍💼
+                    {advisor.avatarEmoji || '👨‍💼'}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full animate-ping" />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full" />
+                  {advisor.isOnline ? (
+                    <>
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full animate-ping" />
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full" />
+                    </>
+                  ) : (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-slate-500 border-2 border-slate-900 rounded-full" />
+                  )}
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-sm">Jean-Pierre Dumont</h3>
+                  <h3 className="text-white font-bold text-sm">{advisor.name}</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-green-400 font-semibold tracking-wider uppercase">
-                      Conseiller en Ligne — répond immédiatement
+                    <span className={`text-[10px] font-semibold tracking-wider uppercase ${advisor.isOnline ? 'text-green-400' : 'text-slate-400'}`}>
+                      {advisor.isOnline ? 'Conseiller en Ligne — répond immédiatement' : 'Conseiller hors-ligne'}
                     </span>
                   </div>
                 </div>
@@ -1640,7 +1796,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   type="text" 
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Posez votre question à Jean-Pierre (ex. Délai, Légalité...)"
+                  placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
                   className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors"
                 />
                 <button 

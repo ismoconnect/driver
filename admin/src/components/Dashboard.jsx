@@ -1,78 +1,225 @@
 import React, { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
-import { collection, getDocs, orderBy, query, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, updateDoc, deleteDoc, onSnapshot, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const Dashboard = ({ onLogout }) => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedLeadUid, setSelectedLeadUid] = useState(() => localStorage.getItem('adminSelectedLeadUid') || null);
   const [updating, setUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState('demandes');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'demandes');
 
-  const fetchLeads = async () => {
+  // Derive selectedLead from leads array using stored UID
+  const selectedLead = leads.find(l => l.uid === selectedLeadUid) || null;
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminActiveTab', activeTab);
+  }, [activeTab]);
+
+  // Persist selectedLeadUid to localStorage
+  useEffect(() => {
+    if (selectedLeadUid) {
+      localStorage.setItem('adminSelectedLeadUid', selectedLeadUid);
+    } else {
+      localStorage.removeItem('adminSelectedLeadUid');
+    }
+  }, [selectedLeadUid]);
+
+  // Advisor Settings States
+  const [advisorSettings, setAdvisorSettings] = useState({
+    name: "Jean-Pierre Dumont",
+    title: "Expert Agréé SPF Belgique",
+    isOnline: true,
+    avatarEmoji: "👨‍💼"
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  // Chat / Messages States
+  const [chats, setChats] = useState([]);
+  const [selectedChatId, setSelectedChatId] = useState(() => localStorage.getItem('adminSelectedChatId') || null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [adminChatInput, setAdminChatInput] = useState('');
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Persist selectedChatId to localStorage
+  useEffect(() => {
+    if (selectedChatId) {
+      localStorage.setItem('adminSelectedChatId', selectedChatId);
+    } else {
+      localStorage.removeItem('adminSelectedChatId');
+    }
+  }, [selectedChatId]);
+
+  // Listen to advisor settings in real-time
+  useEffect(() => {
+    const docRef = doc(db, "settings", "advisor");
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setAdvisorSettings(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to all active chats in real-time
+  useEffect(() => {
+    const chatsRef = collection(db, "chats");
+    const q = query(chatsRef, orderBy("lastMessageTime", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const chatList = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setChats(chatList);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to messages of the selected chat in real-time
+  useEffect(() => {
+    if (!selectedChatId) {
+      setChatMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    const msgsRef = collection(db, "chats", selectedChatId, "messages");
+    const q = query(msgsRef, orderBy("timestamp", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgList = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setChatMessages(msgList);
+      setLoadingMessages(false);
+
+      // Mark as read by admin when admin views the chat
+      const chatDocRef = doc(db, "chats", selectedChatId);
+      updateDoc(chatDocRef, { unreadByAdmin: false }).catch(err => console.error(err));
+    });
+    return () => unsubscribe();
+  }, [selectedChatId]);
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsSuccess(false);
     try {
-      setLoading(true);
-      // Fetch leads
-      const leadsQuery = query(collection(db, "leads"), orderBy("createdAt", "desc"));
-      const leadsSnapshot = await getDocs(leadsQuery);
-      const leadsData = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      // Fetch users
-      const usersQuery = query(collection(db, "users"));
-      const usersSnapshot = await getDocs(usersQuery);
-      const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      // Merge data: users that have leads, and users that just signed up
-      const combinedLeads = [];
-      
-      // Add all leads, enriching with user data if available
-      for (const lead of leadsData) {
-        const matchingUser = usersData.find(u => u.uid === lead.uid);
-        const mergedName = `${lead.firstName || matchingUser?.firstName || ''} ${lead.lastName || matchingUser?.lastName || ''}`.trim() || lead.email;
-        combinedLeads.push({
-          id: lead.id,
-          uid: lead.uid,
-          name: mergedName,
-          email: lead.email,
-          phone: lead.phone || matchingUser?.phone || '',
-          service: "Permis Définitif", // Fixed or from lead if added later
-          date: new Date(lead.createdAt || lead.submittedAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-          status: lead.status || (lead.isSubmitted ? 'processing' : 'new'),
-          rawLead: lead,
-          rawUser: matchingUser
-        });
-      }
-
-      // Add users that don't have a lead yet (signed up but no lead doc)
-      for (const user of usersData) {
-        if (!combinedLeads.find(l => l.uid === user.uid)) {
-          const mergedName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-          combinedLeads.push({
-            id: user.uid,
-            uid: user.uid,
-            name: mergedName,
-            email: user.email,
-            phone: user.phone || '',
-            service: "Inscription simple",
-            date: new Date(user.createdAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-            status: user.status || 'new',
-            rawLead: null,
-            rawUser: user
-          });
-        }
-      }
-
-      setLeads(combinedLeads);
-      setLoading(false);
-    } catch (error) {
-      console.error("Erreur:", error);
-      setLoading(false);
+      const docRef = doc(db, "settings", "advisor");
+      await setDoc(docRef, {
+        name: advisorSettings.name,
+        title: advisorSettings.title,
+        isOnline: advisorSettings.isOnline === true || advisorSettings.isOnline === 'true',
+        avatarEmoji: advisorSettings.avatarEmoji || "👨‍💼"
+      });
+      setSettingsSuccess(true);
+      setTimeout(() => setSettingsSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la sauvegarde des paramètres.");
+    } finally {
+      setSavingSettings(false);
     }
   };
 
+  const handleSendAdminReply = async (e) => {
+    e.preventDefault();
+    if (!adminChatInput.trim() || !selectedChatId) return;
+
+    const messageText = adminChatInput;
+    setAdminChatInput('');
+
+    try {
+      const msgsRef = collection(db, "chats", selectedChatId, "messages");
+      const chatDocRef = doc(db, "chats", selectedChatId);
+
+      // 1. Add reply message
+      await addDoc(msgsRef, {
+        sender: 'advisor',
+        text: messageText,
+        timestamp: serverTimestamp()
+      });
+
+      // 2. Update chat metadata
+      await updateDoc(chatDocRef, {
+        lastMessageText: messageText,
+        lastMessageTime: serverTimestamp(),
+        unreadByClient: true,
+        unreadByAdmin: false
+      });
+    } catch (err) {
+      console.error("Error sending admin reply:", err);
+    }
+  };
+
+  // Real-time synchronization of leads and users combined
   useEffect(() => {
-    fetchLeads();
+    setLoading(true);
+
+    const leadsQuery = query(collection(db, "leads"), orderBy("createdAt", "desc"));
+    const unsubLeads = onSnapshot(leadsQuery, (leadsSnap) => {
+      const leadsData = leadsSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+
+      const usersQuery = query(collection(db, "users"));
+      const unsubUsers = onSnapshot(usersQuery, (usersSnap) => {
+        const usersData = usersSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+
+        const combinedLeads = [];
+
+        // Add all leads, enriching with user data if available
+        for (const lead of leadsData) {
+          const matchingUser = usersData.find(u => u.uid === lead.uid);
+          const mergedName = `${lead.firstName || matchingUser?.firstName || ''} ${lead.lastName || matchingUser?.lastName || ''}`.trim() || lead.email;
+          combinedLeads.push({
+            id: lead.id,
+            uid: lead.uid,
+            name: mergedName,
+            email: lead.email,
+            phone: lead.phone || matchingUser?.phone || '',
+            service: "Permis Définitif",
+            date: new Date(lead.createdAt || lead.submittedAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+            status: lead.status || (lead.isSubmitted ? 'processing' : 'new'),
+            rawLead: lead,
+            rawUser: matchingUser
+          });
+        }
+
+        // Add users that don't have a lead yet (signed up but no lead doc)
+        for (const user of usersData) {
+          if (!combinedLeads.find(l => l.uid === user.uid)) {
+            const mergedName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+            combinedLeads.push({
+              id: user.uid,
+              uid: user.uid,
+              name: mergedName,
+              email: user.email,
+              phone: user.phone || '',
+              service: "Inscription simple",
+              date: new Date(user.createdAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+              status: user.status || 'new',
+              rawLead: null,
+              rawUser: user
+            });
+          }
+        }
+
+        setLeads(combinedLeads);
+        setLoading(false);
+      }, (err) => {
+        console.error("Error listening to users:", err);
+      });
+
+      window.__unsubUsersRealtime = unsubUsers;
+    }, (err) => {
+      console.error("Error listening to leads:", err);
+    });
+
+    return () => {
+      unsubLeads();
+      if (window.__unsubUsersRealtime) window.__unsubUsersRealtime();
+    };
   }, []);
 
   const handleSignOut = () => {
@@ -80,12 +227,12 @@ const Dashboard = ({ onLogout }) => {
   };
 
   const openDetail = (lead) => {
-    setSelectedLead(lead);
+    setSelectedLeadUid(lead.uid);
     setActiveTab('detail');
   };
 
   const closeDetail = () => {
-    setSelectedLead(null);
+    setSelectedLeadUid(null);
     setActiveTab('demandes');
   };
 
@@ -107,8 +254,6 @@ const Dashboard = ({ onLogout }) => {
           isSubmitted: isSubmittedState
         });
       }
-      setLeads(leads.map(l => l.uid === selectedLead.uid ? { ...l, status: newStatus } : l));
-      setSelectedLead({ ...selectedLead, status: newStatus });
     } catch (err) {
       console.error(err);
     }
@@ -126,7 +271,11 @@ const Dashboard = ({ onLogout }) => {
         if (leadToDelete.rawUser && leadToDelete.rawUser.uid) {
           await deleteDoc(doc(db, "users", leadToDelete.rawUser.uid));
         }
-        setLeads(leads.filter(l => l.uid !== leadToDelete.uid));
+        // If the deleted lead is currently open, close it
+        if (selectedLeadUid === leadToDelete.uid) {
+          setSelectedLeadUid(null);
+          setActiveTab('demandes');
+        }
       } catch (err) {
         console.error(err);
       }
@@ -151,7 +300,6 @@ const Dashboard = ({ onLogout }) => {
             isSubmitted: false
           });
         }
-        setLeads(leads.map(l => l.uid === leadToReset.uid ? { ...l, status: "new" } : l));
       } catch (err) {
         console.error(err);
       }
@@ -197,7 +345,7 @@ const Dashboard = ({ onLogout }) => {
             </button>
             <button 
               onClick={() => setActiveTab('messages')}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
                 activeTab === 'messages' 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
@@ -205,6 +353,20 @@ const Dashboard = ({ onLogout }) => {
             >
               <span className="mr-3 text-lg">💬</span> 
               Messagerie
+              {chats.some(c => c.unreadByAdmin) && (
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                activeTab === 'settings' 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="mr-3 text-lg">⚙️</span> 
+              Paramètres
             </button>
           </nav>
         </div>
@@ -236,6 +398,7 @@ const Dashboard = ({ onLogout }) => {
             )}
             {activeTab === 'users' && "Gestion des Utilisateurs"}
             {activeTab === 'messages' && "Messagerie Centrale"}
+            {activeTab === 'settings' && "Paramètres du Conseiller"}
           </h2>
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]">
@@ -564,7 +727,202 @@ const Dashboard = ({ onLogout }) => {
             </div>
           )}
 
-          {activeTab !== 'demandes' && activeTab !== 'detail' && (
+          {activeTab === 'messages' && (
+            <div className="flex gap-6 h-[calc(100vh-12rem)] animate-fade-in">
+              {/* Left pane: Chats List */}
+              <div className="w-1/3 bg-slate-900/60 border border-white/5 rounded-3xl p-5 flex flex-col gap-4 overflow-hidden backdrop-blur-sm">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Conversations Actives</h3>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {chats.map((chat) => {
+                    const isSelected = selectedChatId === chat.id;
+                    return (
+                      <div
+                        key={chat.id}
+                        onClick={() => setSelectedChatId(chat.id)}
+                        className={`p-4 rounded-2xl cursor-pointer border transition-all duration-300 relative flex flex-col gap-1.5 ${
+                          isSelected
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : 'bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-white truncate max-w-[150px]">
+                            {chat.userName || 'Candidat'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            {chat.lastMessageTime ? new Date(chat.lastMessageTime.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 truncate pr-4">
+                          {chat.lastMessageText || 'Pas de message'}
+                        </p>
+                        {chat.unreadByAdmin && (
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {chats.length === 0 && (
+                    <div className="text-center py-10 text-slate-500 text-sm">
+                      Aucune conversation pour le moment.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right pane: Active Thread */}
+              <div className="flex-1 bg-slate-900/60 border border-white/5 rounded-3xl overflow-hidden flex flex-col backdrop-blur-sm relative">
+                {selectedChatId ? (
+                  <>
+                    {/* Selected Chat Header */}
+                    {(() => {
+                      const activeChat = chats.find(c => c.id === selectedChatId);
+                      return (
+                        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-slate-900/40">
+                          <div>
+                            <h4 className="font-bold text-white text-sm">{activeChat?.userName || 'Candidat'}</h4>
+                            <p className="text-xs text-slate-500 mt-0.5">{activeChat?.userEmail}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Messages Container */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                      {loadingMessages && chatMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        chatMessages.map((m) => {
+                          const isAdvisor = m.sender === 'advisor';
+                          return (
+                            <div key={m.id} className={`flex ${isAdvisor ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[75%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+                                isAdvisor
+                                  ? 'bg-emerald-500 text-slate-950 rounded-br-none font-medium'
+                                  : 'bg-white/10 border border-white/5 text-white/90 rounded-bl-none'
+                              }`}>
+                                <p>{m.text}</p>
+                                <span className={`block text-[9px] text-right mt-1.5 ${isAdvisor ? 'text-slate-950 opacity-60 font-semibold' : 'text-white/40'}`}>
+                                  {m.timestamp ? new Date(m.timestamp.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "À l'instant"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Chat Input form */}
+                    <form onSubmit={handleSendAdminReply} className="p-4 border-t border-white/5 bg-slate-900/20 flex gap-2">
+                      <input
+                        type="text"
+                        value={adminChatInput}
+                        onChange={(e) => setAdminChatInput(e.target.value)}
+                        placeholder="Tapez votre réponse en tant que conseiller..."
+                        className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                      />
+                      <button
+                        type="submit"
+                        className="px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition-transform duration-300 hover:scale-105 cursor-pointer"
+                      >
+                        Envoyer
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <div className="text-6xl mb-4">💬</div>
+                    <h3 className="text-lg font-bold text-white mb-2">Sélectionnez une conversation</h3>
+                    <p className="text-slate-500 text-sm max-w-xs">Choisissez un candidat dans la liste de gauche pour lui répondre en temps réel.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="max-w-2xl mx-auto bg-slate-900/60 border border-white/5 rounded-3xl p-8 backdrop-blur-sm shadow-2xl animate-fade-in">
+              <h3 className="text-base font-bold uppercase tracking-wider text-emerald-400 mb-6">⚙️ Configuration du Conseiller</h3>
+              
+              {settingsSuccess && (
+                <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs p-4 rounded-2xl mb-6 flex items-center gap-2">
+                  <span>✓</span> Les paramètres ont été enregistrés avec succès.
+                </div>
+              )}
+
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Nom du Conseiller</label>
+                  <input
+                    required
+                    type="text"
+                    value={advisorSettings.name}
+                    onChange={(e) => setAdvisorSettings(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Jean-Pierre Dumont"
+                    className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Titre / Titre SPF Agréé</label>
+                  <input
+                    required
+                    type="text"
+                    value={advisorSettings.title}
+                    onChange={(e) => setAdvisorSettings(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Ex: Expert Agréé SPF Belgique"
+                    className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Statut de Connexion</label>
+                    <select
+                      value={advisorSettings.isOnline}
+                      onChange={(e) => setAdvisorSettings(prev => ({ ...prev, isOnline: e.target.value === 'true' }))}
+                      className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                    >
+                      <option value="true">🟢 En Ligne (répond immédiatement)</option>
+                      <option value="false">⚫ Hors-ligne (indiqué comme déconnecté)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Avatar (Emoji)</label>
+                    <select
+                      value={advisorSettings.avatarEmoji}
+                      onChange={(e) => setAdvisorSettings(prev => ({ ...prev, avatarEmoji: e.target.value }))}
+                      className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                    >
+                      <option value="👨‍💼">👨‍💼 Homme d'affaires</option>
+                      <option value="👩‍💼">👩‍💼 Femme d'affaires</option>
+                      <option value="🤵">🤵 Costume / Smoking</option>
+                      <option value="👨‍💻">👨‍💻 Développeur</option>
+                      <option value="👩‍💻">👩‍💻 Développeuse</option>
+                      <option value="🧑‍⚖️">🧑‍⚖️ Juge / Officiel</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={savingSettings}
+                  className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/35 transition-all duration-300 hover:scale-[1.01] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {savingSettings ? (
+                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Enregistrer les Paramètres ➔"
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="text-6xl mb-4">🚧</div>
