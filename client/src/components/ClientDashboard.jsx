@@ -42,6 +42,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     return saved ? parseInt(saved, 10) : 1;
   });
 
+  // Client Theme State (light / dark mode)
+  const [theme, setTheme] = useState(() => localStorage.getItem('clientTheme') || 'dark');
+
+  // Persist theme changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('clientTheme', theme);
+  }, [theme]);
+
   // Persist activeTab to localStorage
   useEffect(() => {
     localStorage.setItem('clientActiveTab', activeTab);
@@ -739,7 +747,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // RENDER: SECURED CLIENT DASHBOARD (IF LOGGED IN)
   // ----------------------------------------------------
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans selection:bg-brand-orange selection:text-white relative">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
       {/* Loading overlay for database synchronization */}
       {isLoadingData && (
         <div className="absolute inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center">
@@ -768,7 +776,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="hidden md:inline-block text-xs text-white/50 truncate max-w-[240px]">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all text-sm shadow-sm hover:scale-105 cursor-pointer ${
+              theme === 'dark' 
+                ? 'border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 text-white' 
+                : 'border-slate-200 hover:border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800'
+            }`}
+            title={theme === 'dark' ? 'Passer au mode clair' : 'Passer au mode sombre'}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <span className="hidden md:inline-block text-xs text-white/50 truncate max-w-[240px] font-semibold">
             Candidat : {formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}`.trim() : user.email}
           </span>
           <button 
@@ -1117,6 +1137,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   )}
                 </div>
               </div>
+
+              {/* Promo card removed */}
 
               {/* legal disclaimer compliance */}
               <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1480,8 +1502,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             {[
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
                               { icon: '📖', label: 'Examen Théorique', done: true },
-                              { icon: '🪪', label: 'Permis Provisoire', active: true },
-                              { icon: '👁️', label: 'Perception de Risque', locked: true },
+                              { icon: '👁️', label: 'Perception de Risque', active: true },
                               { icon: '🚗', label: 'Examen Pratique', locked: true },
                               { icon: '🏆', label: 'Permis Définitif', locked: true },
                             ].map((item, i) => (
@@ -1816,18 +1837,251 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </main>
       </div>
 
-      {/* Bubble animation keyframe injected via style tag */}
+      {/* Styles: animations + light theme */}
       <style>{`
         @keyframes bubbleIn {
-          0% {
-            opacity: 0;
-            transform: translateY(8px) scale(0.97);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0px) scale(1);
-          }
+          0%  { opacity: 0; transform: translateY(8px) scale(0.97); }
+          100%{ opacity: 1; transform: translateY(0px)  scale(1);   }
         }
+
+        /* ═══════════════════════════════════════════════════════
+           GLOBAL PREMIUM CUSTOM SCROLLBAR (DARK & LIGHT THEMES)
+        ═══════════════════════════════════════════════════════ */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(156, 163, 175, 0.25) !important;
+          border-radius: 9999px !important;
+          border: 2px solid transparent !important;
+          background-clip: padding-box !important;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(156, 163, 175, 0.45) !important;
+          border: 2px solid transparent !important;
+          background-clip: padding-box !important;
+        }
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(156, 163, 175, 0.25) transparent;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SOLUTION DÉFINITIVE — MODE CLAIR (attribute-selector approach)
+           [class*="..."] capture TOUTES les variantes Tailwind d'un coup.
+        ═══════════════════════════════════════════════════════════════ */
+
+        .light-theme {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+
+        /* ── HEADER ── */
+        .light-theme header {
+          background-color: #ffffff !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
+          color: #0f172a !important;
+        }
+        .light-theme header * { color: #0f172a !important; }
+        .light-theme header [class*="border-white"]  { border-color: #e2e8f0 !important; }
+        .light-theme header [class*="bg-white"]      { background-color: #f8fafc !important; }
+        .light-theme header [class*="bg-emerald"]    { background-color: #dcfce7 !important; border-color: #86efac !important; }
+        .light-theme header [class*="text-emerald"]  { color: #15803d !important; }
+        .light-theme header [class*="text-white\\/"] { color: #475569 !important; }
+
+        /* ── SIDEBAR ── */
+        .light-theme aside {
+          background-color: #ffffff !important;
+          border-right: 1px solid #e2e8f0 !important;
+          color: #0f172a !important;
+        }
+        .light-theme aside * { color: #0f172a !important; }
+        .light-theme aside [class*="text-white\\/"]  { color: #334155 !important; }
+        .light-theme aside [class*="text-slate-4"],
+        .light-theme aside [class*="text-slate-5"]   { color: #64748b !important; }
+        .light-theme aside [class*="border-white"]   { border-color: #e2e8f0 !important; }
+        .light-theme aside [class*="bg-slate-"],
+        .light-theme aside [class*="bg-white\\/"]    { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+        .light-theme aside [class*="text-red-"]      { color: #dc2626 !important; }
+        .light-theme aside [class*="text-emerald"]   { color: #15803d !important; }
+
+        /* ── MAIN AREA ── */
+        .light-theme main {
+          background-color: #ffffff !important;
+          border-color: #e2e8f0 !important;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.04) !important;
+          color: #0f172a !important;
+        }
+
+        /* Toutes les cartes sombres → fond clair */
+        .light-theme main [class*="bg-slate-9"],
+        .light-theme main [class*="bg-slate-8"],
+        .light-theme main [class*="bg-slate-950"] {
+          background-color: #f8fafc !important;
+          border-color: #e2e8f0 !important;
+        }
+
+        /* Gradients sombres → gradient clair */
+        .light-theme main [class*="bg-gradient-to-br"],
+        .light-theme main [class*="bg-gradient-to-r"] {
+          background: #eff6ff !important;
+          background-image: none !important;
+          border-color: #bae6fd !important;
+        }
+        /* Sauf la barre de progression orange */
+        .light-theme main [class*="from-brand-orange"],
+        .light-theme main [class*="from-emerald-5"] {
+          background: linear-gradient(to right, #f97316, #fbbf24) !important;
+        }
+
+        /* bg-white/x → gris très clair */
+        .light-theme main [class*="bg-white\\/"] {
+          background-color: #f1f5f9 !important;
+          border-color: #e2e8f0 !important;
+        }
+
+        /* Toutes les bordures blanc → gris clair */
+        .light-theme main [class*="border-white"] { border-color: #e2e8f0 !important; }
+        .light-theme main [class*="divide-white"] > * { border-color: #e2e8f0 !important; }
+
+        /* text-white et TOUTES ses variantes → sombre lisible */
+        .light-theme main [class*="text-white"]          { color: #0f172a !important; }
+        .light-theme main [class*="text-white\\/9"]      { color: #0f172a !important; }
+        .light-theme main [class*="text-white\\/8"]      { color: #1e293b !important; }
+        .light-theme main [class*="text-white\\/7"]      { color: #334155 !important; }
+        .light-theme main [class*="text-white\\/6"]      { color: #334155 !important; }
+        .light-theme main [class*="text-white\\/5"]      { color: #475569 !important; }
+        .light-theme main [class*="text-white\\/4"]      { color: #64748b !important; }
+        .light-theme main [class*="text-white\\/3"]      { color: #94a3b8 !important; }
+        .light-theme main [class*="text-white\\/2"]      { color: #94a3b8 !important; }
+
+        /* Titres et textes */
+        .light-theme main h1,.light-theme main h2,.light-theme main h3,
+        .light-theme main h4,.light-theme main h5,.light-theme main h6 { color: #0f172a !important; }
+        .light-theme main p      { color: #334155 !important; }
+        .light-theme main label  { color: #475569 !important; font-weight: 600; }
+        .light-theme main strong { color: #0f172a !important; }
+        .light-theme main [class*="text-slate-4"] { color: #475569 !important; }
+        .light-theme main [class*="text-slate-5"] { color: #64748b !important; }
+        .light-theme main [class*="text-slate-3"] { color: #334155 !important; }
+
+        /* Badges statuts */
+        .light-theme main [class*="bg-emerald-5"] {
+          background-color: #dcfce7 !important; color: #15803d !important; border-color: #86efac !important;
+        }
+        .light-theme main [class*="text-emerald-"] { color: #15803d !important; }
+        .light-theme main [class*="border-emerald"] { border-color: #86efac !important; }
+        .light-theme main [class*="bg-amber-5"] {
+          background-color: #fef9c3 !important; color: #b45309 !important; border-color: #fde68a !important;
+        }
+        .light-theme main [class*="text-amber-"]  { color: #b45309 !important; }
+        .light-theme main [class*="bg-indigo-5"] {
+          background-color: #e0e7ff !important; color: #4338ca !important; border-color: #c7d2fe !important;
+        }
+        .light-theme main [class*="text-indigo-"] { color: #4338ca !important; }
+        .light-theme main [class*="bg-red-5"]     { background-color: #fef2f2 !important; border-color: #fecaca !important; }
+        .light-theme main [class*="text-red-4"]   { color: #dc2626 !important; }
+
+        /* Brand orange */
+        .light-theme main [class*="text-brand-orange"]  { color: #c2410c !important; }
+        .light-theme main [class*="bg-brand-orange\\/"] { background-color: #fff7ed !important; border-color: #fed7aa !important; }
+        .light-theme main [class*="border-brand-orange"]{ border-color: #fdba74 !important; }
+
+        /* Formulaires */
+        .light-theme main input,
+        .light-theme main select,
+        .light-theme main textarea {
+          background-color: #ffffff !important;
+          color: #0f172a !important;
+          border-color: #cbd5e1 !important;
+        }
+        .light-theme main input:focus,
+        .light-theme main select:focus,
+        .light-theme main textarea:focus {
+          border-color: #f97316 !important;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.12) !important;
+          outline: none !important;
+        }
+        .light-theme main input::placeholder { color: #94a3b8 !important; }
+
+        /* Zone upload dashed */
+        .light-theme main [class*="border-dashed"] {
+          border-color: #cbd5e1 !important; background-color: #f8fafc !important;
+        }
+
+        /* Google AI Pro card text */
+        .light-theme main [class*="bg-gradient-to-r"] h4   { color: #1e3a8a !important; }
+        .light-theme main [class*="bg-gradient-to-r"] p    { color: #1e40af !important; }
+        .light-theme main [class*="bg-gradient-to-r"] span { color: #1d4ed8 !important; }
+        .light-theme main [class*="bg-gradient-to-r"] a    { background-color: #1e3a8a !important; color: #ffffff !important; }
+
+        /* Chat bubbles côté client */
+        .light-theme main [class*="bg-white\\/10"] {
+          background-color: #f1f5f9 !important; border-color: #e2e8f0 !important;
+        }
+        .light-theme main [class*="bg-white\\/10"] p,
+        .light-theme main [class*="bg-white\\/10"] span { color: #334155 !important; }
+
+        /* Tooltip */
+        .light-theme main [class*="bg-slate-8"].absolute {
+          background-color: #1e293b !important;
+          color: #ffffff !important;
+          border-color: #475569 !important;
+        }
+
+        /* ─── HOVER EFFECTS & CARD HIGHLIGHTS (LIGHT THEME) ─── */
+        
+        /* Base opacity and smooth transitions for locked/upcoming cards */
+        .light-theme main .opacity-40 {
+          opacity: 0.55 !important;
+          background-color: #f8fafc !important;
+          border-color: #e2e8f0 !important;
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* Hover state for locked/upcoming phase cards */
+        .light-theme main .opacity-40:hover {
+          opacity: 1 !important;
+          background-color: #ffffff !important;
+          border-color: #f97316 !important; /* Soft orange highlight border on hover */
+          box-shadow: 0 10px 25px rgba(249, 115, 22, 0.06), 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+          transform: translateY(-2px) !important;
+        }
+
+        /* General hover text color accentuation inside all .group elements */
+        .light-theme .group:hover [class*="text-white\\/2"] { color: #475569 !important; }
+        .light-theme .group:hover [class*="text-white\\/3"] { color: #334155 !important; }
+        .light-theme .group:hover [class*="text-white\\/4"] { color: #334155 !important; }
+        .light-theme .group:hover [class*="text-white\\/5"] { color: #1e293b !important; }
+        .light-theme .group:hover [class*="text-white\\/6"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/7"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/8"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/9"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white"]    { color: #0f172a !important; }
+
+        /* Prevent tooltip from being darkened when hovering over the card group */
+        .light-theme .group:hover [class*="bg-slate-8"].absolute {
+          color: #ffffff !important;
+        }
+
+        /* Grayscale and opacity recovery for icons and text elements inside group on hover */
+        .light-theme .group:hover img,
+        .light-theme .group:hover svg {
+          filter: grayscale(0) !important;
+          opacity: 1 !important;
+        }
+
+        /* Pre/code */
+        .light-theme main pre { background-color: #f8fafc !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+
+        /* Scrollbar */
+        .light-theme ::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
+        .light-theme ::-webkit-scrollbar-track  { background: transparent !important; }
       `}</style>
     </div>
   );

@@ -10,6 +10,14 @@ const Dashboard = ({ onLogout }) => {
   const [updating, setUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'demandes');
 
+  // Admin Theme State (light / dark mode)
+  const [theme, setTheme] = useState(() => localStorage.getItem('adminTheme') || 'dark');
+
+  // Persist theme changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminTheme', theme);
+  }, [theme]);
+
   // Derive selectedLead from leads array using stored UID
   const selectedLead = leads.find(l => l.uid === selectedLeadUid) || null;
 
@@ -308,7 +316,7 @@ const Dashboard = ({ onLogout }) => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white overflow-hidden font-sans">
+    <div className={`flex h-screen ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} overflow-hidden font-sans transition-colors duration-300`}>
       
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900/80 border-r border-white/5 flex flex-col justify-between flex-shrink-0 backdrop-blur-xl relative z-20 shadow-2xl">
@@ -401,6 +409,18 @@ const Dashboard = ({ onLogout }) => {
             {activeTab === 'settings' && "Paramètres du Conseiller"}
           </h2>
           <div className="flex items-center gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all text-sm shadow-sm hover:scale-105 cursor-pointer ${
+                theme === 'dark' 
+                  ? 'border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 text-white' 
+                  : 'border-slate-200 hover:border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800'
+              }`}
+              title={theme === 'dark' ? 'Passer au mode clair' : 'Passer au mode sombre'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]">
               A
             </div>
@@ -920,6 +940,8 @@ const Dashboard = ({ onLogout }) => {
                 </button>
               </form>
             </div>
+
+            
           )}
 
           {activeTab === 'users' && (
@@ -934,6 +956,327 @@ const Dashboard = ({ onLogout }) => {
 
         </main>
       </div>
+
+      {/* Light Theme Styles */}
+      <style>{`
+        /* ═══════════════════════════════════════════════════════
+           GLOBAL PREMIUM CUSTOM SCROLLBAR (DARK & LIGHT THEMES)
+        ═══════════════════════════════════════════════════════ */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(156, 163, 175, 0.25) !important;
+          border-radius: 9999px !important;
+          border: 2px solid transparent !important;
+          background-clip: padding-box !important;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(156, 163, 175, 0.45) !important;
+          border: 2px solid transparent !important;
+          background-clip: padding-box !important;
+        }
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(156, 163, 175, 0.25) transparent;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           PREMIUM LIGHT THEME — ADMIN DASHBOARD
+        ═══════════════════════════════════════════════════════ */
+        .light-theme {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+
+        /* High-contrast overrides for Light Theme — Palette 1 */
+        .light-theme .text-white { color: #0F172A !important; }
+        .light-theme .text-white\/90 { color: #0F172A !important; }
+        .light-theme .text-white\/80 { color: #334155 !important; }
+        .light-theme .text-white\/60 { color: #64748B !important; }
+        .light-theme .text-white\/50 { color: #64748B !important; }
+        .light-theme .text-white\/40 { color: #64748B !important; }
+        .light-theme .text-white\/30 { color: #94a3b8 !important; }
+        .light-theme .text-slate-300 { color: #334155 !important; }
+        .light-theme .text-slate-400,
+        .light-theme .text-slate-500 { color: #64748B !important; }
+        .light-theme header span,
+        .light-theme header div,
+        .light-theme header p { color: #0F172A !important; }
+        .light-theme main h2,
+        .light-theme main h3,
+        .light-theme main h4,
+        .light-theme main h5,
+        .light-theme main p,
+        .light-theme main span,
+        .light-theme main strong { color: #0F172A !important; }
+        .light-theme a,
+        .light-theme .text-emerald-400 { color: #1E40AF !important; }
+
+        /* ─── Sidebar ─── */
+        .light-theme aside {
+          background-color: #ffffff !important;
+          border-right: 1px solid #e2e8f0 !important;
+          box-shadow: 2px 0 12px rgba(0,0,0,0.04) !important;
+        }
+        .light-theme aside h1  { color: #0f172a !important; }
+        .light-theme aside p   { color: #64748b !important; }
+        .light-theme aside .text-white { color: #0f172a !important; }
+        .light-theme aside .text-slate-400,
+        .light-theme aside .text-slate-500 { color: #64748b !important; }
+        .light-theme aside .border-white\/5 { border-color: #f1f5f9 !important; }
+        .light-theme aside .hover\\:bg-white\\/5:hover {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+        .light-theme aside .hover\\:text-white:hover { color: #0f172a !important; }
+        .light-theme aside .text-red-400 { color: #dc2626 !important; }
+        .light-theme aside .hover\\:text-white.text-red-400:hover { color: #ffffff !important; }
+        .light-theme aside .hover\\:bg-red-500\\/20:hover { background-color: #fee2e2 !important; }
+        .light-theme aside .hover\\:border-red-500\\/30:hover { border-color: #fca5a5 !important; }
+
+        /* ─── Header ─── */
+        .light-theme header {
+          background-color: #ffffff !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
+        }
+        .light-theme header h2   { color: #0f172a !important; }
+        .light-theme header span { color: #0f172a !important; }
+        .light-theme header button { color: #0f172a !important; }
+        .light-theme header .text-slate-400,
+        .light-theme header .text-slate-500 { color: #64748b !important; }
+        .light-theme header .text-emerald-500 { color: #15803d !important; }
+        .light-theme header .border-white\/10,
+        .light-theme header .border-white\/5 { border-color: #e2e8f0 !important; }
+        .light-theme header .bg-white\/5 { background-color: #f8fafc !important; }
+        .light-theme header .hover\\:bg-white\\/10:hover { background-color: #f1f5f9 !important; }
+        .light-theme header .bg-emerald-500\/20 {
+          background-color: #dcfce7 !important;
+          border-color: #86efac !important;
+        }
+
+        /* ─── Main Scrollable Area ─── */
+        .light-theme main {
+          background-color: #f1f5f9 !important;
+        }
+        .light-theme main h2,
+        .light-theme main h3,
+        .light-theme main h4,
+        .light-theme main h5,
+        .light-theme main p,
+        .light-theme main span,
+        .light-theme main strong,
+        .light-theme main label { color: #0f172a !important; }
+
+        /* ─── All Card Backgrounds ─── */
+        .light-theme main .bg-slate-900\/60,
+        .light-theme main .bg-slate-900\/80,
+        .light-theme main .bg-slate-900\/40,
+        .light-theme main .bg-slate-900,
+        .light-theme main .bg-slate-950\/80,
+        .light-theme main .bg-slate-950\/50,
+        .light-theme main .bg-slate-950\/30,
+        .light-theme main .bg-slate-950,
+        .light-theme main .bg-white\/5,
+        .light-theme main .bg-white\/\\[0\\.07\\],
+        .light-theme main .bg-white\/\\[0\\.08\\] {
+          background-color: #ffffff !important;
+          border-color: #e2e8f0 !important;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.03) !important;
+        }
+
+        /* ─── All Borders ─── */
+        .light-theme main .border-white\/5,
+        .light-theme main .border-white\/10,
+        .light-theme main .border-white\/15,
+        .light-theme main .divide-white\/5 > * {
+          border-color: #e2e8f0 !important;
+        }
+
+        /* ─── Text Opacity Variants ─── */
+        .light-theme main .text-white   { color: #0f172a !important; }
+        .light-theme main .text-white\/90 { color: #0f172a !important; }
+        .light-theme main .text-white\/80 { color: #1e293b !important; }
+        .light-theme main .text-white\/40 { color: #64748b !important; }
+        .light-theme main .text-slate-300 { color: #334155 !important; }
+        .light-theme main .text-slate-400,
+        .light-theme main .text-slate-500 { color: #64748b !important; }
+
+        /* ─── Stats Cards ─── */
+        .light-theme main .text-4xl.font-black { color: #0f172a !important; }
+
+        /* ─── Table ─── */
+        .light-theme main table th {
+          background-color: #f8fafc !important;
+          color: #475569 !important;
+          border-bottom: 2px solid #e2e8f0 !important;
+        }
+        .light-theme main table tbody tr:hover {
+          background-color: #f8fafc !important;
+        }
+        .light-theme main table td {
+          border-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+        .light-theme main table .text-white { color: #0f172a !important; }
+        .light-theme main table .text-slate-300,
+        .light-theme main table .text-slate-500 { color: #64748b !important; }
+        .light-theme main table tr:hover .text-emerald-400 { color: #15803d !important; }
+        .light-theme main table .group-hover\\:text-emerald-400:hover { color: #15803d !important; }
+
+        /* ─── Status Badges ─── */
+        .light-theme main .bg-emerald-500\/10 {
+          background-color: #dcfce7 !important;
+          color: #15803d !important;
+          border-color: #86efac !important;
+        }
+        .light-theme main .text-emerald-400   { color: #15803d !important; }
+        .light-theme main .border-emerald-500\/20,
+        .light-theme main .border-emerald-500\/30 { border-color: #86efac !important; }
+        .light-theme main .bg-amber-500\/10 {
+          background-color: #fef9c3 !important;
+          color: #b45309 !important;
+          border-color: #fde68a !important;
+        }
+        .light-theme main .text-amber-400   { color: #b45309 !important; }
+        .light-theme main .border-amber-500\/20 { border-color: #fde68a !important; }
+        .light-theme main .bg-indigo-500\/10 {
+          background-color: #e0e7ff !important;
+          color: #4338ca !important;
+          border-color: #c7d2fe !important;
+        }
+        .light-theme main .text-indigo-400   { color: #4338ca !important; }
+        .light-theme main .border-indigo-500\/20 { border-color: #c7d2fe !important; }
+
+        /* ─── Action Buttons in Table ─── */
+        .light-theme main .bg-white\/5:not(table *),
+        .light-theme main [class*="hover:bg-white"]:not(table *) {
+          background-color: #f1f5f9;
+          color: #334155;
+        }
+        .light-theme main .hover\\:bg-indigo-500\\/10:hover {
+          background-color: #e0e7ff !important;
+          color: #4338ca !important;
+        }
+        .light-theme main .hover\\:bg-emerald-500\\/10:hover {
+          background-color: #dcfce7 !important;
+          color: #15803d !important;
+        }
+        .light-theme main .hover\\:bg-red-500\\/10:hover {
+          background-color: #fee2e2 !important;
+          color: #dc2626 !important;
+        }
+        .light-theme main .hover\\:bg-amber-500\\/10:hover {
+          background-color: #fef9c3 !important;
+          color: #b45309 !important;
+        }
+
+        /* ─── Detail / Raw Data area ─── */
+        .light-theme main pre {
+          background-color: #f8fafc !important;
+          color: #334155 !important;
+          border-color: #e2e8f0 !important;
+        }
+
+        /* ─── Danger Zone ─── */
+        .light-theme main .bg-red-500\/5 {
+          background-color: #fef2f2 !important;
+          border-color: #fecaca !important;
+        }
+        .light-theme main .text-red-400 { color: #dc2626 !important; }
+
+        /* ─── Status Action Buttons ─── */
+        .light-theme main button:disabled {
+          opacity: 0.5 !important;
+        }
+
+        /* ─── Chat / Messages Tab ─── */
+        .light-theme main .bg-emerald-500\/10.border-emerald-500\/30 {
+          background-color: #dcfce7 !important;
+          border-color: #86efac !important;
+        }
+        .light-theme main .bg-emerald-500 { background-color: #16a34a !important; }
+        .light-theme main .hover\\:bg-emerald-600:hover { background-color: #15803d !important; }
+
+        /* ─── Chat Messages (from client = left) ─── */
+        .light-theme main .bg-white\/10.border-white\/5 {
+          background-color: #f1f5f9 !important;
+          border-color: #e2e8f0 !important;
+        }
+        .light-theme main .bg-white\/10 p,
+        .light-theme main .bg-white\/10 span { color: #334155 !important; }
+
+        /* ─── Form Inputs in Settings ─── */
+        .light-theme main input,
+        .light-theme main select,
+        .light-theme main textarea {
+          background-color: #ffffff !important;
+          color: #0f172a !important;
+          border-color: #cbd5e1 !important;
+        }
+        .light-theme main input:focus,
+        .light-theme main select:focus,
+        .light-theme main textarea:focus {
+          border-color: #10b981 !important;
+          box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+        }
+        .light-theme main input::placeholder { color: #94a3b8 !important; }
+
+        /* ─── Google AI Pro Card ─── */
+        .light-theme main .bg-gradient-to-r {
+          background: linear-gradient(135deg, #eff6ff, #fefce8, #f0fdf4) !important;
+          background-image: none !important;
+          border-color: #bfdbfe !important;
+        }
+        .light-theme main .bg-gradient-to-r h4   { color: #1e3a8a !important; }
+        .light-theme main .bg-gradient-to-r p     { color: #1e40af !important; }
+        .light-theme main .bg-gradient-to-r span  { color: #1d4ed8 !important; }
+        .light-theme main .bg-gradient-to-r .text-white\/60 { color: #1e40af !important; }
+        .light-theme main .bg-gradient-to-r a {
+          background-color: #1e3a8a !important;
+          color: #ffffff !important;
+        }
+        .light-theme main .bg-gradient-to-r a:hover { background-color: #1e40af !important; }
+
+        /* ─── Emerald Glow Elements ─── */
+        .light-theme main .shadow-\\[0_0_15px_rgba\\(16\\,185\\,129\\,0\\.05\\)\\] {
+          box-shadow: 0 2px 12px rgba(16,185,129,0.1) !important;
+        }
+        .light-theme main .shadow-\\[0_0_20px_rgba\\(16\\,185\\,129\\,0\\.15\\)\\] {
+          box-shadow: 0 4px 16px rgba(16,185,129,0.15) !important;
+        }
+
+        /* ─── HOVER EFFECTS & CARD HIGHLIGHTS (LIGHT THEME) ─── */
+        .light-theme .group:hover [class*="text-white\\/2"] { color: #475569 !important; }
+        .light-theme .group:hover [class*="text-white\\/3"] { color: #334155 !important; }
+        .light-theme .group:hover [class*="text-white\\/4"] { color: #334155 !important; }
+        .light-theme .group:hover [class*="text-white\\/5"] { color: #1e293b !important; }
+        .light-theme .group:hover [class*="text-white\\/6"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/7"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/8"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white\\/9"] { color: #0f172a !important; }
+        .light-theme .group:hover [class*="text-white"]    { color: #0f172a !important; }
+
+        .light-theme .group:hover img,
+        .light-theme .group:hover svg {
+          filter: grayscale(0) !important;
+          opacity: 1 !important;
+        }
+
+        /* ─── Scrollbar ─── */
+        .light-theme .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
+        .light-theme .custom-scrollbar::-webkit-scrollbar-track { background: transparent !important; }
+
+        /* ─── Misc dividers ─── */
+        .light-theme main .border-b.border-white\/5 { border-bottom-color: #e2e8f0 !important; }
+        .light-theme main .border-t.border-white\/5 { border-top-color: #e2e8f0 !important; }
+        .light-theme main .divide-y.divide-white\/5 > * + * { border-top-color: #e2e8f0 !important; }
+      `}</style>
     </div>
   );
 };
