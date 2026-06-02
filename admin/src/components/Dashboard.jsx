@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { collection, getDocs, orderBy, query, doc, updateDoc, deleteDoc, onSnapshot, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import DocumentsUtilisateurs from './DocumentsUtilisateurs';
 
 const Dashboard = ({ onLogout }) => {
   const [leads, setLeads] = useState([]);
@@ -366,6 +367,17 @@ const Dashboard = ({ onLogout }) => {
               )}
             </button>
             <button 
+              onClick={() => setActiveTab('documents')}
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                activeTab === 'documents' 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="mr-3 text-lg">📁</span> 
+              Documents Utilisateurs
+            </button>
+            <button 
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'settings' 
@@ -406,6 +418,7 @@ const Dashboard = ({ onLogout }) => {
             )}
             {activeTab === 'users' && "Gestion des Utilisateurs"}
             {activeTab === 'messages' && "Messagerie Centrale"}
+            {activeTab === 'documents' && "📁 Documents Utilisateurs"}
             {activeTab === 'settings' && "Paramètres du Conseiller"}
           </h2>
           <div className="flex items-center gap-4">
@@ -430,6 +443,8 @@ const Dashboard = ({ onLogout }) => {
         {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto p-8 h-full custom-scrollbar">
           
+          {activeTab === 'documents' && <DocumentsUtilisateurs />}
+
           {activeTab === 'demandes' && (
             <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
               {/* Stats Cards */}

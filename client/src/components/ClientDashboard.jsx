@@ -379,15 +379,47 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Simulating document upload
-  const simulateUpload = (fieldName, file) => {
+  // Détection mobile
+  const isMobile = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+  // Upload réel vers Cloudinary
+  const uploadToCloudinary = async (fieldName, file) => {
     if (!file) return;
     setUploading(prev => ({ ...prev, [fieldName]: true }));
-    
-    setTimeout(() => {
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'monpermis');
+      formData.append('folder', `monpermis/${user?.uid}/${fieldName}`);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/upload`,
+        { method: 'POST', body: formData }
+      );
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setUploads(prev => ({ ...prev, [fieldName]: data.secure_url }));
+        // Sauvegarder l'URL dans Firestore immédiatement
+        if (user) {
+          const { doc: firestoreDoc, setDoc: firestoreSetDoc } = await import('firebase/firestore');
+          const leadRef = firestoreDoc(db, 'leads', user.uid);
+          await firestoreSetDoc(leadRef, {
+            uploads: { ...uploads, [fieldName]: data.secure_url },
+            uid: user.uid,
+            email: user.email,
+          }, { merge: true });
+        }
+      } else {
+        alert('Erreur lors du téléversement. Veuillez réessayer.');
+      }
+    } catch (err) {
+      console.error('Cloudinary upload error:', err);
+      alert('Erreur de connexion. Veuillez réessayer.');
+    } finally {
       setUploading(prev => ({ ...prev, [fieldName]: false }));
-      setUploads(prev => ({ ...prev, [fieldName]: file.name }));
-    }, 1500);
+    }
   };
 
   // Form submission directly to Firestore
@@ -1355,141 +1387,100 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     {/* STEP 2: DOCUMENT UPLOADS */}
                     {wizardStep === 2 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-[bubbleIn_0.4s_ease-out]">
-                        
-                        {/* Front ID */}
-                        <div className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Requis Front</span>
-                            <h4 className="text-white font-semibold text-xs mt-1">Carte d'Identité (Recto)</h4>
-                          </div>
-                          
-                          <div className="mt-4 border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors relative">
-                            <input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              onChange={(e) => simulateUpload('idFront', e.target.files[0])}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                            {uploading.idFront ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[10px] text-white/50">Téléversement...</span>
-                              </div>
-                            ) : uploads.idFront ? (
-                              <div className="text-center">
-                                <span className="text-xl">📄</span>
-                                <p className="text-[10px] text-emerald-400 font-semibold truncate max-w-[150px] mt-1">{uploads.idFront}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="text-xl text-white/30">📤</span>
-                                <span className="text-[10px] text-white/55 mt-1.5 font-medium">Glisser ou cliquer</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Back ID */}
-                        <div className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Requis Back</span>
-                            <h4 className="text-white font-semibold text-xs mt-1">Carte d'Identité (Verso)</h4>
-                          </div>
-                          
-                          <div className="mt-4 border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors relative">
-                            <input 
-                              type="file" 
-                              accept="image/*,application/pdf"
-                              onChange={(e) => simulateUpload('idBack', e.target.files[0])}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                            {uploading.idBack ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[10px] text-white/50">Téléversement...</span>
-                              </div>
-                            ) : uploads.idBack ? (
-                              <div className="text-center">
-                                <span className="text-xl">📄</span>
-                                <p className="text-[10px] text-emerald-400 font-semibold truncate max-w-[150px] mt-1">{uploads.idBack}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="text-xl text-white/30">📤</span>
-                                <span className="text-[10px] text-white/55 mt-1.5 font-medium">Glisser ou cliquer</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        {/* Composant réutilisable pour chaque zone d'upload */}
+                        {[
+                          { field: 'idFront', label: 'Carte d\'Identité (Recto)', badge: 'Requis Front', accept: 'image/*,application/pdf', emoji: '🪪' },
+                          { field: 'idBack',  label: 'Carte d\'Identité (Verso)',  badge: 'Requis Back',  accept: 'image/*,application/pdf', emoji: '🪪' },
+                          { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Requis Officiel', accept: 'image/*', emoji: '📸' },
+                          { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
+                        ].map(({ field, label, badge, accept, emoji }) => (
+                          <div key={field} className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
+                              <h4 className="text-white font-semibold text-xs mt-1">{label}</h4>
+                            </div>
 
-                        {/* Photo ID */}
-                        <div className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Requis Officiel</span>
-                            <h4 className="text-white font-semibold text-xs mt-1">Photo d'Identité Récente</h4>
-                          </div>
-                          
-                          <div className="mt-4 border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors relative">
-                            <input 
-                              type="file" 
-                              accept="image/*"
-                              onChange={(e) => simulateUpload('photo', e.target.files[0])}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                            {uploading.photo ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[10px] text-white/50">Téléversement...</span>
-                              </div>
-                            ) : uploads.photo ? (
-                              <div className="text-center">
-                                <span className="text-xl">📸</span>
-                                <p className="text-[10px] text-emerald-400 font-semibold truncate max-w-[150px] mt-1">{uploads.photo}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="text-xl text-white/30">📤</span>
-                                <span className="text-[10px] text-white/55 mt-1.5 font-medium">Glisser ou cliquer</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                            <div className="mt-4">
+                              {uploading[field] ? (
+                                <div className="border-2 border-dashed border-brand-orange/40 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2">
+                                  <div className="w-6 h-6 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
+                                  <span className="text-[10px] text-white/50">Téléversement vers Cloudinary...</span>
+                                </div>
+                              ) : uploads[field] ? (
+                                // Miniature si image uploadée
+                                <div className="relative group rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900">
+                                  {uploads[field].match(/\.(jpg|jpeg|png|gif|webp)$/i) || uploads[field].includes('cloudinary') ? (
+                                    <img
+                                      src={uploads[field]}
+                                      alt={label}
+                                      className="w-full h-28 object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-28 flex items-center justify-center bg-emerald-500/10">
+                                      <span className="text-3xl">📄</span>
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <a href={uploads[field]} target="_blank" rel="noopener noreferrer"
+                                      className="text-[10px] font-bold text-white bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30">
+                                      Voir ↗
+                                    </a>
+                                    <label className="text-[10px] font-bold text-white bg-brand-orange/80 px-3 py-1.5 rounded-lg hover:bg-brand-orange cursor-pointer">
+                                      Changer
+                                      <input type="file" accept={accept} className="hidden"
+                                        onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                                    </label>
+                                  </div>
+                                  <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-2 py-1 flex items-center gap-1">
+                                    <span className="text-[9px] text-white font-bold">✓ Téléversé</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Zone d'upload vide
+                                <div className="border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-4 flex flex-col items-center justify-center text-center transition-colors gap-2">
+                                  <span className="text-2xl text-white/30">{emoji}</span>
+                                  <span className="text-[10px] text-white/55 font-medium">
+                                    {isMobile() ? 'Appuyer pour choisir' : 'Glisser ou cliquer'}
+                                  </span>
 
-                        {/* Signature Digital */}
-                        <div className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Signature</span>
-                            <h4 className="text-white font-semibold text-xs mt-1">Signature Numérisée (Fond blanc)</h4>
+                                  {/* Boutons selon device */}
+                                  {isMobile() ? (
+                                    <div className="flex flex-col gap-2 w-full mt-1">
+                                      {/* Bouton Fichier */}
+                                      <label className="relative cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-lg transition-colors">
+                                        📁 Choisir un fichier
+                                        <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer"
+                                          onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                                      </label>
+                                      {/* Bouton Caméra (mobile uniquement) */}
+                                      {accept.includes('image') && (
+                                        <label className="relative cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[10px] font-bold rounded-lg transition-colors border border-brand-orange/30">
+                                          📷 Prendre une photo
+                                          <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                                        </label>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    // Desktop: zone cliquable classique
+                                    <label className="relative cursor-pointer w-full">
+                                      <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                                      <span className="block text-[10px] font-bold text-brand-orange underline underline-offset-2">
+                                        Parcourir...
+                                      </span>
+                                    </label>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          
-                          <div className="mt-4 border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors relative">
-                            <input 
-                              type="file" 
-                              accept="image/*"
-                              onChange={(e) => simulateUpload('signature', e.target.files[0])}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                            {uploading.signature ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[10px] text-white/50">Téléversement...</span>
-                              </div>
-                            ) : uploads.signature ? (
-                              <div className="text-center">
-                                <span className="text-xl">✒️</span>
-                                <p className="text-[10px] text-emerald-400 font-semibold truncate max-w-[150px] mt-1">{uploads.signature}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="text-xl text-white/30">📤</span>
-                                <span className="text-[10px] text-white/55 mt-1.5 font-medium">Glisser ou cliquer</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        ))}
 
                       </div>
                     )}
+
 
                     {/* STEP 3: EXPERIENCE & CONFIG */}
                     {wizardStep === 3 && (
