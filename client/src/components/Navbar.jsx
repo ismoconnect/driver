@@ -33,15 +33,7 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
 
             {/* Logo */}
             <a href="#" onClick={(e) => { if (onGoHome) { e.preventDefault(); onGoHome(); } }} className="flex-shrink-0 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-orange flex items-center justify-center shadow-md shadow-brand-orange/20">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
-                </svg>
-              </div>
-              <span className={`text-xl font-display font-bold tracking-wider transition-colors duration-300 text-white`}>
-                MON <span className="text-brand-orange">PERMIS</span>
-              </span>
+              <img src="/logo.png" alt="Mon Permis Logo" className="h-10 rounded-lg" />
             </a>
 
             {/* Desktop links */}

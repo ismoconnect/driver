@@ -208,7 +208,7 @@ const Hero = ({ user, onOpenDashboard }) => {
       </div>
 
       {/* ---- CONTENT ---- */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 flex flex-col lg:flex-row items-center gap-16 lg:gap-12">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 flex flex-col lg:flex-row items-center lg:items-start gap-16 lg:gap-12">
 
         {/* ======= LEFT COLUMN: TEXT CONTENT ======= */}
         <div className="w-full lg:w-1/2 flex flex-col items-start text-left p-8 sm:p-10 rounded-[32px] border border-white/25 hover:border-white/60 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(255,255,255,0.05)] transition-all duration-500 relative overflow-hidden group backdrop-blur-md bg-white/[0.02]">
