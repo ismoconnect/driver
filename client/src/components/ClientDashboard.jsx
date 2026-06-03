@@ -2073,7 +2073,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             <div className="flex-1 flex flex-col relative z-10 h-[calc(100vh-144px)] md:h-auto animate-[bubbleIn_0.5s_ease-out]">
               
               {/* Header Info */}
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[69px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">
+              <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[53px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold">
                     {advisor.avatarEmoji || '👨‍💼'}
