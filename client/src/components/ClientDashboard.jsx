@@ -37,11 +37,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Dashboard state
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [mandatAccepted, setMandatAccepted] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('clientActiveTab') || 'overview'); // overview, wizard, chat
-  const [wizardStep, setWizardStep] = useState(() => {
-    const saved = localStorage.getItem('clientWizardStep');
-    return saved ? parseInt(saved, 10) : 1;
-  });
+  const [activeTab, setActiveTab] = useState('wizard'); // Default to wizard on entry
+  const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
 
   // Client Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('clientTheme') || 'dark');
@@ -50,22 +47,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   useEffect(() => {
     localStorage.setItem('clientTheme', theme);
   }, [theme]);
-
-  // Persist activeTab to localStorage
-  useEffect(() => {
-    localStorage.setItem('clientActiveTab', activeTab);
-  }, [activeTab]);
-
-  // Persist wizardStep to localStorage
-  useEffect(() => {
-    localStorage.setItem('clientWizardStep', wizardStep.toString());
-  }, [wizardStep]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('new');
   const [billingActive, setBillingActive] = useState(false);
   const [paymentValidated, setPaymentValidated] = useState(false);
-  const [selectedPath, setSelectedPath] = useState(null);
+  const [selectedPath, setSelectedPath] = useState('perception');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
 
@@ -219,7 +206,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setIsSubmitted(leadData?.isSubmitted || false);
             setBillingActive(leadData?.billingActive || false);
             setPaymentValidated(leadData?.paymentValidated || false);
-            setSelectedPath(leadData?.selectedPath || 'perception');
+            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'perception') : 'perception');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
             
@@ -268,7 +255,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setIsSubmitted(data.isSubmitted === true);
             setBillingActive(data.billingActive === true);
             setPaymentValidated(data.paymentValidated === true);
-            setSelectedPath(data.selectedPath || 'perception');
+            if (data.isSubmitted) {
+              setSelectedPath(data.selectedPath || 'perception');
+            }
             setPerceptionPaid(data.perceptionPaid === true);
             setApplicationStatus(data.status || 'new');
           }
@@ -494,7 +483,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         selectedPath: selectedPath || 'perception',
         amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
                 selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
-                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
                 (advisor.perceptionAmount || "350,00 €"),
         isSubmitted: true,
         uploads: uploads,
@@ -959,7 +948,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
             {/* 2 — Faire ma demande */}
             <button
-              onClick={() => setActiveTab('wizard')}
+              onClick={() => {
+                setActiveTab('wizard');
+                setWizardStep(1);
+              }}
               className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 w-full ${
                 activeTab === 'wizard'
                   ? 'bg-brand-orange text-white shadow-[0_4px_16px_rgba(255,152,0,0.35)]'
@@ -1013,7 +1005,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5`}`}>
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5 overflow-hidden`}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1259,7 +1251,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                   {!isSubmitted && (
                     <button 
-                      onClick={() => setActiveTab('wizard')}
+                      onClick={() => {
+                        setActiveTab('wizard');
+                        setWizardStep(1);
+                      }}
                       className="mt-6 w-full sm:w-auto px-6 py-3 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/20 hover:scale-[1.02] transition-all duration-300 self-start animate-pulse"
                     >
                       Initier mon dossier maintenant ➔
@@ -1382,7 +1377,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             const leadRef = doc(db, 'leads', user.uid);
                             await updateDoc(leadRef, {
                               selectedPath: 'pratique',
-                              amount: advisor.pratiqueAmount || "750,00 €"
+                              amount: advisor.pratiqueAmount || "2100,00 €"
                             });
                           } catch (err) {
                             console.error(err);
@@ -1396,12 +1391,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           </div>
                           <h4 className="text-sm font-bold text-white mb-1.5">Phase 4 - Examen Pratique</h4>
                           <p className="text-xs text-white/50 leading-relaxed mb-3">
-                            Dispense officielle et homologation pour l'examen pratique (Phase 4).
+                            Dispense officielle et homologation pour l'examen pratique (Phase 4). Comprenant 30 heures obligatoires à 70 € / heure.
                           </p>
                         </div>
                         <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
                           <span className="text-[9px] uppercase font-bold text-brand-orange">Pratique</span>
-                          <span className="text-base font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
+                          <span className="text-base font-black text-white">{advisor.pratiqueAmount || "2100,00 €"}</span>
                         </div>
                       </button>
 
@@ -1502,11 +1497,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                               <>
                                 <div className="flex justify-between text-white/50">
                                   <span>{advisor.pratiqueLabel1 || "Frais de dépôt Examen Pratique"}</span>
-                                  <span className="text-white font-semibold">{advisor.pratiqueAmount1 || "250,00 €"}</span>
+                                  <span className="text-white font-semibold">{advisor.pratiqueAmount1 || "700,00 €"}</span>
                                 </div>
                                 <div className="flex justify-between text-white/50">
-                                  <span>{advisor.pratiqueLabel2 || "Dossier d'homologation dispense pratique"}</span>
-                                  <span className="text-white font-semibold">{advisor.pratiqueAmount2 || "500,00 €"}</span>
+                                  <span>{advisor.pratiqueLabel2 || "Dossier d'homologation dispense pratique (30h à 70€/h)"}</span>
+                                  <span className="text-white font-semibold">{advisor.pratiqueAmount2 || "1400,00 €"}</span>
                                 </div>
                               </>
                             )}
@@ -1529,7 +1524,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <span className="text-base">
                             {selectedPath === 'perception' ? (advisor.perceptionAmount || "350,00 €") :
                              selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
-                             selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                             selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
                              (advisor.directLicenseAmount || "1200,00 €")}
                           </span>
                         </div>
@@ -1698,8 +1693,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 )
               ) : (
                 // ACTIVE WIZARD STATE
-                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between overflow-y-auto min-h-0 pr-1">
-                  <div>
+                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between overflow-hidden min-h-0">
+                  <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                     {/* Header */}
                     <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
                       <div className="flex items-start justify-between gap-4">
@@ -1926,11 +1921,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 3: EXPERIENCE & CONFIG */}
                     {wizardStep === 3 && (
-                      <div className="grid grid-cols-2 gap-2 sm:gap-6 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Recap circuit */}
-                        <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4`}>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-brand-orange mb-1.5">🛣️ Circuit d'obtention</p>
+                        <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-xl p-2 sm:p-2.5`}>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange mb-1">🛣️ Circuit d'obtention</p>
                           <div className="flex flex-wrap gap-1">
                             {[
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
@@ -1939,7 +1934,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                               { icon: '🚗', label: 'Examen Pratique', done: selectedPath === 'direct', active: selectedPath === 'pratique', locked: selectedPath === 'perception' || selectedPath === 'theorique' || !selectedPath },
                               { icon: '🏆', label: 'Permis Définitif', active: selectedPath === 'direct', locked: selectedPath !== 'direct' || !selectedPath },
                             ].map((item, i) => (
-                              <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-semibold border ${
+                              <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[9.5px] font-semibold border ${
                                 item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                                   : item.active ? 'bg-brand-orange/15 border-brand-orange/40 text-brand-orange animate-pulse' 
                                   : 'bg-white/5 border-white/10 text-white/30'
@@ -1955,129 +1950,165 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                         {/* CHOIX DU PARCOURS */}
                         <div className="col-span-2">
-                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Formule d'obtention souhaitée
                           </label>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                             {/* Option 1: Perception du Risque */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedPath('perception');
-                                setAmount(advisor.perceptionAmount || "350,00 €");
+                                if (user) {
+                                  try {
+                                    await updateDoc(doc(db, 'leads', user.uid), {
+                                      selectedPath: 'perception',
+                                      amount: advisor.perceptionAmount || "350,00 €"
+                                    });
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }
                               }}
-                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'perception' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
                                   <span>👁️</span> <span className="truncate">Perception</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
-                                  Dispense de la Phase 2.
+                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
+                                  Inclus : Phase 2 (Perception du Risque).
                                 </p>
                               </div>
-                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 2</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
+                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 2</span>
+                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                               </div>
                             </button>
 
                             {/* Option 2: Examen Théorique */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedPath('theorique');
-                                setAmount(advisor.theoriqueAmount || "550,00 €");
+                                if (user) {
+                                  try {
+                                    await updateDoc(doc(db, 'leads', user.uid), {
+                                      selectedPath: 'theorique',
+                                      amount: advisor.theoriqueAmount || "550,00 €"
+                                    });
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }
                               }}
-                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'theorique' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
                                   <span>📖</span> <span className="truncate">Théorique</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
-                                  Dispense de la Phase 3.
+                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
+                                  Inclus : Phases 2 & 3 (Perception + Théorique).
                                 </p>
                               </div>
-                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 3</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 3</span>
+                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
                               </div>
                             </button>
 
                             {/* Option 3: Examen Pratique */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedPath('pratique');
-                                setAmount(advisor.pratiqueAmount || "750,00 €");
+                                if (user) {
+                                  try {
+                                    await updateDoc(doc(db, 'leads', user.uid), {
+                                      selectedPath: 'pratique',
+                                      amount: advisor.pratiqueAmount || "2100,00 €"
+                                    });
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }
                               }}
-                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'pratique' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
                                   <span>🚗</span> <span className="truncate">Pratique</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
-                                  Dispense de la Phase 4.
+                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
+                                  Inclus : Phases 2, 3 & 4 (Perception + Théorique + Pratique). 30h à 70 €/h.
                                 </p>
                               </div>
-                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 4</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
+                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 4</span>
+                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
                               </div>
                             </button>
 
                             {/* Option 4: Permis Direct */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedPath('direct');
-                                setAmount(advisor.directLicenseAmount || "1200,00 €");
+                                if (user) {
+                                  try {
+                                    await updateDoc(doc(db, 'leads', user.uid), {
+                                      selectedPath: 'direct',
+                                      amount: advisor.directLicenseAmount || "1200,00 €"
+                                    });
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }
                               }}
-                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'direct' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
                                   <span>🏆</span> <span className="truncate">Permis Direct</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
-                                  Obtention directe (Phases 2-5).
+                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
+                                  Inclus : Phases 2, 3, 4 & 5 (Homologation).
                                 </p>
                               </div>
-                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 5</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
+                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 5</span>
+                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
                               </div>
                             </button>
                           </div>
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Échecs à l'examen
                           </label>
                           <select 
                             name="failedAttempts"
                             value={formData.failedAttempts}
                             onChange={handleInputChange}
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none transition-colors text-white/80"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs focus:outline-none transition-colors text-white/80"
                           >
                             <option value="0">Aucun</option>
                             <option value="1">1 échec</option>
@@ -2088,14 +2119,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Type de transmission
                           </label>
                           <div className="grid grid-cols-2 gap-1.5">
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
-                              className={`py-1 sm:py-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                              className={`py-1.5 sm:py-2 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Manuel' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -2106,7 +2137,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
-                              className={`py-1.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                              className={`py-1.5 sm:py-2 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Automatique' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -2184,11 +2215,39 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
 
                   {/* Actions buttons */}
-                  <div className="mt-2.5 pt-1.5 border-t border-white/10 flex justify-between">
+                  <div className="flex-shrink-0 mt-2.5 pt-1.5 border-t border-white/10 flex justify-between">
                     {wizardStep > 1 ? (
                       <button
                         type="button"
-                        onClick={() => setWizardStep(s => s - 1)}
+                        onClick={async () => {
+                          const newStep = wizardStep - 1;
+                          setWizardStep(newStep);
+                          if (user) {
+                            try {
+                              await setDoc(doc(db, 'leads', user.uid), {
+                                firstName:      formData.firstName,
+                                lastName:       formData.lastName,
+                                birthDate:      formData.birthDate,
+                                phone:          formData.phone,
+                                address:        formData.address,
+                                nationalRegister: formData.nationalRegister,
+                                failedAttempts: formData.failedAttempts,
+                                transmission:   formData.transmission,
+                                selectedPath:   selectedPath || 'perception',
+                                amount:         selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
+                                                selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
+                                                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
+                                                (advisor.perceptionAmount || "350,00 €"),
+                                uploads:        uploads,
+                                uid:            user.uid,
+                                email:          user.email,
+                                wizardStep:     newStep,
+                              }, { merge: true });
+                            } catch (e) {
+                              console.error('Auto-save error on Retour:', e);
+                            }
+                          }
+                        }}
                         className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full border border-white/20 hover:border-white/50 text-[11px] sm:text-xs font-bold transition-colors"
                       >
                         Retour
@@ -2215,7 +2274,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 selectedPath:   selectedPath || 'perception',
                                 amount:         selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
                                                 selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
-                                                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                                                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
                                                 (advisor.perceptionAmount || "350,00 €"),
                                 uploads:        uploads,
                                 uid:            user.uid,
@@ -2398,7 +2457,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </button>
         
         <button
-          onClick={() => setActiveTab('wizard')}
+          onClick={() => {
+            setActiveTab('wizard');
+            setWizardStep(1);
+          }}
           className={`group relative flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
             activeTab === 'wizard' 
               ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 

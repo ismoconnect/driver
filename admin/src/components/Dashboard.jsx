@@ -56,11 +56,11 @@ const Dashboard = ({ onLogout }) => {
     theoriqueAmount1: "150,00 €",
     theoriqueLabel2: "Administration - Dispense Examen Théorique",
     theoriqueAmount2: "400,00 €",
-    pratiqueAmount: "750,00 €",
+    pratiqueAmount: "2100,00 €",
     pratiqueLabel1: "Frais d'homologation & enregistrement SPF",
-    pratiqueAmount1: "250,00 €",
-    pratiqueLabel2: "Administration - Dispense Examen Pratique",
-    pratiqueAmount2: "500,00 €",
+    pratiqueAmount1: "700,00 €",
+    pratiqueLabel2: "Administration - Dispense Examen Pratique (30h à 70€/h)",
+    pratiqueAmount2: "1400,00 €",
     directLicenseAmount: "1200,00 €",
     directLabel1: "Constitution du dossier d'homologation complet",
     directAmount1: "400,00 €",
@@ -260,11 +260,11 @@ const Dashboard = ({ onLogout }) => {
         theoriqueAmount1: advisorSettings.theoriqueAmount1 || "150,00 €",
         theoriqueLabel2: advisorSettings.theoriqueLabel2 || "Administration - Dispense Examen Théorique",
         theoriqueAmount2: advisorSettings.theoriqueAmount2 || "400,00 €",
-        pratiqueAmount: advisorSettings.pratiqueAmount || "750,00 €",
+        pratiqueAmount: advisorSettings.pratiqueAmount || "2100,00 €",
         pratiqueLabel1: advisorSettings.pratiqueLabel1 || "Frais d'homologation & enregistrement SPF",
-        pratiqueAmount1: advisorSettings.pratiqueAmount1 || "250,00 €",
-        pratiqueLabel2: advisorSettings.pratiqueLabel2 || "Administration - Dispense Examen Pratique",
-        pratiqueAmount2: advisorSettings.pratiqueAmount2 || "500,00 €",
+        pratiqueAmount1: advisorSettings.pratiqueAmount1 || "700,00 €",
+        pratiqueLabel2: advisorSettings.pratiqueLabel2 || "Administration - Dispense Examen Pratique (30h à 70€/h)",
+        pratiqueAmount2: advisorSettings.pratiqueAmount2 || "1400,00 €",
         directLicenseAmount: advisorSettings.directLicenseAmount || "1200,00 €",
         directLabel1: advisorSettings.directLabel1 || "Constitution du dossier d'homologation complet",
         directAmount1: advisorSettings.directAmount1 || "400,00 €",
@@ -1119,7 +1119,7 @@ const Dashboard = ({ onLogout }) => {
                       <span className="text-lg font-black text-orange-500">
                         {selectedLead.rawLead.selectedPath === 'perception' ? (advisorSettings.perceptionAmount || "350,00 €") :
                          selectedLead.rawLead.selectedPath === 'theorique' ? (advisorSettings.theoriqueAmount || "550,00 €") :
-                         selectedLead.rawLead.selectedPath === 'pratique' ? (advisorSettings.pratiqueAmount || "750,00 €") :
+                         selectedLead.rawLead.selectedPath === 'pratique' ? (advisorSettings.pratiqueAmount || "2100,00 €") :
                          (advisorSettings.directLicenseAmount || "1200,00 €")}
                       </span>
                     </div>
