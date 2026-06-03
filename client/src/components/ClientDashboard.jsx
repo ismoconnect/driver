@@ -844,7 +844,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       )}
 
       {/* --- DASHBOARD HEADER --- */}
-      <header className="bg-slate-900 border-b border-white/10 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
+      <header className="bg-slate-900 border-b-2 border-emerald-500 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Mon Permis Logo" className="h-9 sm:h-10 rounded-lg" />
           <span className="ml-3 hidden sm:inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -1016,35 +1016,35 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className="flex-1 flex flex-col gap-8 relative z-10 animate-[bubbleIn_0.5s_ease-out]">
+            <div className="flex-1 flex flex-col gap-4 sm:gap-8 relative z-10 animate-[bubbleIn_0.5s_ease-out]">
               
               {/* Header card info */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3 sm:pb-6">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white">
+                  <h2 className="text-xl sm:text-3xl font-display font-extrabold text-white">
                     Bonjour, {formData.firstName || 'Candidat'} 👋
                   </h2>
-                  <p className="text-white/60 text-xs sm:text-sm mt-1">
+                  <p className="text-white/60 text-[10px] sm:text-sm mt-0.5 sm:mt-1">
                     {isSubmitted 
                       ? "Votre demande d'obtention de permis officiel est en cours de traitement." 
                       : "Complétez votre demande pour initier l'obtention de votre permis de conduire."}
                   </p>
                 </div>
-                <div className="bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-orange animate-pulse" />
-                  <span className="text-xs font-semibold text-white/95 uppercase tracking-wide">
+                <div className="bg-slate-800/80 border border-white/10 rounded-2xl px-3 py-1 sm:px-4 sm:py-2 flex items-center gap-2 sm:gap-3">
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-orange animate-pulse" />
+                  <span className="text-[10px] sm:text-xs font-semibold text-white/95 uppercase tracking-wide">
                     ID Dossier : {isSubmitted ? `#MPB-${user.uid.slice(0, 5).toUpperCase()}` : "MPB-NON-INITIALISÉ"}
                   </span>
                 </div>
               </div>
 
               {/* TIMELINE DU CIRCUIT */}
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3 sm:gap-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold uppercase tracking-wider text-brand-orange">
+                  <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-brand-orange">
                     🛣️ Votre Circuit d'Obtention
                   </h3>
-                  <span className="text-[10px] text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/10">5 phases officielles</span>
+                  <span className="text-[9px] sm:text-[10px] text-white/40 bg-white/5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-white/10">5 phases officielles</span>
                 </div>
 
                 {/* Ligne de progression horizontale */}
@@ -1118,7 +1118,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       return (
                         <div
                           key={phase.num}
-                          className={`group relative p-4 rounded-2xl flex flex-col gap-2 transition-all duration-500 border cursor-default flex-shrink-0 w-[260px] lg:w-auto snap-start ${
+                          className={`group relative p-3 sm:p-4 rounded-2xl flex flex-col gap-1 sm:gap-2 transition-all duration-500 border cursor-default flex-shrink-0 w-[240px] sm:w-[260px] lg:w-auto snap-start ${
                             isDone
                               ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_4px_20px_rgba(52,211,153,0.08)]'
                             : isActive
@@ -1139,12 +1139,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           </span>
 
                           {/* Icon & Title */}
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
                             <span className={`text-xl transition-all duration-300 ${isLocked ? 'grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-80' : ''}`}>
                               {phase.icon}
                             </span>
                             <div>
-                              <p className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${isLocked ? 'text-white/20 group-hover:text-white/40' : 'text-white/30'}`}>
+                              <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${isLocked ? 'text-white/20 group-hover:text-white/40' : 'text-white/30'}`}>
                                 Phase {phase.num}
                               </p>
                               <h4 className={`font-bold text-xs leading-tight transition-colors duration-300 ${
@@ -1181,53 +1181,53 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               </div>
 
               {/* ACTION CALL / ADVISOR ROW */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-1 sm:mt-2">
                 
                 {/* Advisor Card */}
-                <div className="lg:col-span-1 bg-slate-950/60 border border-white/10 p-6 rounded-2xl flex flex-col justify-between items-center text-center">
+                <div className="lg:col-span-1 bg-slate-950/60 border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between items-center text-center">
                   <div>
-                    <h4 className="text-white/70 font-semibold text-xs uppercase tracking-wider mb-4">Votre Conseiller Agréé</h4>
+                    <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Votre Conseiller Agréé</h4>
                     <div className="relative inline-block">
-                      <div className="w-16 h-16 rounded-full bg-brand-orange flex items-center justify-center text-2xl shadow-lg border-2 border-brand-orange/30">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-brand-orange flex items-center justify-center text-xl sm:text-2xl shadow-lg border-2 border-brand-orange/30">
                         {advisor.avatarEmoji || '👨‍💼'}
                       </div>
-                      <span className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
                     </div>
-                    <h5 className="text-white font-bold text-base mt-3">{advisor.name}</h5>
-                    <p className="text-brand-orange text-xs font-medium uppercase mt-0.5">{advisor.title}</p>
+                    <h5 className="text-white font-bold text-sm sm:text-base mt-2">{advisor.name}</h5>
+                    <p className="text-brand-orange text-[10px] sm:text-xs font-medium uppercase mt-0.5">{advisor.title}</p>
                   </div>
                   <button 
                     onClick={() => setActiveTab('chat')}
-                    className="mt-6 w-full py-2.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-brand-orange hover:bg-brand-orange/10 transition-all duration-300"
+                    className="mt-4 sm:mt-6 w-full py-2 sm:py-2.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-brand-orange hover:bg-brand-orange/10 transition-all duration-300"
                   >
                     Lui écrire un message
                   </button>
                 </div>
 
                 {/* Info Card / Action Card */}
-                <div className="lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border border-white/10 p-6 rounded-2xl flex flex-col justify-between">
+                <div className="lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between">
                   <div>
-                    <h4 className="text-white/70 font-semibold text-xs uppercase tracking-wider mb-4">Statut & Actions Requises</h4>
+                    <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Statut & Actions Requises</h4>
                     
                     {isSubmitted ? (
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                      <div className="flex items-start gap-2.5 sm:gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 text-xs sm:text-sm flex-shrink-0">
                           ✓
                         </div>
                         <div>
-                          <h5 className="text-white font-bold text-sm">Dossier reçu et sauvegardé</h5>
-                          <p className="text-white/60 text-xs mt-1 leading-relaxed">
+                          <h5 className="text-white font-bold text-xs sm:text-sm">Dossier reçu et sauvegardé</h5>
+                          <p className="text-white/60 text-[10px] sm:text-xs mt-1 leading-relaxed">
                             Votre demande a été enregistrée de façon sécurisée dans notre base de données. {(advisor.name || '').split(' ')[0]} analyse vos documents d'identité pour constitution physique. Aucune action supplémentaire n'est requise.
                           </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-brand-orange/15 border border-brand-orange/25 flex items-center justify-center text-brand-orange flex-shrink-0 animate-pulse">
+                      <div className="flex items-start gap-2.5 sm:gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-brand-orange/15 border border-brand-orange/25 flex items-center justify-center text-brand-orange text-xs sm:text-sm flex-shrink-0 animate-pulse">
                           !
                         </div>
                         <div>
-                          <h5 className="text-white font-bold text-sm">Demande en attente d'initialisation</h5>
+                          <h5 className="text-white font-bold text-xs sm:text-sm">Demande en attente d'initialisation</h5>
                           <p className="text-white/60 text-xs mt-1 leading-relaxed">
                             Pour lancer l'analyse de votre profil et la demande légale de votre permis de conduire auprès de l'administration officielle, veuillez compléter votre dossier en fournissant vos pièces.
                           </p>
@@ -2156,7 +2156,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-x border-white/10 rounded-t-3xl px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t-2 border-x border-emerald-500 rounded-t-3xl px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${

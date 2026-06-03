@@ -93,7 +93,7 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
 
         {/* Mobile menu */}
         <div 
-          className={`md:hidden fixed inset-x-0 top-20 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-white/5 transition-all duration-300 ${
+          className={`md:hidden fixed inset-x-0 top-20 h-[380px] z-40 bg-slate-950 border-t border-white/5 rounded-b-[32px] shadow-[0_16px_30px_rgba(0,0,0,0.6)] overflow-y-auto transition-all duration-300 ${
             menuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
           }`}
         >
