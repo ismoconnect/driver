@@ -95,21 +95,38 @@ export default function DocumentsUtilisateurs() {
               ✕ Fermer
             </button>
             <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10">
+              {/* Header */}
               <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
                 <span className="text-white font-bold text-sm">{lightbox.label}</span>
-                <a
-                  href={lightbox.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
-                >
-                  ⬇️ Télécharger
-                </a>
+                {lightbox.url.startsWith('http') && (
+                  <a
+                    href={lightbox.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
+                  >
+                    ⬇️ Télécharger
+                  </a>
+                )}
               </div>
-              {lightbox.url.match(/\.(jpg|jpeg|png|gif|webp)/i) || lightbox.url.includes('cloudinary') ? (
-                <img src={lightbox.url} alt={lightbox.label} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
-              ) : (
+
+              {/* Contenu selon le type */}
+              {!lightbox.url.startsWith('http') ? (
+                // ❌ Ancien format — pas d'URL réelle
+                <div className="p-10 text-center">
+                  <div className="text-5xl mb-4">⚠️</div>
+                  <p className="text-amber-400 font-bold mb-2">Document non disponible</p>
+                  <p className="text-slate-400 text-sm max-w-xs mx-auto">
+                    Ce document a été soumis via l'ancien système et n'est pas stocké en ligne.
+                    Le candidat doit <strong className="text-white">re-uploader</strong> ce fichier.
+                  </p>
+                  <div className="mt-4 bg-slate-800 rounded-xl px-4 py-2 inline-block">
+                    <span className="text-slate-500 text-xs font-mono">{lightbox.url}</span>
+                  </div>
+                </div>
+              ) : lightbox.url.toLowerCase().includes('.pdf') || lightbox.url.includes('/raw/') ? (
+                // 📄 PDF Cloudinary — ouvrir dans nouvel onglet
                 <div className="p-10 text-center">
                   <div className="text-6xl mb-4">📄</div>
                   <p className="text-white font-semibold mb-4">Fichier PDF</p>
@@ -122,11 +139,15 @@ export default function DocumentsUtilisateurs() {
                     Ouvrir le PDF ↗
                   </a>
                 </div>
+              ) : (
+                // 🖼️ Image Cloudinary — afficher directement
+                <img src={lightbox.url} alt={lightbox.label} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
               )}
             </div>
           </div>
         </div>
       )}
+
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -234,7 +255,7 @@ export default function DocumentsUtilisateurs() {
                           onClick={() => setLightbox({ url, label: `${lead.name} — ${label}` })}
                           className="relative group rounded-xl overflow-hidden border border-emerald-500/20 bg-slate-800 hover:border-emerald-500/50 transition-all hover:scale-[1.02]"
                         >
-                          {url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('cloudinary') ? (
+                          {url.startsWith('http') ? (
                             <img src={url} alt={label} className="w-full h-20 object-cover" />
                           ) : (
                             <div className="w-full h-20 flex items-center justify-center bg-emerald-500/5">

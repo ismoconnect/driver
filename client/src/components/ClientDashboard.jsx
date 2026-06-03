@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import Navbar from './Navbar';
 
 export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode }) {
@@ -62,6 +62,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('new');
+  const [billingActive, setBillingActive] = useState(false);
+  const [paymentValidated, setPaymentValidated] = useState(false);
+  const [selectedPath, setSelectedPath] = useState(null);
+  const [perceptionPaid, setPerceptionPaid] = useState(false);
+  const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -149,6 +154,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           }
         ]);
       } else {
+        // Marc les messages de l'admin comme lus par le client
+        const lastMsg = list[list.length - 1];
+        if (lastMsg.sender === 'advisor') {
+          updateDoc(doc(db, 'chats', user.uid), {
+            unreadByClient: false
+          }).catch(err => console.error("Error updating unreadByClient:", err));
+        }
         setMessages(list);
       }
     });
@@ -198,6 +210,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               transmission: leadData?.transmission || 'Manuel',
             });
             setIsSubmitted(leadData?.isSubmitted || false);
+            setBillingActive(leadData?.billingActive || false);
+            setPaymentValidated(leadData?.paymentValidated || false);
+            setSelectedPath(leadData?.selectedPath || 'perception');
+            setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
             
             // Re-simulate or populate file uploads if metadata is in DB
@@ -217,6 +233,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               transmission: 'Manuel',
             });
             setIsSubmitted(false);
+            setBillingActive(false);
+            setPaymentValidated(false);
+            setSelectedPath('perception');
+            setPerceptionPaid(false);
             setUploads({
               idFront: null,
               idBack: null,
@@ -238,6 +258,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           if (snap.exists()) {
             const data = snap.data();
             setIsSubmitted(data.isSubmitted === true);
+            setBillingActive(data.billingActive === true);
+            setPaymentValidated(data.paymentValidated === true);
+            setSelectedPath(data.selectedPath || 'perception');
+            setPerceptionPaid(data.perceptionPaid === true);
             setApplicationStatus(data.status || 'new');
           }
         });
@@ -245,10 +269,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         const unsubUser = onSnapshot(userRef2, (snap) => {
           if (snap.exists()) {
             const data = snap.data();
-            // If the users doc has isSubmitted explicitly set, use it
-            if (data.isSubmitted !== undefined) {
-              setIsSubmitted(data.isSubmitted === true);
-            }
             if (data.status) {
               setApplicationStatus(data.status);
             }
@@ -422,6 +442,29 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     }
   };
 
+  const handleUpgradeToDirect = async () => {
+    try {
+      const leadRef = doc(db, 'leads', user.uid);
+      const alreadyPaid = paymentValidated;
+      await updateDoc(leadRef, {
+        selectedPath: 'direct',
+        amount: advisor.directLicenseAmount || "150,00 €",
+        paymentValidated: false,
+        billingActive: true,
+        status: 'new',
+        perceptionPaid: alreadyPaid
+      });
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        status: 'new'
+      });
+      setActiveTab('wizard');
+      setShowUpgradeConfirm(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Form submission directly to Firestore
   const handleSubmitDemand = async (e) => {
     e.preventDefault();
@@ -438,6 +481,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         nationalRegister: formData.nationalRegister,
         failedAttempts: formData.failedAttempts,
         transmission: formData.transmission,
+        selectedPath: selectedPath || 'perception',
+        amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "150,00 €") : (advisor.perceptionAmount || "85,00 €"),
         isSubmitted: true,
         uploads: uploads,
         submittedAt: new Date().toISOString(),
@@ -860,8 +905,22 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             </div>
             {isSubmitted && (
               <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Dossier en cours</span>
+                {applicationStatus === 'completed' ? (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Dossier validé</span>
+                  </>
+                ) : applicationStatus === 'processing' ? (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Dossier en cours</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Dossier transmis</span>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1011,27 +1070,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         icon: '👁️',
                         title: 'Perception du Risque',
                         desc_done: 'Certificat de dispense validé par l\'administration.',
-                        desc_pending: 'Débloqué après validation de votre dossier.',
-                        status: isSubmitted ? (applicationStatus === 'processing' || applicationStatus === 'completed' ? 'active' : 'active') : 'active',
-                        badge: isSubmitted ? (applicationStatus === 'completed' ? '✓ Dispense' : '● Action requise') : '● Action requise',
+                        desc_pending: !isSubmitted 
+                          ? 'Débloqué après validation de votre dossier.'
+                          : (selectedPath ? 'En attente du virement de votre formule.' : 'Veuillez choisir votre parcours dans l\'onglet "Faire ma demande".'),
+                        status: (paymentValidated || perceptionPaid) ? 'done' : 'active',
+                        badge: (paymentValidated || perceptionPaid) ? '✓ Dispense' : (!isSubmitted ? '● Action requise' : (selectedPath ? '● Paiement en attente' : '● Choix requis')),
                       },
                       {
                         num: 4,
                         icon: '🚗',
                         title: 'Examen Pratique',
                         desc_done: 'Dispense d\'examen pratique certifiée & enregistrée.',
-                        desc_pending: 'Validé après constitution complète du dossier.',
-                        status: applicationStatus === 'completed' ? 'done' : applicationStatus === 'processing' ? 'active' : 'locked',
-                        badge: applicationStatus === 'completed' ? '✓ Certifié' : applicationStatus === 'processing' ? '⌛ En cours' : '🔒 À venir',
+                        desc_pending: !isSubmitted
+                          ? 'Validé après constitution complète du dossier.'
+                          : (selectedPath === 'direct' ? 'Validé après confirmation de votre règlement.' : 'Non inclus dans la formule Perception du Risque.'),
+                        status: (selectedPath === 'direct' && paymentValidated) ? 'done' : 'locked',
+                        badge: (selectedPath === 'direct' && paymentValidated) ? '✓ Certifié' : (selectedPath === 'perception' ? '🔒 Non inclus' : '🔒 À venir'),
                       },
                       {
                         num: 5,
                         icon: '🏆',
                         title: 'Permis Définitif',
                         desc_done: 'Votre permis officiel est prêt — retrait en commune.',
-                        desc_pending: 'Production & livraison du titre officiel en commune.',
-                        status: applicationStatus === 'completed' ? 'ready' : 'locked',
-                        badge: applicationStatus === 'completed' ? '⌛ À retirer' : '🔒 À venir',
+                        desc_pending: !isSubmitted
+                          ? 'Production & livraison du titre officiel en commune.'
+                          : (selectedPath === 'direct' ? 'Production & livraison du titre officiel en commune.' : 'Non inclus dans la formule Perception du Risque.'),
+                        status: (selectedPath === 'direct' && applicationStatus === 'completed') ? 'done' : ((selectedPath === 'direct' && paymentValidated) ? 'ready' : 'locked'),
+                        badge: (selectedPath === 'direct' && applicationStatus === 'completed') ? '✓ Prêt' : ((selectedPath === 'direct' && paymentValidated) ? '⌛ À retirer' : (selectedPath === 'perception' ? '🔒 Non inclus' : '🔒 À venir')),
                       },
                     ].map((phase) => {
                       const isDone = phase.status === 'done';
@@ -1167,6 +1232,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       Initier mon dossier maintenant ➔
                     </button>
                   )}
+
+                  {isSubmitted && selectedPath === 'perception' && (
+                    <button 
+                      onClick={() => setShowUpgradeConfirm(true)}
+                      className="mt-6 w-full sm:w-auto px-6 py-3 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 hover:scale-[1.02] transition-all duration-300 self-start text-white flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      ⚡ Passer au Permis Direct
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1189,70 +1263,305 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           {activeTab === 'wizard' && (
             <div className="flex-1 flex flex-col justify-between relative z-10 animate-[bubbleIn_0.5s_ease-out]">
               {isSubmitted ? (
-                // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
-                <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
-                  {/* Premium Success Badge */}
-                  <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    Analyse du Profil Complétée
-                  </div>
+                !selectedPath ? (
+                  // PATH SELECTION SCREEN
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
+                    <div className="inline-flex items-center gap-2 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
+                      <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
+                      Dossier Transmis — Choix du Parcours
+                    </div>
 
-                  {/* Icon with complex glow */}
-                  <div className="relative mb-6">
-                    <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl scale-125" />
-                    <div className="relative w-20 h-20 rounded-full bg-slate-900 border-2 border-emerald-500 flex items-center justify-center text-4xl shadow-2xl">
-                      ✅
+                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                      CHOISISSEZ VOTRE CIRCUIT D'OBTENTION 🛣️
+                    </h2>
+                    <p className="text-white/60 text-xs sm:text-sm mt-3 leading-relaxed max-w-lg">
+                      Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! Vos pièces justificatives ont bien été transmises. Veuillez maintenant sélectionner la formule correspondante à votre besoin pour lancer l'analyse officielle.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mt-8">
+                      {/* Option 1: Perception du Risque */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const leadRef = doc(db, 'leads', user.uid);
+                            await updateDoc(leadRef, {
+                              selectedPath: 'perception',
+                              amount: advisor.perceptionAmount || "85,00 €"
+                            });
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className="bg-slate-950/60 border border-white/10 hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer"
+                      >
+                        <div>
+                          <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                            👁️
+                          </div>
+                          <h4 className="text-base font-bold text-white mb-2">Perception du Risque</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-4">
+                            Validation officielle de la dispense de l'examen de perception du risque (Phase 3). Idéal si vous effectuez le reste par vous-même.
+                          </p>
+                        </div>
+                        <div className="w-full pt-4 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[10px] uppercase font-bold text-brand-orange">Formule Standard</span>
+                          <span className="text-lg font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
+                        </div>
+                      </button>
+
+                      {/* Option 2: Permis Définitif */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const leadRef = doc(db, 'leads', user.uid);
+                            await updateDoc(leadRef, {
+                              selectedPath: 'direct',
+                              amount: advisor.directLicenseAmount || "150,00 €"
+                            });
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className="bg-slate-950/60 border border-white/10 hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer"
+                      >
+                        <div>
+                          <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                            🚗
+                          </div>
+                          <h4 className="text-base font-bold text-white mb-2">Permis Définitif</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-4">
+                            Validation complète et automatique de toutes les phases (Phases 3 à 5). Vous obtenez votre permis de conduire direct sans aucun examen pratique.
+                          </p>
+                        </div>
+                        <div className="w-full pt-4 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[10px] uppercase font-bold text-brand-orange">Formule Directe</span>
+                          <span className="text-lg font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
+                        </div>
+                      </button>
                     </div>
                   </div>
+                ) : billingActive && !paymentValidated ? (
+                  // BILLING STATE WITH RIB
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-4 animate-[bubbleIn_0.6s_ease-out]">
+                    {/* Premium Danger/Alert Badge */}
+                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      Règlement Requis — Émission en cours
+                    </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
-                    RÉSULTAT : ADMISSIBLE ! 🎉
-                  </h2>
-                  <p className="text-white/60 text-sm mt-3 leading-relaxed max-w-md">
-                    Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! L'analyse de votre profil confirme à 100% votre éligibilité pour notre filière d'obtention légale sans examen. Votre dossier est désormais entièrement constitué et enregistré de manière sécurisée.
-                  </p>
-                  
-                  {/* Results Details Card */}
-                  <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6 w-full mt-8 text-left relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
-                      <span>📋</span> Détails du dossier enregistré
-                    </h4>
+                    {/* Icon with complex glow */}
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl scale-125" />
+                      <div className="relative w-20 h-20 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center text-4xl shadow-2xl">
+                        💳
+                      </div>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                      RÈGLEMENT DE VOTRE DOSSIER ⌛
+                    </h2>
+                    <p className="text-white/60 text-xs sm:text-sm mt-3 leading-relaxed max-w-md">
+                      Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle de votre permis de conduire auprès du SPF Mobilité, veuillez procéder au règlement des frais administratifs ci-dessous.
+                    </p>
+
+                    {/* Facture Détaillée */}
+                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-5 w-full mt-6 text-left relative overflow-hidden group">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-3 flex items-center gap-2">
+                        <span>📄</span> Frais de dossier réglementaires ({selectedPath === 'perception' ? 'Perception du Risque' : 'Permis Définitif'})
+                      </h4>
+                      <div className="space-y-2 text-xs border-b border-white/5 pb-3">
+                        {selectedPath === 'perception' ? (
+                          <>
+                            <div className="flex justify-between text-white/50">
+                              <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
+                              <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
+                            </div>
+                            <div className="flex justify-between text-white/50">
+                              <span>{advisor.perceptionLabel2 || "Administration - Dispense de Perception du Risque"}</span>
+                              <span className="text-white font-semibold">{advisor.perceptionAmount2 || "35,00 €"}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between text-white/50">
+                              <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
+                              <span className="text-white font-semibold">{advisor.directAmount1 || "80,00 €"}</span>
+                            </div>
+                            <div className="flex justify-between text-white/50">
+                              <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
+                              <span className="text-white font-semibold">{advisor.directAmount2 || "70,00 €"}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="pt-3 flex justify-between text-sm font-bold text-brand-orange">
+                        <span>Total TTC à régler :</span>
+                        <span className="text-lg">
+                          {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Informations de paiement (RIB) */}
+                    <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-5 w-full mt-5 text-left shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange/5 rounded-full blur-xl" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
+                        <span>🏦</span> Informations bancaires (RIB / Virement)
+                      </h4>
+                      
+                      <div className="space-y-3 text-xs">
+                        <div className="flex justify-between border-b border-white/5 pb-1.5">
+                          <span className="text-white/40">Bénéficiaire :</span>
+                          <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-white/5 pb-1.5">
+                          <span className="text-white/40">Banque :</span>
+                          <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-white/5 pb-1.5">
+                          <span className="text-white/40">IBAN :</span>
+                          <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-white/5 pb-1.5">
+                          <span className="text-white/40">Code BIC/SWIFT :</span>
+                          <span className="text-white font-mono font-semibold">{advisor.bic || "GEBA BEBB"}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-white/5 pb-1.5">
+                          <span className="text-white/40">Montant à transférer :</span>
+                          <span className="text-brand-orange font-bold font-mono">
+                            {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-white/40">Communication :</span>
+                          <span className="text-brand-orange font-bold font-mono">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-300 leading-normal flex items-start gap-2.5">
+                        <span className="text-base">⚠️</span>
+                        <span>
+                          <strong>IMPORTANT</strong> : Veuillez indiquer la communication exacte lors de votre virement. Une fois le virement effectué, veuillez envoyer un justificatif (capture d'écran) à votre conseiller depuis le chat ci-dessous pour accélérer le traitement.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full justify-center">
+                      <button
+                        onClick={() => setActiveTab('chat')}
+                        className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-2"
+                      >
+                        💬 Envoyer le justificatif à mon conseiller
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
+                    {/* Premium Success Badge */}
+                    <div className={`inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6 ${
+                      applicationStatus === 'completed'
+                        ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400'
+                        : paymentValidated 
+                          ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400' 
+                          : 'bg-amber-500/10 border border-amber-500/25 text-amber-400'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full animate-ping ${applicationStatus === 'completed' ? 'bg-indigo-400' : paymentValidated ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                      {applicationStatus === 'completed' ? "Dossier Clôturé & Validé" : paymentValidated ? "Paiement Validé — Dossier Homologué" : "Dossier en Cours d'Analyse"}
+                    </div>
+
+                    {/* Icon with complex glow */}
+                    <div className="relative mb-6">
+                      <div className={`absolute inset-0 rounded-full blur-xl scale-125 ${applicationStatus === 'completed' ? 'bg-indigo-500/20' : paymentValidated ? 'bg-emerald-500/20' : 'bg-amber-500/20'}`} />
+                      <div className={`relative w-20 h-20 rounded-full bg-slate-900 border-2 flex items-center justify-center text-4xl shadow-2xl ${
+                        applicationStatus === 'completed' ? 'border-indigo-500' : paymentValidated ? 'border-emerald-500' : 'border-amber-500'
+                      }`}>
+                        {applicationStatus === 'completed' ? '🏆' : paymentValidated ? '💳' : '📩'}
+                      </div>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                      {applicationStatus === 'completed' ? "DOSSIER CLÔTURÉ AVEC SUCCÈS ! 🏆" : paymentValidated ? "PAIEMENT CONFIRMÉ ! 🚀" : "DOSSIER SOUMIS AVEC SUCCÈS ! 🚀"}
+                    </h2>
+                    <p className="text-white/60 text-sm mt-3 leading-relaxed max-w-md">
+                      {applicationStatus === 'completed'
+                        ? (selectedPath === 'perception'
+                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense de perception du risque a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
+                          : `Félicitations ${formData.firstName || 'Candidat'} ! Votre permis de conduire officiel est prêt. Vous pouvez dès à présent vous rendre en commune pour le retirer. Merci pour votre confiance.`)
+                        : paymentValidated 
+                          ? (selectedPath === 'perception'
+                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de dispense pour la Perception du Risque est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
+                            : `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre demande de permis définitif est en cours d'enregistrement officiel. Les modalités et la date de retrait en commune vous seront communiquées par e-mail. Merci.`)
+                          : `Merci ${formData.firstName || 'Candidat'} ! Votre dossier est désormais entièrement constitué et transmis à nos services pour vérification. Nos conseillers analysent vos pièces sous 24h/48h.`
+                      }
+                    </p>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                      <div className="space-y-2.5">
-                        <p className="text-white/50">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
-                        <p className="text-white/50">Registre National : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
+                    {/* Results Details Card */}
+                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6 w-full mt-8 text-left relative overflow-hidden group">
+                      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none ${
+                        paymentValidated ? 'bg-emerald-500/5' : 'bg-amber-500/5'
+                      }`} />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
+                        <span>📋</span> Détails du dossier enregistré
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div className="space-y-2.5">
+                          <p className="text-white/50">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
+                          <p className="text-white/50">Registre National : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
+                          <p className="text-white/50">Formule choisie : <span className="text-brand-orange font-semibold">{selectedPath === 'perception' ? "Perception du Risque" : "Permis Définitif"}</span></p>
+                        </div>
+                        <div className="space-y-2.5">
+                          <p className="text-white/50">Permis souhaité : <span className="text-brand-orange font-semibold">Catégorie B ({formData.transmission})</span></p>
+                          <p className="text-white/50">Pièces justificatives : <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 téléversées</span></p>
+                        </div>
                       </div>
-                      <div className="space-y-2.5">
-                        <p className="text-white/50">Permis souhaité : <span className="text-brand-orange font-semibold">Catégorie B ({formData.transmission})</span></p>
-                        <p className="text-white/50">Pièces justificatives : <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 téléversées</span></p>
+
+                      <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[11px]">
+                        <span className="text-white/40">Statut du dossier :</span>
+                        {applicationStatus === 'completed' ? (
+                          <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">
+                            {selectedPath === 'perception' ? "Attestation délivrée" : "Permis disponible en commune"}
+                          </span>
+                        ) : paymentValidated ? (
+                          <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
+                            {selectedPath === 'perception' ? "Attestation en cours d'édition" : "Paiement validé & Homologation SPF"}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 font-bold uppercase tracking-wider bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
+                            Analyse et vérification en cours
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[11px]">
-                      <span className="text-white/40">Statut du dossier :</span>
-                      <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
-                        Constitution & Envoi en cours
-                      </span>
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center">
+                      <button
+                        onClick={() => setActiveTab('overview')}
+                        className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
+                      >
+                        Suivre mon dossier en temps réel ➔
+                      </button>
+                      {selectedPath === 'perception' && applicationStatus === 'completed' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowUpgradeConfirm(true)}
+                          className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 cursor-pointer text-white flex items-center justify-center gap-1.5"
+                        >
+                          ⚡ Passer au Permis Direct
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setActiveTab('chat')}
+                        className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
+                      >
+                        Contacter mon conseiller
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center">
-                    <button
-                      onClick={() => setActiveTab('overview')}
-                      className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
-                    >
-                      Suivre mon dossier en temps réel ➔
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('chat')}
-                      className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
-                    >
-                      Contacter mon conseiller
-                    </button>
-                  </div>
-                </div>
+                )
               ) : (
                 // ACTIVE WIZARD STATE
                 <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between">
@@ -1265,16 +1574,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             Initier ma Demande Officielle
                           </h2>
                           <p className="text-white/50 text-xs mt-1">
-                            {wizardStep === 1 && "Étape 1 sur 5 — Vos informations personnelles d'identité."}
-                            {wizardStep === 2 && "Étape 2 sur 5 — Pièces justificatives (carte d'identité, photo, signature)."}
-                            {wizardStep === 3 && "Étape 3 sur 5 — Votre parcours et configuration du permis souhaité."}
-                            {wizardStep === 4 && "Étape 4 sur 5 — Détail des frais d'exécution et de réalisation du permis."}
-                            {wizardStep === 5 && "Étape 5 sur 5 — Signature du mandat pour finaliser votre dossier officiel."}
+                            {wizardStep === 1 && "Étape 1 sur 4 — Vos informations personnelles d'identité."}
+                            {wizardStep === 2 && "Étape 2 sur 4 — Pièces justificatives (carte d'identité, photo, signature)."}
+                            {wizardStep === 3 && "Étape 3 sur 4 — Votre parcours et configuration du permis souhaité."}
+                            {wizardStep === 4 && "Étape 4 sur 4 — Signature du mandat pour finaliser votre dossier officiel."}
                           </p>
                         </div>
                         {/* Step Bubbles */}
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {[1, 2, 3, 4, 5].map((s) => (
+                          {[1, 2, 3, 4].map((s) => (
                             <div 
                               key={s} 
                               className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
@@ -1295,7 +1603,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div className="mt-4 h-1 bg-white/5 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-brand-orange to-amber-400 rounded-full transition-all duration-500"
-                          style={{ width: `${((wizardStep - 1) / 4) * 100}%` }}
+                          style={{ width: `${((wizardStep - 1) / 3) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -1494,8 +1802,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
                               { icon: '📖', label: 'Examen Théorique', done: true },
                               { icon: '👁️', label: 'Perception de Risque', active: true },
-                              { icon: '🚗', label: 'Examen Pratique', locked: true },
-                              { icon: '🏆', label: 'Permis Définitif', locked: true },
+                              { icon: '🚗', label: 'Examen Pratique', locked: selectedPath === 'perception' },
+                              { icon: '🏆', label: 'Permis Définitif', locked: selectedPath === 'perception' },
                             ].map((item, i) => (
                               <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold border ${
                                 item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
@@ -1508,6 +1816,62 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 {item.locked && <span>🔒</span>}
                               </div>
                             ))}
+                          </div>
+                        </div>
+
+                        {/* CHOIX DU PARCOURS */}
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                            Formule d'obtention souhaitée
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Option 1: Perception du Risque */}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPath('perception')}
+                              className={`p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'perception' 
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                              }`}
+                            >
+                              <div>
+                                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                                  <span>👁️</span> Perception du Risque
+                                </h4>
+                                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+                                  Validation officielle de la dispense de l'examen de perception du risque (Phase 3).
+                                </p>
+                              </div>
+                              <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[9px] uppercase font-bold text-brand-orange">Formule Standard</span>
+                                <span className="text-sm font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
+                              </div>
+                            </button>
+
+                            {/* Option 2: Permis Définitif */}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPath('direct')}
+                              className={`p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'direct' 
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                              }`}
+                            >
+                              <div>
+                                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                                  <span>🚗</span> Permis Définitif
+                                </h4>
+                                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+                                  Obtention directe du permis de conduire définitif (Phases 3 à 5) sans aucun examen pratique.
+                                </p>
+                              </div>
+                              <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[9px] uppercase font-bold text-brand-orange">Formule Directe</span>
+                                <span className="text-sm font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
+                              </div>
+                            </button>
                           </div>
                         </div>
 
@@ -1537,7 +1901,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
-                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 ${
+                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Manuel' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -1548,7 +1912,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
-                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 ${
+                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Automatique' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -1561,79 +1925,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     )}
 
-                    {/* STEP 4: FRAIS D'EXÉCUTION — visible AVANT la soumission */}
+                    {/* STEP 4: MANDAT DE LÉGALITÉ & CONFIRMATION */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
-
-                        {/* Badge informatif */}
-                        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl px-5 py-3">
-                          <span className="text-2xl">💳</span>
-                          <div>
-                            <p className="text-amber-400 font-bold text-sm">Montant à prévoir pour la réalisation</p>
-                            <p className="text-white/60 text-[11px] mt-0.5">Le détail complet des frais liés à l'exécution et l'obtention officielle de votre permis de conduire.</p>
-                          </div>
-                        </div>
-
-                        {/* Invoice détaillée */}
-                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl overflow-hidden">
-                          <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-                            <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                              📄 Devis de Prestation Officielle
-                            </h4>
-                            <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">SPF Agréé</span>
-                          </div>
-
-                          <div className="px-6 py-5 space-y-4">
-                            {[
-                              { label: 'Constitution & analyse du dossier administratif', detail: 'Vérification des pièces, homologation UE', amount: '120,00 €' },
-                              { label: 'Droits de timbre fiscal & frais d\'enregistrement', detail: 'SPF Mobilité + commune de résidence', amount: '110,00 €' },
-                              { label: 'Production du support sécurisé & édition prioritaire', detail: 'Permis plastifié biométrique officiel', amount: '59,00 €' },
-                            ].map((line, i) => (
-                              <div key={i} className="flex items-start justify-between gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0">
-                                <div>
-                                  <p className="text-white/80 text-xs font-semibold">{line.label}</p>
-                                  <p className="text-white/40 text-[10px] mt-0.5">{line.detail}</p>
-                                </div>
-                                <span className="text-white font-bold text-sm flex-shrink-0">{line.amount}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="px-6 py-4 bg-brand-orange/10 border-t border-brand-orange/20 flex items-center justify-between">
-                            <span className="text-brand-orange font-bold text-sm">Total TTC (TVA incluse)</span>
-                            <span className="text-2xl font-black text-brand-orange">289,00 €</span>
-                          </div>
-                        </div>
-
-                        {/* Note paiement */}
-                        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-4 flex gap-3">
-                          <span className="text-lg flex-shrink-0">ℹ️</span>
-                          <div>
-                            <p className="text-white/80 text-xs font-bold mb-1">Aucun paiement immédiat requis</p>
-                            <p className="text-white/50 text-[10px] leading-relaxed">
-                              La validation de cette étape ne déclenche pas de prélèvement. Après soumission de votre dossier, nos conseillers analysent vos documents sous 12h. Les instructions de paiement sécurisé vous seront transmises uniquement après confirmation officielle de votre admissibilité.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Checkbox acceptation */}
-                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
-                          <input 
-                            type="checkbox"
-                            checked={paymentAccepted}
-                            onChange={(e) => setPaymentAccepted(e.target.checked)}
-                            className="mt-1 w-4 h-4 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
-                          />
-                          <span className="text-[11px] text-white/80 leading-normal select-none">
-                            J'ai pris connaissance du montant de <strong className="text-white">289,00 €</strong> requis pour la réalisation et l'obtention de mon permis de conduire officiel et j'accepte de procéder au règlement après validation de mon dossier par mon conseiller. <span className="text-brand-orange font-bold">(Requis pour continuer)</span>
-                          </span>
-                        </label>
-
-                      </div>
-                    )}
-
-                    {/* STEP 5: MANDAT DE LÉGALITÉ & CONFIRMATION */}
-                    {wizardStep === 5 && (
                       <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Récapitulatif du dossier */}
@@ -1710,18 +2003,39 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div />
                     )}
 
-                    {wizardStep < 5 ? (
+                    {wizardStep < 4 ? (
                       <button
                         type="button"
-                        onClick={() => setWizardStep(s => s + 1)}
-                        disabled={wizardStep === 4 && !paymentAccepted}
-                        className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20 ${
-                          wizardStep === 4 && !paymentAccepted
-                            ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
-                            : 'bg-brand-orange hover:bg-brand-orange-dark text-white cursor-pointer'
-                        }`}
+                        onClick={async () => {
+                          // Auto-sauvegarde dans Firestore à chaque étape
+                          if (user) {
+                            try {
+                              await setDoc(doc(db, 'leads', user.uid), {
+                                firstName:      formData.firstName,
+                                lastName:       formData.lastName,
+                                birthDate:      formData.birthDate,
+                                phone:          formData.phone,
+                                address:        formData.address,
+                                nationalRegister: formData.nationalRegister,
+                                failedAttempts: formData.failedAttempts,
+                                transmission:   formData.transmission,
+                                selectedPath:   selectedPath || 'perception',
+                                amount:         selectedPath === 'direct' ? (advisor.directLicenseAmount || "150,00 €") : (advisor.perceptionAmount || "85,00 €"),
+                                uploads:        uploads,
+                                uid:            user.uid,
+                                email:          user.email,
+                                wizardStep:     wizardStep + 1,
+                                // Ne pas écraser isSubmitted ou status si déjà définis
+                              }, { merge: true });
+                            } catch (e) {
+                              console.error('Auto-save error:', e);
+                            }
+                          }
+                          setWizardStep(s => s + 1);
+                        }}
+                        className="px-6 py-2.5 rounded-full text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20 bg-brand-orange hover:bg-brand-orange-dark text-white cursor-pointer"
                       >
-                        {wizardStep === 4 ? 'Valider et continuer ➔' : 'Continuer ➔'}
+                        Continuer ➔
                       </button>
                     ) : (
                       <button
@@ -1828,11 +2142,50 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </main>
       </div>
 
+      {showUpgradeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-[scaleIn_0.3s_ease-out] flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-2xl mb-5 animate-pulse text-indigo-400">
+              ⚡
+            </div>
+            <h3 className="text-xl font-display font-extrabold text-white mb-2">
+              Passer au Permis Direct
+            </h3>
+            <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-6">
+              Voulez-vous passer à la formule <strong>Permis Définitif / Direct</strong> ?<br />
+              Un nouveau règlement correspondant à cette formule sera requis. Votre validation de la Perception du Risque restera enregistrée.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <button
+                onClick={() => setShowUpgradeConfirm(false)}
+                className="flex-1 px-5 py-3 rounded-full text-xs font-bold bg-white/5 border border-white/10 hover:bg-white/10 text-white/90 transition-all duration-300 cursor-pointer order-2 sm:order-1"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleUpgradeToDirect}
+                className="flex-1 px-5 py-3 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 hover:scale-[1.02] text-white transition-all duration-300 cursor-pointer order-1 sm:order-2"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Styles: animations + light theme */}
       <style>{`
         @keyframes bubbleIn {
           0%  { opacity: 0; transform: translateY(8px) scale(0.97); }
           100%{ opacity: 1; transform: translateY(0px)  scale(1);   }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
 
         /* ═══════════════════════════════════════════════════════

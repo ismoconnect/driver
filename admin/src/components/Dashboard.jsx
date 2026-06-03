@@ -9,7 +9,7 @@ const Dashboard = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [selectedLeadUid, setSelectedLeadUid] = useState(() => localStorage.getItem('adminSelectedLeadUid') || null);
   const [updating, setUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'demandes');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'overview');
 
   // Admin Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('adminTheme') || 'dark');
@@ -41,7 +41,21 @@ const Dashboard = ({ onLogout }) => {
     name: "Jean-Pierre Dumont",
     title: "Expert Agréé SPF Belgique",
     isOnline: true,
-    avatarEmoji: "👨‍💼"
+    avatarEmoji: "👨‍💼",
+    beneficiary: "Mon Permis SRL",
+    bankName: "BNP Paribas Fortis",
+    iban: "BE96 3630 1234 5678",
+    bic: "GEBA BEBB",
+    perceptionAmount: "85,00 €",
+    perceptionLabel1: "Frais de timbre fiscal & enregistrement SPF Belgique",
+    perceptionAmount1: "50,00 €",
+    perceptionLabel2: "Administration - Dispense de Perception du Risque",
+    perceptionAmount2: "35,00 €",
+    directLicenseAmount: "150,00 €",
+    directLabel1: "Constitution du dossier d'homologation complet",
+    directAmount1: "80,00 €",
+    directLabel2: "Frais d'édition & timbres fiscaux (SPF Belgique)",
+    directAmount2: "70,00 €"
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
@@ -61,6 +75,14 @@ const Dashboard = ({ onLogout }) => {
       localStorage.removeItem('adminSelectedChatId');
     }
   }, [selectedChatId]);
+
+  // Users tab filters
+  const [userSearch, setUserSearch] = useState('');
+  const [userFilter, setUserFilter] = useState('all');
+
+  // Fichiers téléversés — lightbox
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLabel, setPreviewLabel] = useState('');
 
   // Listen to advisor settings in real-time
   useEffect(() => {
@@ -111,6 +133,52 @@ const Dashboard = ({ onLogout }) => {
     return () => unsubscribe();
   }, [selectedChatId]);
 
+  const handlePerceptionTotalChange = (val) => {
+    const clean = val.replace(/[^\d.,]/g, '').replace(',', '.');
+    const parsed = parseFloat(clean);
+    const total = isNaN(parsed) ? 0 : parsed;
+
+    if (total <= 0) {
+      setAdvisorSettings(prev => ({ ...prev, perceptionAmount: val }));
+      return;
+    }
+
+    const l1 = Math.round(total * 0.5882);
+    const l2 = total - l1;
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    setAdvisorSettings(prev => ({
+      ...prev,
+      perceptionAmount: val,
+      perceptionAmount1: fmt(l1),
+      perceptionAmount2: fmt(l2)
+    }));
+  };
+
+  const handleDirectTotalChange = (val) => {
+    const clean = val.replace(/[^\d.,]/g, '').replace(',', '.');
+    const parsed = parseFloat(clean);
+    const total = isNaN(parsed) ? 0 : parsed;
+
+    if (total <= 0) {
+      setAdvisorSettings(prev => ({ ...prev, directLicenseAmount: val }));
+      return;
+    }
+
+    const l1 = Math.round(total * 0.5333);
+    const l2 = total - l1;
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    setAdvisorSettings(prev => ({
+      ...prev,
+      directLicenseAmount: val,
+      directAmount1: fmt(l1),
+      directAmount2: fmt(l2)
+    }));
+  };
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSavingSettings(true);
@@ -121,7 +189,21 @@ const Dashboard = ({ onLogout }) => {
         name: advisorSettings.name,
         title: advisorSettings.title,
         isOnline: advisorSettings.isOnline === true || advisorSettings.isOnline === 'true',
-        avatarEmoji: advisorSettings.avatarEmoji || "👨‍💼"
+        avatarEmoji: advisorSettings.avatarEmoji || "👨‍💼",
+        beneficiary: advisorSettings.beneficiary || "Mon Permis SRL",
+        bankName: advisorSettings.bankName || "BNP Paribas Fortis",
+        iban: advisorSettings.iban || "BE96 3630 1234 5678",
+        bic: advisorSettings.bic || "GEBA BEBB",
+        perceptionAmount: advisorSettings.perceptionAmount || "85,00 €",
+        perceptionLabel1: advisorSettings.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique",
+        perceptionAmount1: advisorSettings.perceptionAmount1 || "50,00 €",
+        perceptionLabel2: advisorSettings.perceptionLabel2 || "Administration - Dispense de Perception du Risque",
+        perceptionAmount2: advisorSettings.perceptionAmount2 || "35,00 €",
+        directLicenseAmount: advisorSettings.directLicenseAmount || "150,00 €",
+        directLabel1: advisorSettings.directLabel1 || "Constitution du dossier d'homologation complet",
+        directAmount1: advisorSettings.directAmount1 || "80,00 €",
+        directLabel2: advisorSettings.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)",
+        directAmount2: advisorSettings.directAmount2 || "70,00 €"
       });
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 3000);
@@ -163,73 +245,105 @@ const Dashboard = ({ onLogout }) => {
     }
   };
 
-  // Real-time synchronization of leads and users combined
+  // ─── Synchronisation temps réel : deux listeners parallèles ───────────────
+  // On garde chaque collection dans une ref pour pouvoir fusionner à chaque update
+  const leadsDataRef  = React.useRef([]);
+  const usersDataRef  = React.useRef([]);
+
+  const mergeAndSet = () => {
+    const leadsData = leadsDataRef.current;
+    const usersData = usersDataRef.current;
+
+    // Map pour accès rapide par UID
+    const usersMap = Object.fromEntries(usersData.map(u => [u.uid || u.id, u]));
+    const combined = [];
+
+    // 1. Tous les documents leads, enrichis avec la collection users
+    for (const lead of leadsData) {
+      const uid = lead.uid || lead.id;
+      const user = usersMap[uid] || {};
+      const firstName = lead.firstName || user.firstName || '';
+      const lastName  = lead.lastName  || user.lastName  || '';
+      const name = `${firstName} ${lastName}`.trim() || lead.email || user.email || '—';
+      combined.push({
+        id:      lead.id,
+        uid,
+        name,
+        email:   lead.email   || user.email   || '',
+        phone:   lead.phone   || user.phone   || '',
+        service: lead.isSubmitted ? 'Permis Définitif' : 'Inscription simple',
+        date:    new Date(lead.createdAt || lead.submittedAt || Date.now())
+                   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        status:  lead.status  || user.status  || (lead.isSubmitted ? 'processing' : 'new'),
+        rawLead: lead,
+        rawUser: Object.keys(user).length ? user : null,
+      });
+    }
+
+    // 2. Utilisateurs sans document leads (inscription simple, pas encore de dossier)
+    for (const user of usersData) {
+      const uid = user.uid || user.id;
+      if (combined.find(c => c.uid === uid)) continue;
+      const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '—';
+      combined.push({
+        id:      uid,
+        uid,
+        name,
+        email:   user.email  || '',
+        phone:   user.phone  || '',
+        service: 'Inscription simple',
+        date:    new Date(user.createdAt || Date.now())
+                   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        status:  user.status || 'new',
+        rawLead: null,
+        rawUser: user,
+      });
+    }
+
+    // Tri : leads soumis en premier, puis par date décroissante
+    combined.sort((a, b) => {
+      if (a.rawLead?.isSubmitted && !b.rawLead?.isSubmitted) return -1;
+      if (!a.rawLead?.isSubmitted && b.rawLead?.isSubmitted) return 1;
+      return new Date(b.rawLead?.createdAt || b.rawUser?.createdAt || 0)
+           - new Date(a.rawLead?.createdAt || a.rawUser?.createdAt || 0);
+    });
+
+    setLeads(combined);
+    setLoading(false);
+  };
+
   useEffect(() => {
     setLoading(true);
 
-    const leadsQuery = query(collection(db, "leads"), orderBy("createdAt", "desc"));
-    const unsubLeads = onSnapshot(leadsQuery, (leadsSnap) => {
-      const leadsData = leadsSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    // Listener 1 — collection leads
+    const unsubLeads = onSnapshot(
+      query(collection(db, 'leads')),
+      (snap) => {
+        leadsDataRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        mergeAndSet();
+      },
+      (err) => console.error('leads listener error:', err)
+    );
 
-      const usersQuery = query(collection(db, "users"));
-      const unsubUsers = onSnapshot(usersQuery, (usersSnap) => {
-        const usersData = usersSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-
-        const combinedLeads = [];
-
-        // Add all leads, enriching with user data if available
-        for (const lead of leadsData) {
-          const matchingUser = usersData.find(u => u.uid === lead.uid);
-          const mergedName = `${lead.firstName || matchingUser?.firstName || ''} ${lead.lastName || matchingUser?.lastName || ''}`.trim() || lead.email;
-          combinedLeads.push({
-            id: lead.id,
-            uid: lead.uid,
-            name: mergedName,
-            email: lead.email,
-            phone: lead.phone || matchingUser?.phone || '',
-            service: "Permis Définitif",
-            date: new Date(lead.createdAt || lead.submittedAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-            status: lead.status || (lead.isSubmitted ? 'processing' : 'new'),
-            rawLead: lead,
-            rawUser: matchingUser
-          });
-        }
-
-        // Add users that don't have a lead yet (signed up but no lead doc)
-        for (const user of usersData) {
-          if (!combinedLeads.find(l => l.uid === user.uid)) {
-            const mergedName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-            combinedLeads.push({
-              id: user.uid,
-              uid: user.uid,
-              name: mergedName,
-              email: user.email,
-              phone: user.phone || '',
-              service: "Inscription simple",
-              date: new Date(user.createdAt || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-              status: user.status || 'new',
-              rawLead: null,
-              rawUser: user
-            });
-          }
-        }
-
-        setLeads(combinedLeads);
-        setLoading(false);
-      }, (err) => {
-        console.error("Error listening to users:", err);
-      });
-
-      window.__unsubUsersRealtime = unsubUsers;
-    }, (err) => {
-      console.error("Error listening to leads:", err);
-    });
+    // Listener 2 — collection users (indépendant, pas imbriqué)
+    const unsubUsers = onSnapshot(
+      query(collection(db, 'users')),
+      (snap) => {
+        usersDataRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        mergeAndSet();
+      },
+      (err) => console.error('users listener error:', err)
+    );
 
     return () => {
       unsubLeads();
-      if (window.__unsubUsersRealtime) window.__unsubUsersRealtime();
+      unsubUsers();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // ────────────────────────────────────────────────────────────────────────────
+
+
 
   const handleSignOut = () => {
     signOut(auth).then(() => onLogout());
@@ -249,18 +363,14 @@ const Dashboard = ({ onLogout }) => {
     if (!selectedLead) return;
     setUpdating(true);
     try {
-      const isSubmittedState = newStatus !== 'new';
-      
       if (selectedLead.rawLead && selectedLead.rawLead.id) {
         await updateDoc(doc(db, "leads", selectedLead.rawLead.id), { 
-          status: newStatus,
-          isSubmitted: isSubmittedState
+          status: newStatus
         });
       }
       if (selectedLead.rawUser && selectedLead.rawUser.uid) {
         await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
-          status: newStatus,
-          isSubmitted: isSubmittedState
+          status: newStatus
         });
       }
     } catch (err) {
@@ -329,63 +439,85 @@ const Dashboard = ({ onLogout }) => {
             <p className="text-xs font-semibold text-slate-500 mt-1 tracking-widest uppercase">Portail de Gestion</p>
           </div>
           
-          <nav className="mt-8 px-4 space-y-2">
-            <button 
+          <nav className="mt-6 px-4 space-y-1">
+            {/* Vue d'ensemble */}
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                activeTab === 'overview'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="mr-3 text-lg">🏠</span>
+              Vue d'ensemble
+            </button>
+
+            <div className="pt-2 pb-1 px-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Gestion</p>
+            </div>
+
+            <button
               onClick={() => setActiveTab('demandes')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === 'demandes' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
+                activeTab === 'demandes'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">📂</span> 
-              Dossiers & Demandes
+              <span className="mr-3 text-lg">📂</span>
+              Les demandes
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === 'users' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                activeTab === 'users'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">👥</span> 
-              Utilisateurs
+              <span className="mr-3 text-lg">👥</span>
+              Mes utilisateurs
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('messages')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
-                activeTab === 'messages' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                activeTab === 'messages'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">💬</span> 
-              Messagerie
+              <span className="mr-3 text-lg">💬</span>
+              Ma messagerie
               {chats.some(c => c.unreadByAdmin) && (
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('documents')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === 'documents' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                activeTab === 'documents'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">📁</span> 
-              Documents Utilisateurs
+              <span className="mr-3 text-lg">📁</span>
+              Dossiers utilisateurs
             </button>
-            <button 
+
+            <div className="pt-2 pb-1 px-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Configuration</p>
+            </div>
+
+            <button
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
-                activeTab === 'settings' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                activeTab === 'settings'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">⚙️</span> 
+              <span className="mr-3 text-lg">⚙️</span>
               Paramètres
             </button>
           </nav>
@@ -407,7 +539,8 @@ const Dashboard = ({ onLogout }) => {
         {/* Top Header */}
         <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/40 backdrop-blur-md flex-shrink-0">
           <h2 className="text-lg font-bold text-white capitalize">
-            {activeTab === 'demandes' && "Dossiers & Demandes"}
+            {activeTab === 'overview' && "🏠 Vue d'ensemble"}
+            {activeTab === 'demandes' && "📂 Les demandes"}
             {activeTab === 'detail' && selectedLead && (
               <span className="flex items-center gap-3">
                 <button onClick={closeDetail} className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
@@ -416,10 +549,10 @@ const Dashboard = ({ onLogout }) => {
                 Dossier de {selectedLead.name}
               </span>
             )}
-            {activeTab === 'users' && "Gestion des Utilisateurs"}
-            {activeTab === 'messages' && "Messagerie Centrale"}
-            {activeTab === 'documents' && "📁 Documents Utilisateurs"}
-            {activeTab === 'settings' && "Paramètres du Conseiller"}
+            {activeTab === 'users' && "👥 Mes utilisateurs"}
+            {activeTab === 'messages' && "💬 Ma messagerie"}
+            {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
+            {activeTab === 'settings' && "⚙️ Paramètres"}
           </h2>
           <div className="flex items-center gap-4">
             {/* Theme Toggle Button */}
@@ -443,6 +576,163 @@ const Dashboard = ({ onLogout }) => {
         {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto p-8 h-full custom-scrollbar">
           
+          {activeTab === 'overview' && (() => {
+            const now = new Date();
+            const hour = now.getHours();
+            const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+            const totalLeads = leads.length;
+            const submitted = leads.filter(l => l.rawLead?.isSubmitted).length;
+            const inProgress = leads.filter(l => l.status === 'processing').length;
+            const completed = leads.filter(l => l.status === 'completed').length;
+            const newLeads = leads.filter(l => l.status === 'new').length;
+            const unreadChats = chats.filter(c => c.unreadByAdmin).length;
+            const withDocs = leads.filter(l => l.rawLead?.uploads && Object.values(l.rawLead.uploads).some(Boolean)).length;
+            const recentLeads = [...leads].slice(0, 5);
+
+            return (
+              <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+
+                {/* Greeting Banner */}
+                <div className="relative bg-gradient-to-r from-emerald-500/10 via-slate-900/60 to-slate-900/60 border border-emerald-500/20 rounded-3xl p-8 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full transform translate-x-1/4 -translate-y-1/4" />
+                  <div className="relative z-10">
+                    <p className="text-slate-400 text-sm font-semibold mb-1">
+                      {now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                    <h2 className="text-3xl font-black text-white mb-2">{greeting} 👋</h2>
+                    <p className="text-slate-400 text-sm">
+                      Vous avez <span className="text-emerald-400 font-bold">{submitted}</span> dossiers soumis
+                      {unreadChats > 0 && <> et <span className="text-amber-400 font-bold">{unreadChats} message{unreadChats > 1 ? 's' : ''}</span> non lu{unreadChats > 1 ? 's' : ''}</>}.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('demandes')}
+                    className="absolute right-8 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-[0_4px_20px_rgba(16,185,129,0.3)]"
+                  >
+                    Voir les demandes →
+                  </button>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total inscrits', value: totalLeads, icon: '👥', color: 'text-white', border: 'border-white/5', glow: '' },
+                    { label: 'Dossiers soumis', value: submitted, icon: '📋', color: 'text-emerald-400', border: 'border-emerald-500/20', glow: 'bg-emerald-500/5' },
+                    { label: 'En traitement', value: inProgress, icon: '⚡', color: 'text-amber-400', border: 'border-amber-500/20', glow: 'bg-amber-500/5' },
+                    { label: 'Terminés', value: completed, icon: '✅', color: 'text-indigo-400', border: 'border-indigo-500/20', glow: 'bg-indigo-500/5' },
+                  ].map((kpi, i) => (
+                    <div key={i} className={`${kpi.glow || 'bg-slate-900/60'} border ${kpi.border} p-6 rounded-2xl backdrop-blur-sm shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-default`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 opacity-10 text-6xl flex items-end justify-end pr-2 pb-1">{kpi.icon}</div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">{kpi.label}</p>
+                      <p className={`text-4xl font-black ${kpi.color}`}>{kpi.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Row : Activité + Messages */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                  {/* Activité récente */}
+                  <div className="lg:col-span-2 bg-slate-900/60 border border-white/5 rounded-3xl p-6 backdrop-blur-sm shadow-xl">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-sm font-bold text-white uppercase tracking-wider">Dernières inscriptions</h3>
+                      <button onClick={() => setActiveTab('demandes')} className="text-xs text-emerald-400 font-bold hover:underline">Voir tout →</button>
+                    </div>
+                    <div className="space-y-3">
+                      {recentLeads.length === 0 ? (
+                        <p className="text-slate-500 text-sm text-center py-8">Aucune inscription pour le moment.</p>
+                      ) : recentLeads.map(lead => (
+                        <div
+                          key={lead.uid}
+                          onClick={() => openDetail(lead)}
+                          className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 hover:bg-white/[0.08] border border-white/5 hover:border-emerald-500/20 transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-xs font-black text-emerald-400">
+                              {(lead.name?.[0] || '?').toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-white text-sm font-semibold group-hover:text-emerald-400 transition-colors">{lead.name}</p>
+                              <p className="text-slate-500 text-xs">{lead.date}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {lead.rawLead?.isSubmitted && (
+                              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">✓ Soumis</span>
+                            )}
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
+                              lead.status === 'new' ? 'text-emerald-400 bg-emerald-500/10' :
+                              lead.status === 'processing' ? 'text-amber-400 bg-amber-500/10' :
+                              'text-indigo-400 bg-indigo-500/10'
+                            }`}>
+                              {lead.status === 'new' ? 'Nouveau' : lead.status === 'processing' ? 'En cours' : 'Terminé'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Panel droit */}
+                  <div className="flex flex-col gap-4">
+
+                    {/* Messages non lus */}
+                    <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm shadow-xl flex-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Messages</h3>
+                        <button onClick={() => setActiveTab('messages')} className="text-xs text-emerald-400 font-bold hover:underline">Ouvrir →</button>
+                      </div>
+                      {unreadChats === 0 ? (
+                        <div className="text-center py-6">
+                          <div className="text-3xl mb-2">✉️</div>
+                          <p className="text-slate-500 text-xs">Tout est lu !</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {chats.filter(c => c.unreadByAdmin).slice(0, 4).map(chat => (
+                            <div
+                              key={chat.id}
+                              onClick={() => { setActiveTab('messages'); }}
+                              className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-colors"
+                            >
+                              <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-xs font-black text-amber-400 flex-shrink-0">
+                                {(chat.userName?.[0] || '?').toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-white text-xs font-bold truncate">{chat.userName || 'Candidat'}</p>
+                                <p className="text-slate-400 text-[10px] truncate">{chat.lastMessageText}</p>
+                              </div>
+                              <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 mt-1.5 animate-pulse" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Docs rapides */}
+                    <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm shadow-xl">
+                      <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Documents</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-400">Avec documents</span>
+                          <span className="text-sm font-bold text-emerald-400">{withDocs}</span>
+                        </div>
+                        <div className="w-full bg-white/5 rounded-full h-1.5">
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all" style={{ width: totalLeads > 0 ? `${(withDocs/totalLeads)*100}%` : '0%' }} />
+                        </div>
+                        <button onClick={() => setActiveTab('documents')} className="w-full mt-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-400 hover:text-white border border-white/5 transition-all">
+                          📁 Voir tous les dossiers
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
+
           {activeTab === 'documents' && <DocumentsUtilisateurs />}
 
           {activeTab === 'demandes' && (
@@ -621,83 +911,279 @@ const Dashboard = ({ onLogout }) => {
               </div>
 
               {/* === FICHIERS TÉLÉVERSÉS === */}
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">Fichiers Téléversés</h3>
-                <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-6 backdrop-blur-sm">
-                  {(() => {
-                    const uploads = selectedLead.rawLead?.uploads;
-                    const documents = selectedLead.rawUser?.documents;
-                    const hasUploads = uploads && Object.values(uploads).some(v => v);
-                    const hasDocs = documents && Object.keys(documents).length > 0;
+              {(() => {
+                const uploads = selectedLead.rawLead?.uploads || {};
+                const DOC_META = {
+                  idFront:   { label: "Carte d'Identité Recto", icon: '🪪', color: 'emerald' },
+                  idBack:    { label: "Carte d'Identité Verso",  icon: '🪪', color: 'emerald' },
+                  photo:     { label: "Photo d'Identité",        icon: '📸', color: 'indigo'  },
+                  signature: { label: "Signature Numérisée",     icon: '✍️', color: 'amber'   },
+                };
+                const allKeys = Object.keys(DOC_META);
+                const hasAny = allKeys.some(k => uploads[k]);
 
-                    if (!hasUploads && !hasDocs) {
-                      return (
-                        <div className="text-center py-10">
-                          <div className="text-4xl mb-3">📭</div>
-                          <p className="text-slate-500 font-medium text-sm">Aucun fichier téléversé pour le moment.</p>
+                return (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">
+                      Fichiers Téléversés
+                      <span className="ml-3 text-emerald-400 font-black">
+                        {allKeys.filter(k => uploads[k] && uploads[k].startsWith('http')).length}/{allKeys.length}
+                      </span>
+                    </h3>
+
+                    {/* Lightbox interne */}
+                    {previewUrl && (
+                      <div
+                        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                        onClick={() => setPreviewUrl(null)}
+                      >
+                        <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => setPreviewUrl(null)}
+                            className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-bold"
+                          >✕ Fermer</button>
+                          <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10">
+                            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                              <span className="text-white font-bold text-sm">{previewLabel}</span>
+                              <a href={previewUrl} target="_blank" rel="noopener noreferrer" download
+                                className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
+                                ⬇️ Télécharger
+                              </a>
+                            </div>
+                            {previewUrl.toLowerCase().includes('.pdf') ? (
+                              <div className="p-10 text-center">
+                                <div className="text-5xl mb-3">📄</div>
+                                <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-bold text-sm">
+                                  Ouvrir le PDF ↗
+                                </a>
+                              </div>
+                            ) : (
+                              <img src={previewUrl} alt={previewLabel} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
+                            )}
+                          </div>
                         </div>
-                      );
-                    }
-
-                    return (
-                      <div className="space-y-3">
-                        {hasUploads && Object.entries(uploads).filter(([,v]) => v).map(([key, val]) => (
-                          <div key={key} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/[0.07] transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">📄</div>
-                              <div>
-                                <p className="text-white font-bold text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                                <p className="text-slate-500 text-xs mt-0.5">{typeof val === 'string' ? val : 'Fichier téléversé'}</p>
-                              </div>
-                            </div>
-                            <span className="text-emerald-400 bg-emerald-500/10 px-4 py-1.5 rounded-lg text-xs font-bold">Téléversé ✓</span>
-                          </div>
-                        ))}
-                        {hasDocs && Object.entries(documents).map(([key, url]) => (
-                          <div key={key} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/[0.07] transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">📎</div>
-                              <div>
-                                <p className="text-white font-bold text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                                <p className="text-slate-500 text-xs mt-0.5">Document stocké</p>
-                              </div>
-                            </div>
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 bg-indigo-500/10 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-500/20 transition-colors">
-                              Ouvrir ↗
-                            </a>
-                          </div>
-                        ))}
                       </div>
-                    );
-                  })()}
-                </div>
-              </div>
+                    )}
 
-              {/* === DONNÉES BRUTES FIRESTORE === */}
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">Données Brutes Firestore</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400 mb-3">Collection: leads</p>
-                    {selectedLead.rawLead ? (
-                      <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-white/5">
-                        {JSON.stringify(selectedLead.rawLead, null, 2)}
-                      </pre>
-                    ) : (
-                      <p className="text-slate-500 text-sm">Aucun document dans la collection leads.</p>
-                    )}
+                    {/* Grille 2x2 */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {allKeys.map(key => {
+                        const meta = DOC_META[key];
+                        const url = uploads[key];
+                        const isValid = url && url.startsWith('http');
+                        const colorMap = {
+                          emerald: { ring: 'border-emerald-500/30', badge: 'bg-emerald-500/10 text-emerald-400', thumb: 'bg-emerald-500/5' },
+                          indigo:  { ring: 'border-indigo-500/30',  badge: 'bg-indigo-500/10 text-indigo-400',   thumb: 'bg-indigo-500/5'  },
+                          amber:   { ring: 'border-amber-500/30',   badge: 'bg-amber-500/10 text-amber-400',     thumb: 'bg-amber-500/5'   },
+                        };
+                        const c = colorMap[meta.color];
+
+                        return (
+                          <div key={key} className="flex flex-col gap-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{meta.label}</span>
+                            {isValid ? (
+                              <button
+                                onClick={() => { setPreviewUrl(url); setPreviewLabel(`${selectedLead.name} — ${meta.label}`); }}
+                                className={`relative group rounded-2xl overflow-hidden border ${c.ring} bg-slate-800 hover:border-opacity-60 transition-all hover:scale-[1.02] hover:shadow-lg`}
+                              >
+                                {/* Thumbnail */}
+                                {!url.toLowerCase().includes('.pdf') ? (
+                                  <img src={url} alt={meta.label} className="w-full h-28 object-cover" />
+                                ) : (
+                                  <div className={`w-full h-28 flex flex-col items-center justify-center gap-2 ${c.thumb}`}>
+                                    <span className="text-3xl">📄</span>
+                                    <span className="text-[10px] font-bold text-slate-400">PDF</span>
+                                  </div>
+                                )}
+                                {/* Hover overlay */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-lg">🔍 Voir</span>
+                                </div>
+                                {/* Badge bas */}
+                                <div className={`${c.badge} py-1 text-center`}>
+                                  <span className="text-[10px] font-bold">✓ Reçu</span>
+                                </div>
+                              </button>
+                            ) : url ? (
+                              /* Ancien format — pas une URL */
+                              <div className="w-full rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 flex flex-col items-center justify-center gap-2 py-6 px-2 text-center">
+                                <span className="text-xl">⚠️</span>
+                                <span className="text-[9px] text-amber-400 font-bold">Ancien format</span>
+                                <span className="text-[8px] text-slate-500 font-mono break-all">{url}</span>
+                              </div>
+                            ) : (
+                              /* Manquant */
+                              <div className="w-full rounded-2xl border-2 border-dashed border-white/10 bg-slate-900/40 flex flex-col items-center justify-center gap-2 py-8">
+                                <span className="text-2xl opacity-20">{meta.icon}</span>
+                                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">Non reçu</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Collection: users</p>
-                    {selectedLead.rawUser ? (
-                      <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-white/5">
-                        {JSON.stringify(selectedLead.rawUser, null, 2)}
-                      </pre>
-                    ) : (
-                      <p className="text-slate-500 text-sm">Aucun document dans la collection users.</p>
-                    )}
+                );
+              })()}
+
+              {/* === FACTURATION & RIB === */}
+              <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col gap-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-0 ml-1">Facturation & Réglement</h3>
+                
+                {/* Option de Parcours Choisie */}
+                {selectedLead.rawLead?.selectedPath ? (
+                  <div className="bg-slate-950/60 p-5 rounded-2xl border border-orange-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-orange-500/15 border border-orange-500/30 text-orange-500 px-2.5 py-1 rounded">
+                        Option Choisie
+                      </span>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        {selectedLead.rawLead.selectedPath === 'perception' 
+                          ? '👁️ Perception du Risque (Phase 3)' 
+                          : '🚗 Permis Définitif / Direct (Phases 3 à 5)'}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Le candidat a sélectionné cette option pour la constitution de son dossier.
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase text-slate-400 font-semibold">Montant dû</p>
+                      <span className="text-lg font-black text-orange-500">
+                        {selectedLead.rawLead.selectedPath === 'perception' 
+                          ? (advisorSettings.perceptionAmount || "85,00 €") 
+                          : (advisorSettings.directLicenseAmount || "150,00 €")}
+                      </span>
+                    </div>
                   </div>
+                ) : (
+                  <div className="bg-slate-950/20 p-5 rounded-2xl border border-white/5 text-center">
+                    <p className="text-xs text-slate-400">
+                      ⚠️ Le candidat n'a pas encore fait son choix de parcours (Perception du Risque ou Permis Définitif).
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>💳</span> Lancer l'état de facturation
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      {selectedLead.rawLead?.billingActive 
+                        ? "Le devis détaillé et les coordonnées du RIB de Mon Permis SRL sont actuellement visibles pour le client."
+                        : "Activez la facturation pour afficher la demande de paiement par virement bancaire sur le tableau de bord du candidat."}
+                    </p>
+                  </div>
+                  <button
+                    disabled={updating}
+                    onClick={async () => {
+                      if (!selectedLead) return;
+                      setUpdating(true);
+                      try {
+                        const currentVal = selectedLead.rawLead?.billingActive === true;
+                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                        
+                        await updateDoc(doc(db, "leads", leadId), { 
+                          billingActive: !currentVal
+                        });
+                      } catch (err) {
+                        console.error(err);
+                      }
+                      setUpdating(false);
+                    }}
+                    className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
+                      selectedLead.rawLead?.billingActive
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400 shadow-amber-500/25'
+                        : 'bg-orange-600 hover:bg-orange-500 text-white border-orange-500 shadow-orange-600/25'
+                    }`}
+                  >
+                    {selectedLead.rawLead?.billingActive ? '🔴 Désactiver la facture' : '⚡ Déclencher la facture & RIB'}
+                  </button>
                 </div>
+
+                {selectedLead.rawLead?.billingActive && (
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <span>💰</span> Validation du paiement
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        {selectedLead.rawLead?.paymentValidated 
+                          ? "Le paiement a été validé. Le client voit son reçu officiel."
+                          : "Une fois le justificatif ou le virement bancaire reçu, validez le règlement."}
+                      </p>
+                    </div>
+                    <button
+                      disabled={updating}
+                      onClick={async () => {
+                        if (!selectedLead) return;
+                        setUpdating(true);
+                        try {
+                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                          const nextVal = !selectedLead.rawLead?.paymentValidated;
+                          
+                          // Determine status depending on selectedPath and validation state
+                          const isDirectPath = selectedLead.rawLead?.selectedPath === 'direct';
+                          const targetStatus = nextVal ? (isDirectPath ? 'completed' : 'processing') : 'new';
+
+                          // 1. Update payment state & dossier status
+                          await updateDoc(doc(db, "leads", leadId), { 
+                            paymentValidated: nextVal,
+                            status: targetStatus
+                          });
+
+                          // 2. Sync status to user document
+                          if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                            await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                              status: targetStatus
+                            });
+                          }
+
+                          // 3. Send automated advisor chat message
+                          const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                          const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                          
+                          let textMessage = "";
+                          if (nextVal) {
+                            if (selectedLead.rawLead?.selectedPath === 'perception') {
+                              textMessage = "✅ Votre paiement pour la Perception du Risque a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 👁️";
+                            } else if (selectedLead.rawLead?.selectedPath === 'direct') {
+                              textMessage = "✅ Votre paiement pour le Permis Définitif a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🚗";
+                            } else {
+                              textMessage = "✅ Votre paiement a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🚗";
+                            }
+                          } else {
+                            textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller pour plus d'informations.";
+                          }
+
+                          await addDoc(messagesRef, {
+                            sender: 'advisor',
+                            text: textMessage,
+                            timestamp: serverTimestamp()
+                          });
+
+                          await setDoc(chatDocRef, {
+                            lastMessageText: textMessage,
+                            lastMessageTime: serverTimestamp(),
+                            unreadByClient: true
+                          }, { merge: true });
+
+                        } catch (err) {
+                          console.error(err);
+                        }
+                        setUpdating(false);
+                      }}
+                      className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
+                        selectedLead.rawLead?.paymentValidated
+                          ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
+                      }`}
+                    >
+                      {selectedLead.rawLead?.paymentValidated ? '🔴 Annuler la validation' : '✓ Valider le paiement'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* === ACTIONS SUR LE STATUT === */}
@@ -942,6 +1428,195 @@ const Dashboard = ({ onLogout }) => {
                   </div>
                 </div>
 
+                {/* --- CONFIGURATION RIB & MONTANT PAR DÉFAUT --- */}
+                <div className="border-t border-white/10 pt-6 mt-6 space-y-6">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">💳 Paramètres de Facturation & RIB par défaut</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Bénéficiaire du Virement</label>
+                      <input
+                        type="text"
+                        value={advisorSettings.beneficiary || ''}
+                        onChange={(e) => setAdvisorSettings(prev => ({ ...prev, beneficiary: e.target.value }))}
+                        placeholder="Ex: Mon Permis SRL"
+                        className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Nom de la Banque</label>
+                      <input
+                        type="text"
+                        value={advisorSettings.bankName || ''}
+                        onChange={(e) => setAdvisorSettings(prev => ({ ...prev, bankName: e.target.value }))}
+                        placeholder="Ex: BNP Paribas Fortis"
+                        className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Code IBAN</label>
+                      <input
+                        type="text"
+                        value={advisorSettings.iban || ''}
+                        onChange={(e) => setAdvisorSettings(prev => ({ ...prev, iban: e.target.value }))}
+                        placeholder="Ex: BE96 3630 1234 5678"
+                        className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Code BIC/SWIFT</label>
+                      <input
+                        type="text"
+                        value={advisorSettings.bic || ''}
+                        onChange={(e) => setAdvisorSettings(prev => ({ ...prev, bic: e.target.value }))}
+                        placeholder="Ex: GEBA BEBB"
+                        className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* CONFIGURATION PERCEPTION DU RISQUE */}
+                  <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">👁️ Paramètres Perception du Risque (Phase 3)</h5>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="sm:col-span-1">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Montant Total TTC</label>
+                        <input
+                          type="text"
+                          value={advisorSettings.perceptionAmount || ''}
+                          onChange={(e) => handlePerceptionTotalChange(e.target.value)}
+                          placeholder="Ex: 85,00 €"
+                          className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Perception Ligne 1 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 1 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.perceptionLabel1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, perceptionLabel1: e.target.value }))}
+                            placeholder="Ex: Frais de timbre fiscal..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.perceptionAmount1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, perceptionAmount1: e.target.value }))}
+                            placeholder="Ex: 50,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Perception Ligne 2 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 2 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.perceptionLabel2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, perceptionLabel2: e.target.value }))}
+                            placeholder="Ex: Administration - Dispense..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.perceptionAmount2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, perceptionAmount2: e.target.value }))}
+                            placeholder="Ex: 35,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CONFIGURATION PERMIS DEFINITIF / DIRECT */}
+                  <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">🚗 Paramètres Permis Définitif / Direct (Phases 3 à 5)</h5>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="sm:col-span-1">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Montant Total TTC</label>
+                        <input
+                          type="text"
+                          value={advisorSettings.directLicenseAmount || ''}
+                          onChange={(e) => handleDirectTotalChange(e.target.value)}
+                          placeholder="Ex: 150,00 €"
+                          className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Direct Ligne 1 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 1 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.directLabel1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directLabel1: e.target.value }))}
+                            placeholder="Ex: Constitution du dossier d'homologation..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.directAmount1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directAmount1: e.target.value }))}
+                            placeholder="Ex: 80,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Direct Ligne 2 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 2 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.directLabel2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directLabel2: e.target.value }))}
+                            placeholder="Ex: Frais d'édition & timbres fiscaux..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.directAmount2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directAmount2: e.target.value }))}
+                            placeholder="Ex: 70,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   disabled={savingSettings}
@@ -959,15 +1634,210 @@ const Dashboard = ({ onLogout }) => {
             
           )}
 
-          {activeTab === 'users' && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🚧</div>
-                <h3 className="text-xl font-bold text-white mb-2">Module en développement</h3>
-                <p className="text-slate-500 text-sm">Cette section sera bientôt disponible.</p>
+          {activeTab === 'users' && (() => {
+            const filteredUsers = leads.filter(l => {
+              const matchSearch =
+                l.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                l.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                (l.phone || '').includes(userSearch);
+              const matchFilter =
+                userFilter === 'all' ||
+                (userFilter === 'submitted' && l.rawLead?.isSubmitted) ||
+                (userFilter === 'new' && l.status === 'new') ||
+                (userFilter === 'processing' && l.status === 'processing') ||
+                (userFilter === 'completed' && l.status === 'completed');
+              return matchSearch && matchFilter;
+            });
+
+            const statsData = [
+              { label: 'Total inscrits', value: leads.length, color: 'text-white', bg: '' },
+              { label: 'Dossiers soumis', value: leads.filter(l => l.rawLead?.isSubmitted).length, color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
+              { label: 'En cours', value: leads.filter(l => l.status === 'processing').length, color: 'text-amber-400', bg: 'bg-amber-500/5' },
+              { label: 'Terminés', value: leads.filter(l => l.status === 'completed').length, color: 'text-indigo-400', bg: 'bg-indigo-500/5' },
+            ];
+
+            return (
+              <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {statsData.map((s, i) => (
+                    <div key={i} className={`${s.bg || 'bg-slate-900/60'} border border-white/5 p-5 rounded-2xl backdrop-blur-sm shadow-xl`}>
+                      <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">{s.label}</p>
+                      <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filtres & Recherche */}
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <div className="relative flex-1">
+                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Rechercher par nom, email ou téléphone..."
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 rounded-xl text-sm focus:outline-none focus:border-emerald-500/40 transition-colors"
+                    />
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { key: 'all', label: 'Tous' },
+                      { key: 'submitted', label: '📋 Soumis' },
+                      { key: 'new', label: '🟢 Nouveaux' },
+                      { key: 'processing', label: '🟡 En cours' },
+                      { key: 'completed', label: '🟣 Terminés' },
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setUserFilter(f.key)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          userFilter === f.key
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Résultats */}
+                <div className="text-xs text-slate-500 font-semibold -mb-4">
+                  {filteredUsers.length} utilisateur{filteredUsers.length !== 1 ? 's' : ''} affiché{filteredUsers.length !== 1 ? 's' : ''}
+                </div>
+
+                {/* Tableau */}
+                <div className="bg-slate-900/80 rounded-3xl border border-white/5 overflow-hidden shadow-2xl backdrop-blur-xl">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-white/5">
+                      <thead className="bg-slate-900">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Utilisateur</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Inscription</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Documents</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Statut</th>
+                          <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {filteredUsers.length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="px-6 py-16 text-center text-slate-500 font-medium text-sm">
+                              Aucun utilisateur trouvé pour cette recherche.
+                            </td>
+                          </tr>
+                        ) : filteredUsers.map(lead => {
+                          const uploads = lead.rawLead?.uploads || {};
+                          const docsCount = Object.values(uploads).filter(Boolean).length;
+                          const hasLead = !!lead.rawLead;
+
+                          return (
+                            <tr
+                              key={lead.uid}
+                              className="hover:bg-white/5 transition-all duration-200 group cursor-pointer"
+                              onClick={() => openDetail(lead)}
+                            >
+                              {/* Utilisateur */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-sm font-black text-emerald-400 flex-shrink-0">
+                                    {(lead.name?.[0] || '?').toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{lead.name}</p>
+                                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">{lead.uid?.slice(0, 10)}...</p>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Contact */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <p className="text-sm text-slate-300 font-medium">{lead.email}</p>
+                                {lead.phone && (
+                                  <p className="text-xs text-slate-500 mt-0.5">{lead.phone}</p>
+                                )}
+                              </td>
+
+                              {/* Date inscription */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <p className="text-sm text-slate-400 font-medium">{lead.date}</p>
+                                <p className="text-[11px] text-slate-600 mt-0.5">
+                                  {hasLead ? '📋 Dossier créé' : '👤 Inscription seule'}
+                                </p>
+                              </td>
+
+                              {/* Documents */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex gap-1">
+                                    {['idFront','idBack','photo','signature'].map(k => (
+                                      <div
+                                        key={k}
+                                        className={`w-2 h-2 rounded-full ${uploads[k] ? 'bg-emerald-500' : 'bg-white/10'}`}
+                                        title={k}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className={`text-xs font-bold ${docsCount >= 4 ? 'text-emerald-400' : docsCount > 0 ? 'text-amber-400' : 'text-slate-600'}`}>
+                                    {docsCount}/4
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Statut */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                                  lead.status === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                  lead.status === 'processing' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                  lead.status === 'completed' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                                  'bg-white/5 text-slate-500 border border-white/5'
+                                }`}>
+                                  {lead.status === 'new' ? '● Nouveau' :
+                                   lead.status === 'processing' ? '● En cours' :
+                                   lead.status === 'completed' ? '● Terminé' : '● Inconnu'}
+                                </span>
+                                {lead.rawLead?.isSubmitted && (
+                                  <span className="ml-2 text-[10px] text-emerald-400 font-bold">✓ Soumis</span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-6 py-4 whitespace-nowrap text-right" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => openDetail(lead)}
+                                    className="text-xs font-bold text-slate-400 hover:text-indigo-400 bg-white/5 hover:bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-white/5 hover:border-indigo-500/20 transition-all"
+                                    title="Ouvrir le dossier"
+                                  >
+                                    ⚙️ Dossier
+                                  </button>
+                                  <button
+                                    onClick={e => handleDelete(e, lead)}
+                                    className="text-xs font-bold text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-3 py-1.5 rounded-lg border border-white/5 hover:border-red-500/20 transition-all"
+                                    title="Supprimer"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
               </div>
-            </div>
-          )}
+            );
+          })()}
+
 
         </main>
       </div>
