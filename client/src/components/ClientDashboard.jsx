@@ -1817,8 +1817,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 )
               ) : (
                 // ACTIVE WIZARD STATE
-                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between overflow-hidden min-h-0">
-                  <div className="flex-1 overflow-y-auto scrollbar-hidden">
+                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden min-h-0">
+                  <div className="overflow-y-auto scrollbar-hidden">
                     {/* Header */}
                     <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
                       <div className="flex items-start justify-between gap-4">
