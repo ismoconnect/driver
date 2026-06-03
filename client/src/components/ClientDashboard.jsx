@@ -937,7 +937,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-4 md:gap-6 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-3 pt-3 px-3 pb-[74px] sm:p-6 lg:p-8 md:pb-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -1057,7 +1057,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5 overflow-y-auto scrollbar-none`}`}>
+        <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 h-full md:h-full ${
+          activeTab === 'chat' 
+            ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl md:p-6` 
+            : `rounded-none border-0 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl p-2 sm:p-5 overflow-y-auto scrollbar-none`
+        }`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
