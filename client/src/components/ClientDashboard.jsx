@@ -881,7 +881,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className="flex-1 flex flex-col md:flex-row w-full p-4 sm:p-6 lg:p-8 gap-6">
+      <div className="flex-1 flex flex-col md:flex-row w-full p-4 sm:p-6 lg:p-8 gap-6 pb-24 md:pb-8">
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -1045,7 +1045,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     style={{ width: isSubmitted ? (applicationStatus === 'processing' ? '55%' : applicationStatus === 'completed' ? '80%' : '30%') : '20%' }}
                   />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-3 pb-3 scrollbar-none snap-x snap-mandatory -mx-4 px-4 lg:mx-0 lg:px-0">
                     {[
                       {
                         num: 1,
@@ -1106,7 +1106,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       return (
                         <div
                           key={phase.num}
-                          className={`group relative p-4 rounded-2xl flex flex-col gap-2 transition-all duration-500 border cursor-default ${
+                          className={`group relative p-4 rounded-2xl flex flex-col gap-2 transition-all duration-500 border cursor-default flex-shrink-0 w-[260px] lg:w-auto snap-start ${
                             isDone
                               ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_4px_20px_rgba(52,211,153,0.08)]'
                             : isActive
@@ -2142,6 +2142,43 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-white/10 px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'overview' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          }`}
+        >
+          <span className="text-xl">🛣️</span>
+          <span className="text-[10px] uppercase tracking-wider">Circuit</span>
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('wizard')}
+          className={`relative flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'wizard' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          }`}
+        >
+          <span className="text-xl">📄</span>
+          <span className="text-[10px] uppercase tracking-wider">Demande</span>
+          {!isSubmitted && (
+            <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-brand-orange animate-ping" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`relative flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'chat' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          }`}
+        >
+          <span className="text-xl">💬</span>
+          <span className="text-[10px] uppercase tracking-wider">Conseiller</span>
+          <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900" />
+        </button>
+      </nav>
+
       {showUpgradeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-[scaleIn_0.3s_ease-out] flex flex-col items-center text-center">
@@ -2186,6 +2223,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         @keyframes scaleIn {
           from { transform: scale(0.95); opacity: 0; }
           to { transform: scale(1); opacity: 1; }
+        }
+
+        .scrollbar-none::-webkit-scrollbar {
+          display: none !important;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
         }
 
         /* ═══════════════════════════════════════════════════════
