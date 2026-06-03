@@ -21,6 +21,14 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
 
   return (
     <>
+      {/* Mobile menu backdrop overlay - placed outside <nav> to guarantee click interception across the whole viewport */}
+      {menuOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
       <nav
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-400 ${
           scrolled
@@ -42,21 +50,24 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={() => { if (onGoHome) onGoHome(); }}
-
+                  onClick={(e) => {
+                    if (onGoHome) {
+                      e.preventDefault();
+                      window.location.href = link.href === '#' ? '/' : '/' + link.href;
+                    }
+                  }}
                   className={`text-sm font-medium transition-colors duration-300 hover:text-brand-orange text-white/80`}
                 >
                   {link.label}
                 </a>
               ))}
-              <a
-                href="#contact"
-                onClick={() => { if (onGoHome) onGoHome(); }}
-                className="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-brand-orange/30 overflow-hidden"
+              <button
+                onClick={() => onOpenDashboard('signup')}
+                className="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-brand-orange/30 overflow-hidden cursor-pointer"
               >
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
                 Nous contacter
-              </a>
+              </button>
 
               {user ? (
                 <button
@@ -91,6 +102,8 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
           </div>
         </div>
 
+
+
         {/* Mobile menu */}
         <div 
           className={`md:hidden fixed inset-x-0 top-20 h-[380px] z-40 bg-slate-950 border-t border-white/5 rounded-b-[32px] shadow-[0_16px_30px_rgba(0,0,0,0.6)] overflow-y-auto transition-all duration-300 ${
@@ -102,7 +115,13 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
               <a
                 key={link.label}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  if (onGoHome) {
+                    e.preventDefault();
+                    window.location.href = link.href === '#' ? '/' : '/' + link.href;
+                  }
+                }}
                 className={`text-lg font-bold tracking-wide text-white/80 hover:text-brand-orange transition-all duration-300 transform ${
                   menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                 }`}
@@ -111,16 +130,18 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
                 {link.label}
               </a>
             ))}
-            <a
-              href="#contact"
-              onClick={() => setMenuOpen(false)}
-              className={`w-full max-w-xs text-center bg-brand-orange text-white px-6 py-3.5 rounded-full text-sm font-semibold hover:bg-brand-orange-dark shadow-lg shadow-brand-orange/20 transition-all duration-300 transform active:scale-95 ${
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenDashboard('signup');
+              }}
+              className={`w-full max-w-xs text-center bg-brand-orange text-white px-6 py-3.5 rounded-full text-sm font-semibold hover:bg-brand-orange-dark shadow-lg shadow-brand-orange/20 transition-all duration-300 transform active:scale-95 cursor-pointer ${
                 menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
               }`}
               style={{ transitionDelay: `${links.length * 50}ms` }}
             >
               Nous contacter
-            </a>
+            </button>
 
             {user ? (
               <button

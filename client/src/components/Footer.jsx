@@ -1,14 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const Footer = () => {
-  const [sent, setSent] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', message: '' });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSent(true);
-  };
-
+const Footer = ({ user, onOpenDashboard }) => {
   return (
     <footer id="contact" className="relative bg-brand-dark overflow-hidden">
 
@@ -85,70 +77,30 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Right: Contact Form */}
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl">
-            {sent ? (
-              <div className="flex flex-col items-center justify-center h-full py-12 text-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-green-500/15 border border-green-500/30 flex items-center justify-center text-3xl mb-2">
-                  ✅
-                </div>
-                <h3 className="text-xl font-bold text-white">Message envoyé !</h3>
-                <p className="text-slate-400 text-sm max-w-xs">
-                  Merci, nous vous répondrons dans les plus brefs délais.
-                </p>
-              </div>
-            ) : (
-              <>
-                <h3 className="text-lg font-bold text-white mb-6">Envoyez-nous un message</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Nom complet</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Jean Dupont"
-                      value={form.name}
-                      onChange={e => setForm({ ...form, name: e.target.value })}
-                      className="w-full bg-white/8 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Téléphone / WhatsApp</label>
-                    <input
-                      type="tel"
-                      placeholder="+32 4XX XX XX XX"
-                      value={form.phone}
-                      onChange={e => setForm({ ...form, phone: e.target.value })}
-                      className="w-full bg-white/8 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Votre situation</label>
-                    <textarea
-                      rows={4}
-                      required
-                      placeholder="Ex: J'ai raté mon permis 2 fois, je cherche de l'aide..."
-                      value={form.message}
-                      onChange={e => setForm({ ...form, message: e.target.value })}
-                      className="w-full bg-white/8 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-all resize-none"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="group w-full relative inline-flex items-center justify-center px-6 py-3.5 rounded-xl text-sm font-semibold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:shadow-[0_8px_30px_rgba(255,152,0,0.35)] overflow-hidden mt-2"
-                  >
-                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/15 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
-                    <span>Envoyer ma demande</span>
-                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </button>
-                  <p className="text-center text-[11px] text-slate-500 mt-2">
-                    🔒 Vos données sont confidentielles et ne seront jamais partagées.
-                  </p>
-                </form>
-              </>
-            )}
+          {/* Right: Registration / Account Creation CTA */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col justify-center min-h-[350px]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-orange/10 rounded-full blur-3xl" />
+            <div className="relative z-10 text-center lg:text-left">
+              <h3 className="text-xl sm:text-2xl font-display font-extrabold text-white mb-4">
+                Créez votre espace en 1 clic 🚀
+              </h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Pour garantir un traitement prioritaire de votre demande et obtenir un suivi direct avec votre conseiller attitré, veuillez créer votre compte. L'inscription est simplifiée à l'extrême : <strong>seulement 2 informations demandées</strong> (votre nom et votre numéro) et un véritable email pour recevoir les mises à jour en temps réel.
+              </p>
+              <button
+                onClick={() => onOpenDashboard(user ? 'overview' : 'signup')}
+                className="group w-full relative inline-flex items-center justify-center px-6 py-4 rounded-full text-sm font-bold text-white bg-brand-orange hover:bg-brand-orange-dark transition-all duration-300 hover:shadow-[0_8px_30px_rgba(255,152,0,0.35)] hover:scale-[1.02] overflow-hidden cursor-pointer"
+              >
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/15 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                <span>{user ? "Accéder à mon espace" : "Créer mon compte en 2 secondes"}</span>
+                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+              <p className="text-center lg:text-left text-[11px] text-slate-500 mt-4 flex items-center justify-center lg:justify-start gap-1">
+                <span>🔒</span> Inscription 100% sécurisée, gratuite et sans engagement.
+              </p>
+            </div>
           </div>
         </div>
 

@@ -257,9 +257,9 @@ const Hero = ({ user, onOpenDashboard }) => {
               Découvrir la méthode
             </a>
 
-            <a
-              href="#contact"
-              className="inline-flex items-center gap-3.5 text-sm font-bold text-white group/btn w-full sm:w-auto justify-center sm:justify-start"
+            <button
+              onClick={() => onOpenDashboard('signup')}
+              className="inline-flex items-center gap-3.5 text-sm font-bold text-white group/btn w-full sm:w-auto justify-center sm:justify-start cursor-pointer text-left"
             >
               <span className="w-12 h-12 rounded-full bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg shadow-brand-orange/20 transition-all duration-300 transform group-hover/btn:scale-110 group-hover/btn:shadow-brand-orange/45 flex-shrink-0">
                 <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -269,7 +269,7 @@ const Hero = ({ user, onOpenDashboard }) => {
               <span className="border-b border-white/20 group-hover/btn:border-white transition-colors pb-0.5">
                 Parler à un conseiller
               </span>
-            </a>
+            </button>
           </div>
 
           {/* Quick link to follow demand */}

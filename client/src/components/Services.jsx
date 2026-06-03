@@ -52,7 +52,7 @@ const services = [
   },
 ];
 
-const Services = () => {
+const Services = ({ onOpenDashboard }) => {
   return (
     <section id="services" className="pt-24 pb-12 bg-white relative overflow-hidden">
       {/* Subtle background decoration */}
@@ -170,15 +170,15 @@ const Services = () => {
 
         {/* Bottom CTA */}
         <div className="mt-10 text-center">
-          <a
-            href="#contact"
-            className="inline-flex items-center gap-3 bg-brand-dark text-white px-8 py-4 rounded-full font-semibold text-sm hover:bg-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl shadow-md"
+          <button
+            onClick={() => onOpenDashboard('signup')}
+            className="inline-flex items-center gap-3 bg-brand-dark text-white px-8 py-4 rounded-full font-semibold text-sm hover:bg-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl shadow-md cursor-pointer"
           >
             <span>Commencer mon accompagnement</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
-          </a>
+          </button>
         </div>
       </div>
     </section>

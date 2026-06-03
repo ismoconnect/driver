@@ -61,9 +61,9 @@ function LandingPage({ user, authChecked }) {
     <div className="min-h-screen bg-brand-bg-light text-brand-dark font-sans selection:bg-brand-orange selection:text-white transition-colors duration-500">
       <Navbar user={user} onOpenDashboard={handleOpenDashboard} />
       <Hero user={user} onOpenDashboard={handleOpenDashboard} />
-      <Services />
+      <Services onOpenDashboard={handleOpenDashboard} />
       <Testimonials />
-      <Footer />
+      <Footer user={user} onOpenDashboard={handleOpenDashboard} />
     </div>
   );
 }
