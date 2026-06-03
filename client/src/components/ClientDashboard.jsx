@@ -52,6 +52,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [applicationStatus, setApplicationStatus] = useState('new');
   const [billingActive, setBillingActive] = useState(false);
   const [paymentValidated, setPaymentValidated] = useState(false);
+  const [soldeValidated, setSoldeValidated] = useState(false);
   const [selectedPath, setSelectedPath] = useState('perception');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
@@ -91,6 +92,50 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     isOnline: true,
     avatarEmoji: "👨‍💼"
   });
+
+  const getTotalAmount = () => {
+    let val = "0,00 €";
+    if (selectedPath === 'perception') val = advisor.perceptionAmount || "350,00 €";
+    else if (selectedPath === 'theorique') val = advisor.theoriqueAmount || "550,00 €";
+    else if (selectedPath === 'pratique') val = advisor.pratiqueAmount || "2100,00 €";
+    else if (selectedPath === 'direct') val = advisor.directLicenseAmount || "1200,00 €";
+    return val;
+  };
+
+  const getSplitPaymentDetails = () => {
+    const totalStr = getTotalAmount();
+    const clean = totalStr.replace(/[^\d.,]/g, '').replace(',', '.');
+    const totalNum = parseFloat(clean) || 0;
+
+    if (selectedPath === 'pratique') {
+      return {
+        isSplit: false,
+        total: totalStr,
+        firstPayment: totalStr,
+        secondPayment: null
+      };
+    }
+
+    const firstPaymentNum = Math.min(200, totalNum);
+    const secondPaymentNum = Math.max(0, totalNum - firstPaymentNum);
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    return {
+      isSplit: true,
+      total: totalStr,
+      firstPayment: fmt(firstPaymentNum),
+      secondPayment: secondPaymentNum > 0 ? fmt(secondPaymentNum) : null
+    };
+  };
+
+  const getTransferAmount = () => {
+    const details = getSplitPaymentDetails();
+    if (details.isSplit && paymentValidated) {
+      return details.secondPayment || details.total;
+    }
+    return details.firstPayment;
+  };
 
   useEffect(() => {
     const advisorRef = doc(db, 'settings', 'advisor');
@@ -206,6 +251,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setIsSubmitted(leadData?.isSubmitted || false);
             setBillingActive(leadData?.billingActive || false);
             setPaymentValidated(leadData?.paymentValidated || false);
+            setSoldeValidated(leadData?.soldeValidated || false);
             setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'perception') : 'perception');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
@@ -229,6 +275,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setIsSubmitted(false);
             setBillingActive(false);
             setPaymentValidated(false);
+            setSoldeValidated(false);
             setSelectedPath('perception');
             setPerceptionPaid(false);
             setUploads({
@@ -255,6 +302,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setIsSubmitted(data.isSubmitted === true);
             setBillingActive(data.billingActive === true);
             setPaymentValidated(data.paymentValidated === true);
+            setSoldeValidated(data.soldeValidated === true);
             if (data.isSubmitted) {
               setSelectedPath(data.selectedPath || 'perception');
             }
@@ -1432,13 +1480,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </button>
                     </div>
                   </div>
-                ) : billingActive && !paymentValidated ? (
+                ) : billingActive && (!paymentValidated || (applicationStatus === 'completed' && getSplitPaymentDetails().isSplit && !soldeValidated)) ? (
                   // BILLING STATE WITH RIB
                   <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Danger/Alert Badge */}
                     <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold tracking-widest uppercase px-3.5 py-1 md:py-1 rounded-full mb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      Règlement Requis — Émission en cours
+                      {paymentValidated ? "Règlement Requis — Solde Final" : "Règlement Requis — Émission en cours"}
                     </div>
 
                     {/* Icon with complex glow */}
@@ -1450,10 +1498,23 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
 
                     <h2 className="text-xl md:text-lg font-display font-extrabold text-white tracking-tight">
-                      RÈGLEMENT DE VOTRE DOSSIER ⌛
+                      {paymentValidated ? "RÈGLEMENT DU SOLDE DE VOTRE DOSSIER ⌛" : "RÈGLEMENT DE VOTRE DOSSIER ⌛"}
                     </h2>
                     <p className="text-white/60 text-xs md:text-[11px] mt-1 md:mt-1 leading-relaxed max-w-xl">
-                      Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle de votre permis de conduire auprès du SPF Mobilité, veuillez procéder au règlement des frais administratifs ci-dessous.
+                      {paymentValidated ? (
+                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier a été validé et votre ${
+                          selectedPath === 'perception' ? "attestation de perception" :
+                          selectedPath === 'theorique' ? "dispense d'examen théorique" :
+                          "permis de conduire"
+                        } est prêt. Afin de finaliser l'envoi officiel de votre document par nos conseillers, veuillez procéder au règlement du solde restant ci-dessous.`
+                      ) : (
+                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle ${
+                          selectedPath === 'perception' ? "de votre attestation de perception" :
+                          selectedPath === 'theorique' ? "de votre dispense d'examen théorique" :
+                          selectedPath === 'pratique' ? "de votre dispense d'examen pratique" :
+                          "de votre permis de conduire"
+                        } auprès du SPF Mobilité, veuillez procéder au règlement des frais administratifs ci-dessous.`
+                      )}
                     </p>
 
                     {/* Grid wrapper for Invoice & RIB */}
@@ -1519,14 +1580,34 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             )}
                           </div>
                         </div>
-                        <div className="pt-2 flex justify-between text-xs md:text-sm font-bold text-brand-orange">
-                          <span>Total TTC à régler :</span>
-                          <span className="text-base">
-                            {selectedPath === 'perception' ? (advisor.perceptionAmount || "350,00 €") :
-                             selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
-                             selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
-                             (advisor.directLicenseAmount || "1200,00 €")}
-                          </span>
+                        <div className="pt-2 border-t border-white/5 space-y-1 text-xs font-bold">
+                          {getSplitPaymentDetails().isSplit ? (
+                            <>
+                              <div className="flex justify-between text-white/50">
+                                <span>Total de la formule :</span>
+                                <span className="text-white">{getSplitPaymentDetails().total}</span>
+                              </div>
+                              <div className="flex justify-between text-brand-orange text-[13px] md:text-sm">
+                                <span>Acompte à régler (1er virement) :</span>
+                                <span className="text-base font-black">{getSplitPaymentDetails().firstPayment}</span>
+                              </div>
+                              {getSplitPaymentDetails().secondPayment && (
+                                <div className="flex justify-between text-white/35 text-[10px]">
+                                  <span>Solde ({
+                                    selectedPath === 'perception' ? "à l'obtention de l'attestation de perception" :
+                                    selectedPath === 'theorique' ? "à l'obtention de la dispense d'examen" :
+                                    "à l'obtention du permis de conduire"
+                                  }) :</span>
+                                  <span>{getSplitPaymentDetails().secondPayment}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex justify-between text-brand-orange text-sm md:text-base">
+                              <span>Total TTC à régler :</span>
+                              <span className="text-base font-black">{getSplitPaymentDetails().total}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1537,6 +1618,16 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2 md:mb-1.5 flex items-center gap-2">
                             <span>🏦</span> Informations bancaires (RIB / Virement)
                           </h4>
+
+                          {getSplitPaymentDetails().isSplit && (
+                            <div className="mb-2.5 px-2.5 py-1.5 rounded-xl bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9.5px] font-bold uppercase tracking-wider text-center leading-normal">
+                              💡 Acompte de 200 € à régler pour lancer le dossier, le solde ({getSplitPaymentDetails().secondPayment}) {
+                                selectedPath === 'perception' ? "à l'obtention de l'attestation de perception" :
+                                selectedPath === 'theorique' ? "à l'obtention de la dispense d'examen" :
+                                "à l'obtention du document"
+                              }.
+                            </div>
+                          )}
                           
                           <div className="space-y-1.5 text-xs">
                             <div className="flex justify-between border-b border-white/5 pb-1">
@@ -1557,8 +1648,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             </div>
                             <div className="flex justify-between border-b border-white/5 pb-1">
                               <span className="text-white/40">Montant à transférer :</span>
-                              <span className="text-brand-orange font-bold font-mono">
-                                {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
+                              <span className="text-brand-orange font-black font-mono text-sm">
+                                {getTransferAmount()}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -1617,11 +1708,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     <p className="text-white/60 text-[10px] sm:text-xs mt-0.5 sm:mt-2 leading-relaxed max-w-md">
                       {applicationStatus === 'completed'
                         ? (selectedPath === 'perception'
-                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense d'examen théorique a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
+                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de perception a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
                           : `Félicitations ${formData.firstName || 'Candidat'} ! Votre permis de conduire officiel est prêt. Vous pouvez dès à présent vous rendre en commune pour le retirer. Merci pour votre confiance.`)
                         : paymentValidated 
                           ? (selectedPath === 'perception'
-                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de dispense pour l'Examen Théorique est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
+                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de perception est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
                             : `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre demande de permis définitif est en cours d'enregistrement officiel. Les modalités et la date de retrait en commune vous seront communiquées par e-mail. Merci.`)
                           : `Merci ${formData.firstName || 'Candidat'} ! Votre dossier est désormais entièrement constitué et transmis à nos services pour vérification. Nos conseillers analysent vos pièces sous 24h/48h.`
                       }

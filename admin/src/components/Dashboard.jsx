@@ -235,6 +235,39 @@ const Dashboard = ({ onLogout }) => {
     }));
   };
 
+  const getAdminSplitPaymentDetails = (lead) => {
+    const selectedPath = lead?.selectedPath;
+    let totalStr = "0,00 €";
+    if (selectedPath === 'perception') totalStr = advisorSettings.perceptionAmount || "350,00 €";
+    else if (selectedPath === 'theorique') totalStr = advisorSettings.theoriqueAmount || "550,00 €";
+    else if (selectedPath === 'pratique') totalStr = advisorSettings.pratiqueAmount || "2100,00 €";
+    else if (selectedPath === 'direct') totalStr = advisorSettings.directLicenseAmount || "1200,00 €";
+
+    const clean = totalStr.replace(/[^\d.,]/g, '').replace(',', '.');
+    const totalNum = parseFloat(clean) || 0;
+
+    if (selectedPath === 'pratique') {
+      return {
+        isSplit: false,
+        total: totalStr,
+        firstPayment: totalStr,
+        secondPayment: null
+      };
+    }
+
+    const firstPaymentNum = Math.min(200, totalNum);
+    const secondPaymentNum = Math.max(0, totalNum - firstPaymentNum);
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    return {
+      isSplit: true,
+      total: totalStr,
+      firstPayment: fmt(firstPaymentNum),
+      secondPayment: secondPaymentNum > 0 ? fmt(secondPaymentNum) : null
+    };
+  };
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSavingSettings(true);
@@ -1171,89 +1204,160 @@ const Dashboard = ({ onLogout }) => {
                 </div>
 
                 {selectedLead.rawLead?.billingActive && (
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <span>💰</span> Validation du paiement
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                        {selectedLead.rawLead?.paymentValidated 
-                          ? "Le paiement a été validé. Le client voit son reçu officiel."
-                          : "Une fois le justificatif ou le virement bancaire reçu, validez le règlement."}
-                      </p>
-                    </div>
-                    <button
-                      disabled={updating}
-                      onClick={async () => {
-                        if (!selectedLead) return;
-                        setUpdating(true);
-                        try {
-                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                          const nextVal = !selectedLead.rawLead?.paymentValidated;
-                          
-                          // Determine status depending on selectedPath and validation state
-                          const isDirectPath = selectedLead.rawLead?.selectedPath === 'direct';
-                          const targetStatus = nextVal ? (isDirectPath ? 'completed' : 'processing') : 'new';
+                  <div className="space-y-4">
+                    {/* Acompte Validation Card */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>💰</span> Validation du paiement {getAdminSplitPaymentDetails(selectedLead.rawLead).isSplit && "— Acompte (200 €)"}
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                          {selectedLead.rawLead?.paymentValidated 
+                            ? "Le premier virement (acompte) de 200,00 € a été validé."
+                            : "Une fois le premier virement de 200,00 € reçu, validez le règlement."}
+                        </p>
+                      </div>
+                      <button
+                        disabled={updating}
+                        onClick={async () => {
+                          if (!selectedLead) return;
+                          setUpdating(true);
+                          try {
+                            const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                            const nextVal = !selectedLead.rawLead?.paymentValidated;
+                            
+                            // Determine status depending on selectedPath and validation state
+                            const leadSplit = getAdminSplitPaymentDetails(selectedLead.rawLead);
+                            const targetStatus = nextVal ? (leadSplit.isSplit ? 'processing' : 'completed') : 'new';
 
-                          // 1. Update payment state & dossier status
-                          await updateDoc(doc(db, "leads", leadId), { 
-                            paymentValidated: nextVal,
-                        status: targetStatus
-                          });
-
-                          // 2. Sync status to user document
-                          if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                            await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                            // 1. Update payment state & dossier status
+                            await updateDoc(doc(db, "leads", leadId), { 
+                              paymentValidated: nextVal,
                               status: targetStatus
                             });
-                          }
 
-                          // 3. Send automated advisor chat message
-                          const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                          const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                          
-                          let textMessage = "";
-                          if (nextVal) {
-                            if (selectedLead.rawLead?.selectedPath === 'perception') {
-                              textMessage = "✅ Votre paiement pour la Phase 2 - Perception du Risque a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 📖";
-                            } else if (selectedLead.rawLead?.selectedPath === 'theorique') {
-                              textMessage = "✅ Votre paiement pour la Phase 3 - Examen Théorique a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 📚";
-                            } else if (selectedLead.rawLead?.selectedPath === 'pratique') {
-                              textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 🚗";
-                            } else if (selectedLead.rawLead?.selectedPath === 'direct') {
-                              textMessage = "✅ Votre paiement pour la Phase 5 - Permis Définitif a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🏆";
-                            } else {
-                              textMessage = "✅ Votre paiement a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de traitement. 🚀";
+                            // 2. Sync status to user document
+                            if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                              await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                status: targetStatus
+                              });
                             }
-                          } else {
-                            textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller pour plus d'informations.";
+
+                            // 3. Send automated advisor chat message
+                            const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                            const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                            
+                            let textMessage = "";
+                            if (nextVal) {
+                              if (leadSplit.isSplit) {
+                                textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
+                              } else {
+                                textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
+                              }
+                            } else {
+                              textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller.";
+                            }
+
+                            await addDoc(messagesRef, {
+                              sender: 'advisor',
+                              text: textMessage,
+                              timestamp: serverTimestamp()
+                            });
+
+                            await setDoc(chatDocRef, {
+                              lastMessageText: textMessage,
+                              lastMessageTime: serverTimestamp(),
+                              unreadByClient: true
+                            }, { merge: true });
+
+                          } catch (err) {
+                            console.error(err);
                           }
+                          setUpdating(false);
+                        }}
+                        className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
+                          selectedLead.rawLead?.paymentValidated
+                            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
+                        }`}
+                      >
+                        {selectedLead.rawLead?.paymentValidated ? "🔴 Annuler l'acompte" : "✓ Valider l'acompte (200 €)"}
+                      </button>
+                    </div>
 
-                          await addDoc(messagesRef, {
-                            sender: 'advisor',
-                            text: textMessage,
-                            timestamp: serverTimestamp()
-                          });
+                    {/* Solde Validation Card (if split payment) */}
+                    {getAdminSplitPaymentDetails(selectedLead.rawLead).isSplit && selectedLead.rawLead?.paymentValidated && (
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                            <span>💳</span> Validation du solde ({getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment})
+                          </h4>
+                          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                            {selectedLead.rawLead?.soldeValidated 
+                              ? "Le paiement du solde restant a été validé."
+                              : `Validez le paiement du solde de ${getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment} une fois le virement reçu.`}
+                          </p>
+                        </div>
+                        <button
+                          disabled={updating}
+                          onClick={async () => {
+                            if (!selectedLead) return;
+                            setUpdating(true);
+                            try {
+                              const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                              const nextSoldeVal = !selectedLead.rawLead?.soldeValidated;
+                              
+                              // When solde is validated, status becomes completed. If cancelled, goes back to processing.
+                              const targetStatus = nextSoldeVal ? 'completed' : 'processing';
 
-                          await setDoc(chatDocRef, {
-                            lastMessageText: textMessage,
-                            lastMessageTime: serverTimestamp(),
-                            unreadByClient: true
-                          }, { merge: true });
+                              await updateDoc(doc(db, "leads", leadId), { 
+                                soldeValidated: nextSoldeVal,
+                                status: targetStatus
+                              });
 
-                        } catch (err) {
-                          console.error(err);
-                        }
-                        setUpdating(false);
-                      }}
-                      className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
-                        selectedLead.rawLead?.paymentValidated
-                          ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
-                      }`}
-                    >
-                      {selectedLead.rawLead?.paymentValidated ? '🔴 Annuler la validation' : '✓ Valider le paiement'}
-                    </button>
+                              if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                  status: targetStatus
+                                });
+                              }
+
+                              const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                              const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                              
+                              let textMessage = "";
+                              if (nextSoldeVal) {
+                                textMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
+                              } else {
+                                textMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
+                              }
+
+                              await addDoc(messagesRef, {
+                                sender: 'advisor',
+                                text: textMessage,
+                                timestamp: serverTimestamp()
+                              });
+
+                              await setDoc(chatDocRef, {
+                                lastMessageText: textMessage,
+                                lastMessageTime: serverTimestamp(),
+                                unreadByClient: true
+                              }, { merge: true });
+
+                            } catch (err) {
+                              console.error(err);
+                            }
+                            setUpdating(false);
+                          }}
+                          className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
+                            selectedLead.rawLead?.soldeValidated
+                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
+                          }`}
+                        >
+                          {selectedLead.rawLead?.soldeValidated ? "🔴 Annuler le solde" : `✓ Valider le solde (${getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment})`}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
