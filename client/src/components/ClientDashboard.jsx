@@ -56,6 +56,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [selectedPath, setSelectedPath] = useState('perception');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
+  const [attestationUrl, setAttestationUrl] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -252,6 +253,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setBillingActive(leadData?.billingActive || false);
             setPaymentValidated(leadData?.paymentValidated || false);
             setSoldeValidated(leadData?.soldeValidated || false);
+            setAttestationUrl(leadData?.attestationUrl || '');
             setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'perception') : 'perception');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
@@ -276,6 +278,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setBillingActive(false);
             setPaymentValidated(false);
             setSoldeValidated(false);
+            setAttestationUrl('');
             setSelectedPath('perception');
             setPerceptionPaid(false);
             setUploads({
@@ -303,6 +306,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setBillingActive(data.billingActive === true);
             setPaymentValidated(data.paymentValidated === true);
             setSoldeValidated(data.soldeValidated === true);
+            setAttestationUrl(data.attestationUrl || '');
             if (data.isSubmitted) {
               setSelectedPath(data.selectedPath || 'perception');
             }
@@ -1498,15 +1502,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
 
                     <h2 className="text-xl md:text-lg font-display font-extrabold text-white tracking-tight">
-                      {paymentValidated ? "RÈGLEMENT DU SOLDE DE VOTRE DOSSIER ⌛" : "RÈGLEMENT DE VOTRE DOSSIER ⌛"}
+                      {paymentValidated ? (
+                        selectedPath === 'perception' ? "VOTRE ATTESTATION DE PERCEPTION EST DISPONIBLE ! 📄" :
+                        selectedPath === 'theorique' ? "VOTRE DISPENSE D'EXAMEN EST DISPONIBLE ! 📄" :
+                        "VOTRE PERMIS DE CONDUIRE EST DISPONIBLE ! 🏆"
+                      ) : "RÈGLEMENT DE VOTRE DOSSIER ⌛"}
                     </h2>
                     <p className="text-white/60 text-xs md:text-[11px] mt-1 md:mt-1 leading-relaxed max-w-xl">
                       {paymentValidated ? (
-                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier a été validé et votre ${
+                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre ${
                           selectedPath === 'perception' ? "attestation de perception" :
                           selectedPath === 'theorique' ? "dispense d'examen théorique" :
                           "permis de conduire"
-                        } est prêt. Afin de finaliser l'envoi officiel de votre document par nos conseillers, veuillez procéder au règlement du solde restant ci-dessous.`
+                        } est disponible ! Pour finaliser son obtention et pouvoir la télécharger, veuillez régler le solde restant de votre formule ci-dessous.`
                       ) : (
                         `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle ${
                           selectedPath === 'perception' ? "de votre attestation de perception" :
@@ -1742,9 +1750,20 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div className="mt-1.5 pt-1.5 sm:mt-2.5 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[11px]">
                         <span className="text-white/40 text-[9px] sm:text-[10px]">Statut :</span>
                         {applicationStatus === 'completed' ? (
-                          <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-indigo-500/20 text-[8px] sm:text-[10px]">
-                            {selectedPath === 'perception' ? "Attestation délivrée" : "Permis en commune"}
-                          </span>
+                          attestationUrl ? (
+                            <a
+                              href={attestationUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/20 px-2 py-1 rounded border border-indigo-500/40 hover:bg-indigo-600 hover:text-white transition-all text-[8px] sm:text-[10px] flex items-center gap-1"
+                            >
+                              📥 Télécharger
+                            </a>
+                          ) : (
+                            <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-indigo-500/20 text-[8px] sm:text-[10px]">
+                              {selectedPath === 'perception' ? "Attestation délivrée" : "Permis en commune"}
+                            </span>
+                          )
                         ) : paymentValidated ? (
                           <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-emerald-500/20 text-[8px] sm:text-[10px]">
                             {selectedPath === 'perception' ? "Édition en cours" : " SPF homologué"}
@@ -1758,6 +1777,16 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
 
                     <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full justify-center">
+                      {applicationStatus === 'completed' && attestationUrl && (
+                        <a
+                          href={attestationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-1.5"
+                        >
+                          📥 Télécharger mon attestation
+                        </a>
+                      )}
                       <button
                         onClick={() => setActiveTab('overview')}
                         className="px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"

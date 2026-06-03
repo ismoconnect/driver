@@ -9,6 +9,9 @@ const Dashboard = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [selectedLeadUid, setSelectedLeadUid] = useState(() => localStorage.getItem('adminSelectedLeadUid') || null);
   const [updating, setUpdating] = useState(false);
+  const [attestationUrlInput, setAttestationUrlInput] = useState('');
+  const [attestationUploadStatus, setAttestationUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success' | 'error'
+  const [attestationUploadProgress, setAttestationUploadProgress] = useState(0);
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'overview');
 
   // Admin Theme State (light / dark mode)
@@ -35,6 +38,17 @@ const Dashboard = ({ onLogout }) => {
       localStorage.removeItem('adminSelectedLeadUid');
     }
   }, [selectedLeadUid]);
+
+  // Sync attestationUrlInput state when selectedLead changes
+  useEffect(() => {
+    if (selectedLead && selectedLead.rawLead) {
+      setAttestationUrlInput(selectedLead.rawLead.attestationUrl || '');
+      setAttestationUploadStatus(selectedLead.rawLead.attestationUrl ? 'success' : 'idle');
+    } else {
+      setAttestationUrlInput('');
+      setAttestationUploadStatus('idle');
+    }
+  }, [selectedLeadUid, selectedLead?.rawLead?.attestationUrl]);
 
   // Advisor Settings States
   const [advisorSettings, setAdvisorSettings] = useState({
@@ -1400,6 +1414,173 @@ const Dashboard = ({ onLogout }) => {
                     🟣 Terminé
                   </button>
                 </div>
+              </div>
+
+              {/* === LIEN DE TÉLÉCHARGEMENT === */}
+              <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                  📎 Document officiel (Attestation / Permis)
+                </h3>
+                <p className="text-[11px] text-slate-400 mb-5 ml-1">
+                  Uploadez le PDF directement — il sera hébergé sur Cloudinary et disponible instantanément pour le client.
+                </p>
+
+                {/* Cloudinary Upload Zone */}
+                <label
+                  htmlFor="admin-pdf-upload"
+                  className={`relative flex flex-col items-center justify-center gap-3 w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 py-8 px-4
+                    ${attestationUploadStatus === 'uploading'
+                      ? 'border-amber-400/50 bg-amber-500/5 animate-pulse'
+                      : attestationUploadStatus === 'success'
+                      ? 'border-emerald-500/50 bg-emerald-500/5'
+                      : attestationUploadStatus === 'error'
+                      ? 'border-red-500/50 bg-red-500/5'
+                      : 'border-white/10 bg-white/[0.02] hover:border-brand-orange/50 hover:bg-brand-orange/[0.03]'
+                    }`}
+                >
+                  {attestationUploadStatus === 'uploading' ? (
+                    <>
+                      <div className="w-10 h-10 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                      <span className="text-sm font-semibold text-amber-400">Upload en cours...</span>
+                      <span className="text-xs text-slate-500">{attestationUploadProgress}%</span>
+                    </>
+                  ) : attestationUploadStatus === 'success' ? (
+                    <>
+                      <span className="text-3xl">✅</span>
+                      <span className="text-sm font-bold text-emerald-400">PDF uploadé avec succès !</span>
+                      <span className="text-xs text-slate-400">Cliquez pour remplacer</span>
+                    </>
+                  ) : attestationUploadStatus === 'error' ? (
+                    <>
+                      <span className="text-3xl">❌</span>
+                      <span className="text-sm font-bold text-red-400">Échec de l'upload</span>
+                      <span className="text-xs text-slate-400">Cliquez pour réessayer</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-3xl">📄</span>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-white">Glissez votre PDF ici</p>
+                        <p className="text-xs text-slate-500 mt-1">ou cliquez pour choisir un fichier</p>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-slate-600 bg-white/5 px-3 py-1 rounded-full">
+                        PDF accepté · Max 20MB
+                      </span>
+                    </>
+                  )}
+                  <input
+                    id="admin-pdf-upload"
+                    type="file"
+                    accept="application/pdf"
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !selectedLead) return;
+                      if (file.size > 20 * 1024 * 1024) {
+                        alert('Le fichier dépasse 20MB.');
+                        return;
+                      }
+                      setAttestationUploadStatus('uploading');
+                      setAttestationUploadProgress(0);
+                      try {
+                        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', 'monpermis');
+                        formData.append('folder', `monpermis/admin/attestations`);
+                        formData.append('resource_type', 'raw');
+
+                        // Use XMLHttpRequest for progress tracking
+                        const url = await new Promise((resolve, reject) => {
+                          const xhr = new XMLHttpRequest();
+                          xhr.upload.addEventListener('progress', (ev) => {
+                            if (ev.lengthComputable) {
+                              setAttestationUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                            }
+                          });
+                          xhr.addEventListener('load', () => {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.secure_url) resolve(data.secure_url);
+                            else reject(new Error('No secure_url'));
+                          });
+                          xhr.addEventListener('error', () => reject(new Error('Network error')));
+                          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`);
+                          xhr.send(formData);
+                        });
+
+                        // Save URL to Firestore
+                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                        await updateDoc(doc(db, 'leads', leadId), { attestationUrl: url });
+                        setAttestationUrlInput(url);
+                        setAttestationUploadStatus('success');
+                      } catch (err) {
+                        console.error('Upload error:', err);
+                        setAttestationUploadStatus('error');
+                      }
+                    }}
+                  />
+                </label>
+
+                {/* Current URL display */}
+                {attestationUrlInput && (
+                  <div className="mt-4 flex items-center gap-3 bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
+                    <span className="text-emerald-400 text-lg">📎</span>
+                    <a
+                      href={attestationUrlInput}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2 truncate"
+                    >
+                      {attestationUrlInput}
+                    </a>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Supprimer ce lien ?')) return;
+                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                        await updateDoc(doc(db, 'leads', leadId), { attestationUrl: '' });
+                        setAttestationUrlInput('');
+                        setAttestationUploadStatus('idle');
+                      }}
+                      className="text-red-400 hover:text-red-300 text-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                )}
+
+                {/* Manual URL fallback */}
+                <details className="mt-4">
+                  <summary className="text-[11px] text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none">
+                    Ou saisir un lien manuellement
+                  </summary>
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      placeholder="https://exemple.com/attestation.pdf"
+                      value={attestationUrlInput}
+                      onChange={(e) => setAttestationUrlInput(e.target.value)}
+                      className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-orange transition-all"
+                    />
+                    <button
+                      disabled={updating}
+                      onClick={async () => {
+                        if (!selectedLead) return;
+                        setUpdating(true);
+                        try {
+                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                          await updateDoc(doc(db, 'leads', leadId), { attestationUrl: attestationUrlInput });
+                        } catch (err) {
+                          console.error(err);
+                        }
+                        setUpdating(false);
+                      }}
+                      className="px-4 py-2.5 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-xl font-bold text-xs transition-all cursor-pointer"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </details>
               </div>
 
               {/* === ZONE DANGER === */}
