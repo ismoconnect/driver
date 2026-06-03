@@ -937,7 +937,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className={`flex-1 flex flex-col md:flex-row w-full gap-4 md:gap-6 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-3 pt-3 px-3 pb-[54px] sm:p-6 lg:p-8 md:pb-8'}`}>
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-4 md:gap-6 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-0 pb-[60px] sm:p-6 lg:p-8 md:pb-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
