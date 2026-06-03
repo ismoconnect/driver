@@ -1108,7 +1108,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     style={{ width: isSubmitted ? (applicationStatus === 'processing' ? '55%' : applicationStatus === 'completed' ? '80%' : '30%') : '20%' }}
                   />
 
-                  <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-3 pb-3 scrollbar-none snap-x snap-mandatory -mx-4 px-4 lg:mx-0 lg:px-0">
+                  <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-3 pb-3 scrollbar-none snap-x snap-mandatory lg:mx-0 lg:px-0">
                     {[
                       {
                         num: 1,
