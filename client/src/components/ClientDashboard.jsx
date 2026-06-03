@@ -2156,7 +2156,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-white/10 px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-x border-white/10 rounded-t-3xl px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
