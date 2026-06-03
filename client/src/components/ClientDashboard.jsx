@@ -1057,7 +1057,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5 overflow-hidden`}`}>
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5 overflow-y-auto scrollbar-none`}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1486,7 +1486,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 ) : billingActive && (!paymentValidated || (applicationStatus === 'completed' && getSplitPaymentDetails().isSplit && !soldeValidated)) ? (
                   // BILLING STATE WITH RIB
-                  <div className="flex-1 flex flex-col items-center justify-start text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out] overflow-y-auto w-full pr-1 scrollbar-none" style={{ maxHeight: '68vh' }}>
+                  <div className="flex-1 flex flex-col items-center justify-start text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Danger/Alert Badge */}
                     <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold tracking-widest uppercase px-3.5 py-1 md:py-1 rounded-full mb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
