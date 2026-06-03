@@ -180,7 +180,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      setIsInitializing(false);
       
       if (currentUser) {
         // Fetch existing lead data from Firestore
@@ -256,6 +255,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           console.error("Erreur lors du chargement des données:", error);
         } finally {
           setIsLoadingData(false);
+          setIsInitializing(false);
         }
 
         // Real-time listeners: update UI instantly when admin changes status/reset
@@ -286,6 +286,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         // Store unsubscribe functions for cleanup
         window.__unsubLeadListener = unsubLead;
         window.__unsubUserListener = unsubUser;
+      } else {
+        setIsInitializing(false);
       }
     });
 
@@ -842,7 +844,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       )}
 
       {/* --- DASHBOARD HEADER --- */}
-      <header className="bg-slate-900 border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
+      <header className="bg-slate-900 border-b border-white/10 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Mon Permis Logo" className="h-9 sm:h-10 rounded-lg" />
           <span className="ml-3 hidden sm:inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -1008,7 +1010,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? 'rounded-none border-0 p-4 md:rounded-[32px] md:border md:border-white/10 md:p-8' : 'rounded-[32px] border border-white/10 p-6 sm:p-8'}`}>
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? 'rounded-none border-0 p-4 md:rounded-[32px] md:border md:border-white/10 md:p-8' : 'rounded-[32px] border border-white/10 p-4 sm:p-8'}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1469,33 +1471,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 ) : (
                   // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-1 sm:py-8 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Success Badge */}
-                    <div className={`inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6 ${
+                    <div className={`inline-flex items-center gap-2 text-[9px] sm:text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 sm:px-4 sm:py-2 rounded-full mb-1.5 sm:mb-6 ${
                       applicationStatus === 'completed'
                         ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400'
                         : paymentValidated 
                           ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400' 
                           : 'bg-amber-500/10 border border-amber-500/25 text-amber-400'
                     }`}>
-                      <span className={`w-2 h-2 rounded-full animate-ping ${applicationStatus === 'completed' ? 'bg-indigo-400' : paymentValidated ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                      <span className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full animate-ping ${applicationStatus === 'completed' ? 'bg-indigo-400' : paymentValidated ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                       {applicationStatus === 'completed' ? "Dossier Clôturé & Validé" : paymentValidated ? "Paiement Validé — Dossier Homologué" : "Dossier en Cours d'Analyse"}
                     </div>
 
                     {/* Icon with complex glow */}
-                    <div className="relative mb-6">
+                    <div className="relative mb-1.5 sm:mb-6">
                       <div className={`absolute inset-0 rounded-full blur-xl scale-125 ${applicationStatus === 'completed' ? 'bg-indigo-500/20' : paymentValidated ? 'bg-emerald-500/20' : 'bg-amber-500/20'}`} />
-                      <div className={`relative w-20 h-20 rounded-full bg-slate-900 border-2 flex items-center justify-center text-4xl shadow-2xl ${
+                      <div className={`relative w-10 h-10 sm:w-20 sm:h-20 rounded-full bg-slate-900 border-2 flex items-center justify-center text-xl sm:text-4xl shadow-2xl ${
                         applicationStatus === 'completed' ? 'border-indigo-500' : paymentValidated ? 'border-emerald-500' : 'border-amber-500'
                       }`}>
                         {applicationStatus === 'completed' ? '🏆' : paymentValidated ? '💳' : '📩'}
                       </div>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                    <h2 className="text-base sm:text-3xl font-display font-extrabold text-white tracking-tight">
                       {applicationStatus === 'completed' ? "DOSSIER CLÔTURÉ AVEC SUCCÈS ! 🏆" : paymentValidated ? "PAIEMENT CONFIRMÉ ! 🚀" : "DOSSIER SOUMIS AVEC SUCCÈS ! 🚀"}
                     </h2>
-                    <p className="text-white/60 text-sm mt-3 leading-relaxed max-w-md">
+                    <p className="text-white/60 text-[10px] sm:text-sm mt-0.5 sm:mt-3 leading-relaxed max-w-md">
                       {applicationStatus === 'completed'
                         ? (selectedPath === 'perception'
                           ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense de perception du risque a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
@@ -1509,48 +1511,48 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
                     
                     {/* Results Details Card */}
-                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-6 w-full mt-8 text-left relative overflow-hidden group">
+                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-6 w-full mt-2 sm:mt-8 text-left relative overflow-hidden group">
                       <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none ${
                         paymentValidated ? 'bg-emerald-500/5' : 'bg-amber-500/5'
                       }`} />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
+                      <h4 className="text-[9px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 sm:mb-4 flex items-center gap-2">
                         <span>📋</span> Détails du dossier enregistré
                       </h4>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                        <div className="space-y-2.5">
-                          <p className="text-white/50">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
-                          <p className="text-white/50">Registre National : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
-                          <p className="text-white/50">Formule choisie : <span className="text-brand-orange font-semibold">{selectedPath === 'perception' ? "Perception du Risque" : "Permis Définitif"}</span></p>
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:gap-4 text-[9px] sm:text-xs">
+                        <div className="space-y-1 sm:space-y-2.5">
+                          <p className="text-white/50 truncate">Candidat : <span className="text-white font-semibold block sm:inline">{formData.firstName} {formData.lastName}</span></p>
+                          <p className="text-white/50 truncate">N° Registre : <span className="text-white font-mono block sm:inline">{formData.nationalRegister || "Non spécifié"}</span></p>
+                          <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold block sm:inline">{selectedPath === 'perception' ? "Perception" : "Permis Direct"}</span></p>
                         </div>
-                        <div className="space-y-2.5">
-                          <p className="text-white/50">Permis souhaité : <span className="text-brand-orange font-semibold">Catégorie B ({formData.transmission})</span></p>
-                          <p className="text-white/50">Pièces justificatives : <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 téléversées</span></p>
+                        <div className="space-y-1 sm:space-y-2.5">
+                          <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold block sm:inline">Catégorie B ({formData.transmission})</span></p>
+                          <p className="text-white/50 truncate">Pièces : <span className="text-emerald-400 font-semibold block sm:inline">{Object.values(uploads).filter(Boolean).length} / 4 OK</span></p>
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[11px]">
-                        <span className="text-white/40">Statut du dossier :</span>
+                      <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[11px]">
+                        <span className="text-white/40 text-[9px] sm:text-[10px]">Statut :</span>
                         {applicationStatus === 'completed' ? (
-                          <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">
-                            {selectedPath === 'perception' ? "Attestation délivrée" : "Permis disponible en commune"}
+                          <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-indigo-500/20 text-[8px] sm:text-[10px]">
+                            {selectedPath === 'perception' ? "Attestation délivrée" : "Permis en commune"}
                           </span>
                         ) : paymentValidated ? (
-                          <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
-                            {selectedPath === 'perception' ? "Attestation en cours d'édition" : "Paiement validé & Homologation SPF"}
+                          <span className="text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-emerald-500/20 text-[8px] sm:text-[10px]">
+                            {selectedPath === 'perception' ? "Édition en cours" : " SPF homologué"}
                           </span>
                         ) : (
-                          <span className="text-amber-400 font-bold uppercase tracking-wider bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
-                            Analyse et vérification en cours
+                          <span className="text-amber-400 font-bold uppercase tracking-wider bg-amber-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-amber-500/20 text-[8px] sm:text-[10px]">
+                            Analyse en cours
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center">
+                    <div className="mt-2.5 sm:mt-8 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full justify-center">
                       <button
                         onClick={() => setActiveTab('overview')}
-                        className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
+                        className="px-6 py-1.5 sm:px-8 sm:py-3.5 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
                       >
                         Suivre mon dossier en temps réel ➔
                       </button>
@@ -1558,14 +1560,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         <button
                           type="button"
                           onClick={() => setShowUpgradeConfirm(true)}
-                          className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 cursor-pointer text-white flex items-center justify-center gap-1.5"
+                          className="px-4 py-1.5 sm:px-6 sm:py-3.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 cursor-pointer text-white flex items-center justify-center gap-1.5"
                         >
                           ⚡ Passer au Permis Direct
                         </button>
                       )}
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className="px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
+                        className="px-4 py-1.5 sm:px-6 sm:py-3.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
                       >
                         Contacter mon conseiller
                       </button>
@@ -1577,13 +1579,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between">
                   <div>
                     {/* Header */}
-                    <div className="border-b border-white/10 pb-5 mb-6">
+                    <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">
+                          <h2 className="text-base sm:text-2xl font-display font-extrabold text-white">
                             Initier ma Demande Officielle
                           </h2>
-                          <p className="text-white/50 text-xs mt-1">
+                          <p className="text-white/50 text-[10px] sm:text-xs mt-1">
                             {wizardStep === 1 && "Étape 1 sur 4 — Vos informations personnelles d'identité."}
                             {wizardStep === 2 && "Étape 2 sur 4 — Pièces justificatives (carte d'identité, photo, signature)."}
                             {wizardStep === 3 && "Étape 3 sur 4 — Votre parcours et configuration du permis souhaité."}
@@ -1591,13 +1593,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           </p>
                         </div>
                         {/* Step Bubbles */}
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {[1, 2, 3, 4].map((s) => (
                             <div 
                               key={s} 
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 ${
                                 wizardStep === s 
-                                  ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/30 scale-110' 
+                                  ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/30 scale-105' 
                                   : wizardStep > s 
                                     ? 'bg-emerald-500 text-white' 
                                     : 'bg-white/5 border border-white/10 text-white/30'
@@ -1610,7 +1612,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
 
                       {/* Progress bar */}
-                      <div className="mt-4 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className="mt-3 sm:mt-4 h-1 bg-white/5 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-brand-orange to-amber-400 rounded-full transition-all duration-500"
                           style={{ width: `${((wizardStep - 1) / 3) * 100}%` }}
@@ -1620,9 +1622,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 1: IDENTITY */}
                     {wizardStep === 1 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Prénom</label>
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Prénom</label>
                           <input 
                             required
                             type="text" 
@@ -1630,12 +1632,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             value={formData.firstName}
                             onChange={handleInputChange}
                             placeholder="Ex. Sarah" 
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors"
                           />
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Nom de famille</label>
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nom de famille</label>
                           <input 
                             required
                             type="text" 
@@ -1643,24 +1645,24 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             value={formData.lastName}
                             onChange={handleInputChange}
                             placeholder="Ex. Peeters" 
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors"
                           />
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Date de naissance</label>
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date de naissance</label>
                           <input 
                             required
                             type="date" 
                             name="birthDate"
                             value={formData.birthDate}
                             onChange={handleInputChange}
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white/80"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white/80"
                           />
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Téléphone</label>
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Téléphone</label>
                           <input 
                             required
                             type="tel" 
@@ -1668,12 +1670,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             value={formData.phone}
                             onChange={handleInputChange}
                             placeholder="Ex. +32 495 12 34 56" 
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors"
                           />
                         </div>
 
                         <div className="col-span-2">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Adresse de résidence en Belgique</label>
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Adresse de résidence en Belgique</label>
                           <input 
                             required
                             type="text" 
@@ -1681,12 +1683,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             value={formData.address}
                             onChange={handleInputChange}
                             placeholder="Rue de la Loi 16, 1000 Bruxelles" 
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors"
                           />
                         </div>
 
                         <div className="col-span-2">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Numéro de Registre National Belge (Simulé)
                           </label>
                           <input 
@@ -1696,7 +1698,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             value={formData.nationalRegister}
                             onChange={handleInputChange}
                             placeholder="Ex. 95.05.23-123.45" 
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors"
                           />
                         </div>
                       </div>
@@ -1704,7 +1706,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 2: DOCUMENT UPLOADS */}
                     {wizardStep === 2 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Composant réutilisable pour chaque zone d'upload */}
                         {[
@@ -1713,17 +1715,17 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Requis Officiel', accept: 'image/*', emoji: '📸' },
                           { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
                         ].map(({ field, label, badge, accept, emoji }) => (
-                          <div key={field} className="bg-slate-950/40 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                          <div key={field} className="bg-slate-950/40 border border-white/10 rounded-2xl p-2 sm:p-4 flex flex-col justify-between">
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
-                              <h4 className="text-white font-semibold text-xs mt-1">{label}</h4>
+                              <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
+                              <h4 className="text-white font-semibold text-[10px] sm:text-xs mt-0.5 leading-tight">{label}</h4>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-2 sm:mt-4">
                               {uploading[field] ? (
-                                <div className="border-2 border-dashed border-brand-orange/40 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2">
-                                  <div className="w-6 h-6 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
-                                  <span className="text-[10px] text-white/50">Téléversement vers Cloudinary...</span>
+                                <div className="border border-dashed border-brand-orange/40 rounded-xl p-3 sm:p-6 flex flex-col items-center justify-center text-center gap-1 sm:gap-2">
+                                  <div className="w-4 h-4 sm:w-6 sm:h-6 border border-brand-orange border-t-transparent rounded-full animate-spin" />
+                                  <span className="text-[8px] sm:text-[10px] text-white/50">Chargement...</span>
                                 </div>
                               ) : uploads[field] ? (
                                 // Miniature si image uploadée
@@ -1732,49 +1734,49 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                     <img
                                       src={uploads[field]}
                                       alt={label}
-                                      className="w-full h-28 object-cover"
+                                      className="w-full h-14 sm:h-28 object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-28 flex items-center justify-center bg-emerald-500/10">
-                                      <span className="text-3xl">📄</span>
+                                    <div className="w-full h-14 sm:h-28 flex items-center justify-center bg-emerald-500/10">
+                                      <span className="text-lg sm:text-3xl">📄</span>
                                     </div>
                                   )}
-                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-2">
                                     <a href={uploads[field]} target="_blank" rel="noopener noreferrer"
-                                      className="text-[10px] font-bold text-white bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30">
+                                      className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:bg-white/30">
                                       Voir ↗
                                     </a>
-                                    <label className="text-[10px] font-bold text-white bg-brand-orange/80 px-3 py-1.5 rounded-lg hover:bg-brand-orange cursor-pointer">
+                                    <label className="text-[8px] sm:text-[10px] font-bold text-white bg-brand-orange/80 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:bg-brand-orange cursor-pointer">
                                       Changer
                                       <input type="file" accept={accept} className="hidden"
                                         onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                                     </label>
                                   </div>
-                                  <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-2 py-1 flex items-center gap-1">
-                                    <span className="text-[9px] text-white font-bold">✓ Téléversé</span>
+                                  <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-1.5 py-0.5 sm:px-2 sm:py-1 flex items-center gap-1">
+                                    <span className="text-[8px] sm:text-[9px] text-white font-bold font-sans">✓ Prêt</span>
                                   </div>
                                 </div>
                               ) : (
                                 // Zone d'upload vide
-                                <div className="border-2 border-dashed border-white/15 hover:border-brand-orange rounded-xl p-4 flex flex-col items-center justify-center text-center transition-colors gap-2">
-                                  <span className="text-2xl text-white/30">{emoji}</span>
-                                  <span className="text-[10px] text-white/55 font-medium">
-                                    {isMobile() ? 'Appuyer pour choisir' : 'Glisser ou cliquer'}
+                                <div className="border border-dashed border-white/15 hover:border-brand-orange rounded-xl p-2.5 sm:p-4 flex flex-col items-center justify-center text-center transition-colors gap-1.5 sm:gap-2">
+                                  <span className="hidden sm:block text-2xl text-white/30">{emoji}</span>
+                                  <span className="hidden sm:block text-[10px] text-white/55 font-medium">
+                                    {isMobile() ? 'Choisir' : 'Glisser ou cliquer'}
                                   </span>
 
                                   {/* Boutons selon device */}
                                   {isMobile() ? (
-                                    <div className="flex flex-col gap-2 w-full mt-1">
+                                    <div className="flex flex-col gap-1.5 w-full">
                                       {/* Bouton Fichier */}
-                                      <label className="relative cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-lg transition-colors">
-                                        📁 Choisir un fichier
+                                      <label className="relative cursor-pointer w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold rounded-lg transition-colors">
+                                        📁 Fichier
                                         <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer"
                                           onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                                       </label>
                                       {/* Bouton Caméra (mobile uniquement) */}
                                       {accept.includes('image') && (
-                                        <label className="relative cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[10px] font-bold rounded-lg transition-colors border border-brand-orange/30">
-                                          📷 Prendre une photo
+                                        <label className="relative cursor-pointer w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[9px] font-bold rounded-lg transition-colors border border-brand-orange/30">
+                                          📷 Photo
                                           <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer"
                                             onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                                         </label>
@@ -1802,12 +1804,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 3: EXPERIENCE & CONFIG */}
                     {wizardStep === 3 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-6 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Recap circuit */}
-                        <div className="col-span-2 bg-slate-950/60 border border-white/10 rounded-2xl p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-brand-orange mb-3">🛣️ Votre circuit d'obtention personnalisé</p>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="col-span-2 bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-brand-orange mb-1.5">🛣️ Circuit d'obtention</p>
+                          <div className="flex flex-wrap gap-1">
                             {[
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
                               { icon: '📖', label: 'Examen Théorique', done: true },
@@ -1815,13 +1817,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                               { icon: '🚗', label: 'Examen Pratique', locked: selectedPath === 'perception' },
                               { icon: '🏆', label: 'Permis Définitif', locked: selectedPath === 'perception' },
                             ].map((item, i) => (
-                              <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold border ${
+                              <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-semibold border ${
                                 item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                                   : item.active ? 'bg-brand-orange/15 border-brand-orange/40 text-brand-orange animate-pulse' 
                                   : 'bg-white/5 border-white/10 text-white/30'
                               }`}>
                                 <span>{item.icon}</span>
-                                <span>{item.label}</span>
+                                <span className="hidden xs:inline">{item.label}</span>
                                 {item.done && <span>✓</span>}
                                 {item.locked && <span>🔒</span>}
                               </div>
@@ -1831,31 +1833,31 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                         {/* CHOIX DU PARCOURS */}
                         <div className="col-span-2">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Formule d'obtention souhaitée
                           </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
                             {/* Option 1: Perception du Risque */}
                             <button
                               type="button"
                               onClick={() => setSelectedPath('perception')}
-                              className={`p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2.5 sm:p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'perception' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                                  <span>👁️</span> Perception du Risque
+                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                  <span>👁️</span> <span className="truncate">Perception</span>
                                 </h4>
-                                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
-                                  Validation officielle de la dispense de l'examen de perception du risque (Phase 3).
+                                <p className="text-[9px] sm:text-[11px] text-white/50 mt-0.5 leading-normal">
+                                  Dispense de l'examen de perception du risque (Phase 3).
                                 </p>
                               </div>
-                              <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[9px] uppercase font-bold text-brand-orange">Formule Standard</span>
-                                <span className="text-sm font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
+                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Standard</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
                               </div>
                             </button>
 
@@ -1863,72 +1865,72 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             <button
                               type="button"
                               onClick={() => setSelectedPath('direct')}
-                              className={`p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              className={`p-2.5 sm:p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'direct' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                                  <span>🚗</span> Permis Définitif
+                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                  <span>🚗</span> <span className="truncate">Permis Direct</span>
                                 </h4>
-                                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
-                                  Obtention directe du permis de conduire définitif (Phases 3 à 5) sans aucun examen pratique.
+                                <p className="text-[9px] sm:text-[11px] text-white/50 mt-0.5 leading-normal">
+                                  Obtention directe du permis de conduire définitif (Phases 3 à 5).
                                 </p>
                               </div>
-                              <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[9px] uppercase font-bold text-brand-orange">Formule Directe</span>
-                                <span className="text-sm font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
+                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Directe</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
                               </div>
                             </button>
                           </div>
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Nombre d'échecs précédents à l'examen
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                            Échecs à l'examen
                           </label>
                           <select 
                             name="failedAttempts"
                             value={formData.failedAttempts}
                             onChange={handleInputChange}
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white/80"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none transition-colors text-white/80"
                           >
-                            <option value="0">Aucun (1ère demande)</option>
+                            <option value="0">Aucun</option>
                             <option value="1">1 échec</option>
                             <option value="2">2 échecs</option>
                             <option value="3">3 échecs</option>
-                            <option value="4+">4 échecs ou plus</option>
+                            <option value="4+">4+</option>
                           </select>
                         </div>
 
                         <div className="col-span-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                            Type de transmission souhaité
+                          <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                            Type de transmission
                           </label>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-1.5">
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
-                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                              className={`py-1 sm:py-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Manuel' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
-                              🕹️ Manuelle
+                              Manuel
                             </button>
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
-                              className={`py-3 rounded-xl border text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                              className={`py-1.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
                                 formData.transmission === 'Automatique' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
-                              ⚡ Automatique
+                              Auto
                             </button>
                           </div>
                         </div>
@@ -1937,61 +1939,61 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 4: MANDAT DE LÉGALITÉ & CONFIRMATION */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-1 gap-1.5 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Récapitulatif du dossier */}
-                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-5">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-4 flex items-center gap-2">
+                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-5">
+                          <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-0.5 sm:mb-4 flex items-center gap-1">
                             <span>📋</span> Récapitulatif de votre dossier
                           </h4>
-                          <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="grid grid-cols-2 gap-1 sm:gap-3 text-[10px] sm:text-xs">
                             <div>
-                              <span className="text-white/40 block">Candidat</span>
-                              <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Candidat</span>
+                              <span className="text-white font-semibold truncate block">{formData.firstName} {formData.lastName}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block">Date de naissance</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Date de naissance</span>
                               <span className="text-white font-semibold">{formData.birthDate || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block">Téléphone</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Téléphone</span>
                               <span className="text-white font-semibold">{formData.phone || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block">Permis souhaité</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Permis souhaité</span>
                               <span className="text-brand-orange font-semibold">Cat. B — {formData.transmission}</span>
                             </div>
                             <div className="col-span-2">
-                              <span className="text-white/40 block">Adresse</span>
-                              <span className="text-white font-semibold">{formData.address || '—'}</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Adresse</span>
+                              <span className="text-white font-semibold truncate block">{formData.address || '—'}</span>
                             </div>
                             <div className="col-span-2">
-                              <span className="text-white/40 block">Pièces justificatives</span>
+                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Pièces justificatives</span>
                               <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 fichiers téléversés</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Mandat légal */}
-                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-5">
-                          <h4 className="font-bold text-sm text-brand-orange flex items-center gap-2 mb-3">
-                            🛡️ Mandat de Constitution Officielle — SPF Mobilité Belgique
+                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2 sm:p-5">
+                          <h4 className="font-bold text-[10px] sm:text-sm text-brand-orange flex items-center gap-1.5 mb-0.5 sm:mb-3">
+                            🛡️ Mandat de Constitution Officielle — SPF Belgique
                           </h4>
-                          <p className="text-[11px] text-white/70 leading-relaxed">
-                            En soumettant ce dossier, vous conférez officiellement mandat de représentation administrative à nos conseillers agréés pour le traitement, le suivi légal et l'enregistrement complet de votre équivalence de permis de conduire auprès du SPF Mobilité et de votre commune de résidence en Belgique. Cette procédure est 100% encadrée par les directives CE 2006/126 et les accords de réciprocité en vigueur au sein de l'Union Européenne. <span className="text-brand-orange font-semibold">Aucun examen théorique ou pratique ne vous sera demandé.</span>
+                          <p className="text-[9.5px] sm:text-[11px] text-white/70 leading-normal">
+                            En soumettant ce dossier, vous conférez mandat de représentation pour l'enregistrement officiel de votre équivalence de permis auprès du SPF Mobilité Belgique. <span className="text-brand-orange font-semibold">Aucun examen requis.</span>
                           </p>
                         </div>
 
                         {/* Checkbox mandat final */}
-                        <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-4 rounded-2xl cursor-pointer transition-all duration-300">
+                        <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2 sm:p-4 rounded-2xl cursor-pointer transition-all duration-300">
                           <input 
                             type="checkbox"
                             checked={mandatAccepted}
                             onChange={(e) => setMandatAccepted(e.target.checked)}
-                            className="mt-1 w-4 h-4 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                            className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
                           />
-                          <span className="text-[11px] text-white/80 leading-normal select-none">
-                            Je certifie sur l'honneur l'exactitude et la véracité de toutes les informations renseignées dans ce dossier, et je donne mandat exprès à les conseillers agréés de <strong>Mon Permis</strong> pour représenter mes intérêts administratifs dans l'obtention légale de mon permis de conduire. <span className="text-brand-orange font-bold">(Requis pour soumettre)</span>
+                          <span className="text-[9.5px] sm:text-[11px] text-white/80 leading-tight select-none">
+                            Je certifie l'exactitude de ces informations et donne mandat de représentation à <strong>Mon Permis</strong>. <span className="text-brand-orange font-bold">(Requis)</span>
                           </span>
                         </label>
 
@@ -2000,12 +2002,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
 
                   {/* Actions buttons */}
-                  <div className="mt-8 pt-4 border-t border-white/10 flex justify-between">
+                  <div className="mt-2.5 pt-1.5 border-t border-white/10 flex justify-between">
                     {wizardStep > 1 ? (
                       <button
                         type="button"
                         onClick={() => setWizardStep(s => s - 1)}
-                        className="px-6 py-2.5 rounded-full border border-white/20 hover:border-white/50 text-xs font-bold transition-colors"
+                        className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full border border-white/20 hover:border-white/50 text-[11px] sm:text-xs font-bold transition-colors"
                       >
                         Retour
                       </button>
@@ -2043,7 +2045,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           }
                           setWizardStep(s => s + 1);
                         }}
-                        className="px-6 py-2.5 rounded-full text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20 bg-brand-orange hover:bg-brand-orange-dark text-white cursor-pointer"
+                        className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 shadow-md shadow-brand-orange/20 bg-brand-orange hover:bg-brand-orange-dark text-white cursor-pointer"
                       >
                         Continuer ➔
                       </button>
@@ -2051,13 +2053,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <button
                         type="submit"
                         disabled={!mandatAccepted}
-                        className={`px-8 py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 shadow-md flex items-center gap-2 ${
+                        className={`px-4 py-1.5 sm:px-8 sm:py-3 rounded-full text-[11px] sm:text-sm font-bold transition-all duration-300 shadow-md flex items-center gap-2 ${
                           mandatAccepted 
                             ? 'bg-brand-orange hover:bg-brand-orange-dark shadow-brand-orange/30 text-white cursor-pointer hover:scale-[1.02]' 
                             : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
                         }`}
                       >
-                        🚀 Soumettre ma Demande Officielle
+                        🚀 Soumettre ma Demande
                       </button>
                     )}
                   </div>
