@@ -1486,7 +1486,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 ) : billingActive && (!paymentValidated || (applicationStatus === 'completed' && getSplitPaymentDetails().isSplit && !soldeValidated)) ? (
                   // BILLING STATE WITH RIB
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-start text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out] overflow-y-auto w-full pr-1 scrollbar-none" style={{ maxHeight: '68vh' }}>
                     {/* Premium Danger/Alert Badge */}
                     <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold tracking-widest uppercase px-3.5 py-1 md:py-1 rounded-full mb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -1526,9 +1526,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
 
                     {/* Grid wrapper for Invoice & RIB */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-3 text-left items-stretch">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4 w-full mt-3 text-left items-stretch">
                       {/* Facture Détaillée */}
-                      <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-4 md:p-3.5 flex flex-col justify-between relative overflow-hidden group`}>
+                      <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-3 md:p-3.5 flex flex-col justify-between relative overflow-hidden group`}>
                         <div>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 md:mb-1.5 flex items-center gap-2">
                             <span>📄</span> Frais de dossier réglementaires ({
@@ -1620,7 +1620,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
 
                       {/* Informations de paiement (RIB) */}
-                      <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-4 md:p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+                      <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-3 md:p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange/5 rounded-full blur-xl" />
                         <div>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2 md:mb-1.5 flex items-center gap-2">
