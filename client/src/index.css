@@ -134,3 +134,28 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
+
+/* Hide scrollbar but keep scrolling functional */
+.scrollbar-hidden {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE / Edge */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;               /* Chrome / Safari / Opera */
+}
+
+/* Custom scrollbar (used in admin + chat) — thin & subtle */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,152,0,0.3) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255,152,0,0.3);
+  border-radius: 4px;
+}

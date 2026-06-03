@@ -878,7 +878,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // RENDER: SECURED CLIENT DASHBOARD (IF LOGGED IN)
   // ----------------------------------------------------
   return (
-    <div className={`min-h-screen md:h-screen md:overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
+    <div className={`h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
       {/* Loading overlay for database synchronization */}
       {isLoadingData && (
         <div className="absolute inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center">
@@ -1063,7 +1063,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto min-h-0 pr-1">
+            <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto scrollbar-hidden min-h-0">
               
               {/* Header card info */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-1.5 sm:pb-3">
@@ -1814,7 +1814,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               ) : (
                 // ACTIVE WIZARD STATE
                 <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between overflow-hidden min-h-0">
-                  <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="flex-1 overflow-y-auto scrollbar-hidden">
                     {/* Header */}
                     <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
                       <div className="flex items-start justify-between gap-4">
@@ -2070,10 +2070,63 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                         {/* CHOIX DU PARCOURS */}
                         <div className="col-span-2">
+
+                          {/* Échecs + Transmission — EN HAUT sur une ligne */}
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <div>
+                              <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                Échecs à l'examen
+                              </label>
+                              <select
+                                name="failedAttempts"
+                                value={formData.failedAttempts}
+                                onChange={handleInputChange}
+                                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white/80"
+                              >
+                                <option value="0">Aucun</option>
+                                <option value="1">1 échec</option>
+                                <option value="2">2 échecs</option>
+                                <option value="3">3 échecs</option>
+                                <option value="4+">4+</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                Type de transmission
+                              </label>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
+                                  className={`py-1.5 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
+                                    formData.transmission === 'Manuel'
+                                      ? 'border-brand-orange bg-brand-orange/10 text-white'
+                                      : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                                  }`}
+                                >
+                                  Manuel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
+                                  className={`py-1.5 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
+                                    formData.transmission === 'Automatique'
+                                      ? 'border-brand-orange bg-brand-orange/10 text-white'
+                                      : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                                  }`}
+                                >
+                                  Auto
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Formules — SOUS les sélecteurs */}
                           <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Formule d'obtention souhaitée
                           </label>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                          <div className="grid grid-cols-2 gap-1.5">
                             {/* Option 1: Perception du Risque */}
                             <button
                               type="button"
@@ -2085,28 +2138,24 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                       selectedPath: 'perception',
                                       amount: advisor.perceptionAmount || "350,00 €"
                                     });
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
+                                  } catch (e) { console.error(e); }
                                 }
                               }}
-                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
-                                selectedPath === 'perception' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'perception'
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
                                   <span>👁️</span> <span className="truncate">Perception</span>
                                 </h4>
-                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
-                                  Inclus : Phase 2 (Perception du Risque).
-                                </p>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 2 — Perception du Risque.</p>
                               </div>
-                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 2</span>
-                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
+                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 2</span>
+                                <span className="text-[10px] font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                               </div>
                             </button>
 
@@ -2121,28 +2170,24 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                       selectedPath: 'theorique',
                                       amount: advisor.theoriqueAmount || "550,00 €"
                                     });
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
+                                  } catch (e) { console.error(e); }
                                 }
                               }}
-                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
-                                selectedPath === 'theorique' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'theorique'
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
                                   <span>📖</span> <span className="truncate">Théorique</span>
                                 </h4>
-                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
-                                  Inclus : Phases 2 & 3 (Perception + Théorique).
-                                </p>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2 &amp; 3 — Perception + Théorique.</p>
                               </div>
-                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 3</span>
-                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 3</span>
+                                <span className="text-[10px] font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
                               </div>
                             </button>
 
@@ -2157,28 +2202,24 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                       selectedPath: 'pratique',
                                       amount: advisor.pratiqueAmount || "2100,00 €"
                                     });
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
+                                  } catch (e) { console.error(e); }
                                 }
                               }}
-                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
-                                selectedPath === 'pratique' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'pratique'
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
                                   <span>🚗</span> <span className="truncate">Pratique</span>
                                 </h4>
-                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
-                                  Inclus : Phases 2, 3 & 4 (Perception + Théorique + Pratique). 30h à 70 €/h.
-                                </p>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2, 3 &amp; 4 — + conduite 30h.</p>
                               </div>
-                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 4</span>
-                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
+                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 4</span>
+                                <span className="text-[10px] font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
                               </div>
                             </button>
 
@@ -2193,77 +2234,25 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                       selectedPath: 'direct',
                                       amount: advisor.directLicenseAmount || "1200,00 €"
                                     });
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
+                                  } catch (e) { console.error(e); }
                                 }
                               }}
-                              className={`p-2 sm:p-3 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
-                                selectedPath === 'direct' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'direct'
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                               }`}
                             >
                               <div>
-                                <h4 className="text-[11px] sm:text-xs font-bold text-white flex items-center gap-1">
+                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
                                   <span>🏆</span> <span className="truncate">Permis Direct</span>
                                 </h4>
-                                <p className="text-[8px] sm:text-[9.5px] text-white/50 leading-tight">
-                                  Inclus : Phases 2, 3, 4 & 5 (Homologation).
-                                </p>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2–5 — Homologation.</p>
                               </div>
-                              <div className="mt-1 pt-1 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[8px] uppercase font-bold text-brand-orange">Phase 5</span>
-                                <span className="text-[11px] sm:text-xs font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
+                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 5</span>
+                                <span className="text-[10px] font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
                               </div>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="col-span-1">
-                          <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                            Échecs à l'examen
-                          </label>
-                          <select 
-                            name="failedAttempts"
-                            value={formData.failedAttempts}
-                            onChange={handleInputChange}
-                            className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs focus:outline-none transition-colors text-white/80"
-                          >
-                            <option value="0">Aucun</option>
-                            <option value="1">1 échec</option>
-                            <option value="2">2 échecs</option>
-                            <option value="3">3 échecs</option>
-                            <option value="4+">4+</option>
-                          </select>
-                        </div>
-
-                        <div className="col-span-1">
-                          <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                            Type de transmission
-                          </label>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
-                              className={`py-1.5 sm:py-2 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
-                                formData.transmission === 'Manuel' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white' 
-                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
-                              }`}
-                            >
-                              Manuel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
-                              className={`py-1.5 sm:py-2 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
-                                formData.transmission === 'Automatique' 
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white' 
-                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
-                              }`}
-                            >
-                              Auto
                             </button>
                           </div>
                         </div>
@@ -2272,63 +2261,68 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 4: MANDAT DE LÉGALITÉ & CONFIRMATION */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-1.5 sm:gap-3.5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-2 animate-[bubbleIn_0.4s_ease-out]">
 
-                        {/* Récapitulatif du dossier */}
-                        <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4`}>
-                          <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-0.5 sm:mb-2.5 flex items-center gap-1">
-                            <span>📋</span> Récapitulatif de votre dossier
+                        {/* COLONNE GAUCHE — Récapitulatif du dossier */}
+                        <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2.5`}>
+                          <h4 className="text-[9px] font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-1">
+                            <span>📋</span> Récapitulatif
                           </h4>
-                          <div className="grid grid-cols-2 gap-1 sm:gap-2 text-[10px] sm:text-xs">
+                          <div className="space-y-1.5 text-[9px]">
                             <div>
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Candidat</span>
+                              <span className="text-white/40 block text-[8px]">Candidat</span>
                               <span className="text-white font-semibold truncate block">{formData.firstName} {formData.lastName}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Date de naissance</span>
+                              <span className="text-white/40 block text-[8px]">Date de naissance</span>
                               <span className="text-white font-semibold">{formData.birthDate || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Téléphone</span>
+                              <span className="text-white/40 block text-[8px]">Téléphone</span>
                               <span className="text-white font-semibold">{formData.phone || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Permis souhaité</span>
+                              <span className="text-white/40 block text-[8px]">Permis souhaité</span>
                               <span className="text-brand-orange font-semibold">Cat. B — {formData.transmission}</span>
                             </div>
-                            <div className="col-span-2">
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Adresse</span>
+                            <div>
+                              <span className="text-white/40 block text-[8px]">Adresse</span>
                               <span className="text-white font-semibold truncate block">{formData.address || '—'}</span>
                             </div>
-                            <div className="col-span-2">
-                              <span className="text-white/40 block text-[8px] sm:text-[10px]">Pièces justificatives</span>
-                              <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 fichiers téléversés</span>
+                            <div>
+                              <span className="text-white/40 block text-[8px]">Pièces justificatives</span>
+                              <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 ✓</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Mandat légal */}
-                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2 sm:p-4">
-                          <h4 className="font-bold text-[10px] sm:text-sm text-brand-orange flex items-center gap-1.5 mb-0.5 sm:mb-2">
-                            🛡️ Mandat de Constitution Officielle — SPF Belgique
-                          </h4>
-                          <p className="text-[9.5px] sm:text-[11px] text-white/70 leading-normal">
-                            En soumettant ce dossier, vous conférez mandat de représentation pour l'enregistrement officiel de votre équivalence de permis auprès du SPF Mobilité Belgique. <span className="text-brand-orange font-semibold">Aucun examen requis.</span>
-                          </p>
-                        </div>
+                        {/* COLONNE DROITE — Mandat + Checkbox */}
+                        <div className="flex flex-col gap-2">
 
-                        {/* Checkbox mandat final */}
-                        <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300">
-                          <input 
-                            type="checkbox"
-                            checked={mandatAccepted}
-                            onChange={(e) => setMandatAccepted(e.target.checked)}
-                            className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
-                          />
-                          <span className="text-[9.5px] sm:text-[11px] text-white/80 leading-tight select-none">
-                            Je certifie l'exactitude de ces informations et donne mandat de représentation à <strong>Mon Permis</strong>. <span className="text-brand-orange font-bold">(Requis)</span>
-                          </span>
-                        </label>
+                          {/* Mandat légal */}
+                          <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2.5 flex-1">
+                            <h4 className="font-bold text-[9px] text-brand-orange flex items-center gap-1 mb-1.5 leading-tight">
+                              🛡️ Mandat SPF Belgique
+                            </h4>
+                            <p className="text-[8.5px] text-white/70 leading-snug">
+                              En soumettant ce dossier, vous conférez mandat de représentation pour l'enregistrement officiel de votre équivalence de permis auprès du SPF Mobilité. <span className="text-brand-orange font-semibold">Aucun examen requis.</span>
+                            </p>
+                          </div>
+
+                          {/* Checkbox mandat final */}
+                          <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2.5 rounded-2xl cursor-pointer transition-all duration-300">
+                            <input
+                              type="checkbox"
+                              checked={mandatAccepted}
+                              onChange={(e) => setMandatAccepted(e.target.checked)}
+                              className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                            />
+                            <span className="text-[8.5px] text-white/80 leading-snug select-none min-w-0">
+                              Je certifie l'exactitude de ces informations et donne mandat à <strong>Mon Permis</strong>. <span className="text-brand-orange font-bold">(Requis)</span>
+                            </span>
+                          </label>
+
+                        </div>
 
                       </div>
                     )}
