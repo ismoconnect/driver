@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -15,6 +15,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Authentication states
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState(initialMode); // 'login' or 'signup'
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
     setAuthMode(initialMode);
@@ -167,6 +168,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
     return () => unsubscribe();
   }, [user, advisor.name]);
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    if (activeTab === 'chat' && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeTab]);
 
   // Listen to Auth state changes
   useEffect(() => {
@@ -836,20 +844,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       {/* --- DASHBOARD HEADER --- */}
       <header className="bg-slate-900 border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md shadow-brand-orange/20">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-              <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
-            </svg>
-          </div>
-          <div>
-            <span className="text-lg font-display font-bold tracking-wider">
-              MON <span className="text-brand-orange">PERMIS</span>
-            </span>
-            <span className="ml-3 hidden sm:inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-              🔒 Espace Sécurisé SSL
-            </span>
-          </div>
+          <img src="/logo.png" alt="Mon Permis Logo" className="h-9 sm:h-10 rounded-lg" />
+          <span className="ml-3 hidden sm:inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+            🔒 Espace Sécurisé SSL
+          </span>
         </div>
 
         <div className="flex items-center gap-4">
@@ -893,7 +891,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className="flex-1 flex flex-col md:flex-row w-full p-4 sm:p-6 lg:p-8 gap-6 pb-24 md:pb-8">
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -1010,7 +1008,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className="flex-1 min-w-0 bg-slate-900 rounded-[32px] border border-white/10 p-6 sm:p-8 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col">
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? 'rounded-none border-0 p-4 md:rounded-[32px] md:border md:border-white/10 md:p-8' : 'rounded-[32px] border border-white/10 p-6 sm:p-8'}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -2070,10 +2068,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
           {/* TAB 3: SUPPORT CHAT */}
           {activeTab === 'chat' && (
-            <div className="flex-1 flex flex-col relative z-10 h-full animate-[bubbleIn_0.5s_ease-out]">
+            <div className="flex-1 flex flex-col relative z-10 h-[calc(100vh-144px)] md:h-auto animate-[bubbleIn_0.5s_ease-out]">
               
               {/* Header Info */}
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+              <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[69px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold">
                     {advisor.avatarEmoji || '👨‍💼'}
@@ -2098,7 +2096,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               </div>
 
               {/* Message log */}
-              <div className="flex-1 overflow-y-auto space-y-4 px-2 py-2 max-h-[300px] sm:max-h-[340px] border border-white/5 rounded-2xl bg-slate-950/30 mb-4 p-4 min-h-[220px]">
+              <div className="flex-1 overflow-y-auto space-y-4 px-2 py-2 border border-white/5 rounded-2xl bg-slate-950/30 mb-4 p-4 min-h-0 pt-20 md:pt-4 pb-20 md:pb-4">
                 {messages.map((m) => {
                   const isUser = m.sender === 'student';
                   return (
@@ -2126,10 +2124,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
                   </div>
                 )}
+                <div ref={chatEndRef} />
               </div>
 
               {/* Input field Form */}
-              <form onSubmit={handleSendMessage} className="flex gap-2">
+              <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10">
                 <input 
                   type="text" 
                   value={chatInput}
