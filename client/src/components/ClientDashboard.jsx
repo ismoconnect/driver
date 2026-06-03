@@ -834,7 +834,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // RENDER: SECURED CLIENT DASHBOARD (IF LOGGED IN)
   // ----------------------------------------------------
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
+    <div className={`min-h-screen md:h-screen md:overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
       {/* Loading overlay for database synchronization */}
       {isLoadingData && (
         <div className="absolute inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center">
@@ -893,7 +893,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -1010,16 +1010,16 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-8` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-8`}`}>
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col min-h-0 h-full md:h-full ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-6` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-5`}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className="flex-1 flex flex-col gap-4 sm:gap-8 relative z-10 animate-[bubbleIn_0.5s_ease-out]">
+            <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto min-h-0 pr-1">
               
               {/* Header card info */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3 sm:pb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-1.5 sm:pb-3">
                 <div>
                   <h2 className="text-xl sm:text-3xl font-display font-extrabold text-white">
                     Bonjour, {formData.firstName || 'Candidat'} 👋
@@ -1039,7 +1039,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               </div>
 
               {/* TIMELINE DU CIRCUIT */}
-              <div className="flex flex-col gap-3 sm:gap-5">
+              <div className="flex flex-col gap-1.5 sm:gap-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-brand-orange">
                     🛣️ Votre Circuit d'Obtention
@@ -1118,7 +1118,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       return (
                         <div
                           key={phase.num}
-                          className={`group relative p-3 sm:p-4 rounded-2xl flex flex-col gap-1 sm:gap-2 transition-all duration-500 border cursor-default flex-shrink-0 w-[240px] sm:w-[260px] lg:w-auto snap-start ${
+                          className={`group relative p-2.5 sm:p-3.5 rounded-2xl flex flex-col gap-1 sm:gap-1.5 transition-all duration-500 border cursor-default flex-shrink-0 w-[240px] sm:w-[260px] lg:w-auto snap-start ${
                             isDone
                               ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_4px_20px_rgba(52,211,153,0.08)]'
                             : isActive
@@ -1181,31 +1181,31 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               </div>
 
               {/* ACTION CALL / ADVISOR ROW */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-1 sm:mt-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mt-1 sm:mt-1.5">
                 
                 {/* Advisor Card */}
-                <div className={`lg:col-span-1 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-4 sm:p-6 rounded-2xl flex flex-col justify-between items-center text-center`}>
+                <div className={`lg:col-span-1 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between items-center text-center`}>
                   <div>
-                    <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Votre Conseiller Agréé</h4>
+                    <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2.5">Votre Conseiller Agréé</h4>
                     <div className="relative inline-block">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-brand-orange flex items-center justify-center text-xl sm:text-2xl shadow-lg border-2 border-brand-orange/30">
+                      <div className="w-12 h-12 sm:w-12 sm:h-12 rounded-full bg-brand-orange flex items-center justify-center text-xl sm:text-xl shadow-lg border-2 border-brand-orange/30">
                         {advisor.avatarEmoji || '👨‍💼'}
                       </div>
-                      <span className={`absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
                     </div>
                     <h5 className="text-white font-bold text-sm sm:text-base mt-2">{advisor.name}</h5>
                     <p className="text-brand-orange text-[10px] sm:text-xs font-medium uppercase mt-0.5">{advisor.title}</p>
                   </div>
                   <button 
                     onClick={() => setActiveTab('chat')}
-                    className="mt-4 sm:mt-6 w-full py-2 sm:py-2.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-brand-orange hover:bg-brand-orange/10 transition-all duration-300"
+                    className="mt-2.5 sm:mt-3 w-full py-1.5 sm:py-2 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-brand-orange hover:bg-brand-orange/10 transition-all duration-300"
                   >
                     Lui écrire un message
                   </button>
                 </div>
 
                 {/* Info Card / Action Card */}
-                <div className={`lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-4 sm:p-6 rounded-2xl flex flex-col justify-between`}>
+                <div className={`lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between`}>
                   <div>
                     <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Statut & Actions Requises</h4>
                     
@@ -1356,114 +1356,121 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 ) : billingActive && !paymentValidated ? (
                   // BILLING STATE WITH RIB
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-4 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Danger/Alert Badge */}
-                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold tracking-widest uppercase px-3.5 py-1 md:py-1 rounded-full mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                       Règlement Requis — Émission en cours
                     </div>
 
                     {/* Icon with complex glow */}
-                    <div className="relative mb-6">
+                    <div className="relative mb-3 md:hidden">
                       <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl scale-125" />
-                      <div className="relative w-20 h-20 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center text-4xl shadow-2xl">
+                      <div className="relative w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center text-2xl shadow-2xl">
                         💳
                       </div>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                    <h2 className="text-xl md:text-lg font-display font-extrabold text-white tracking-tight">
                       RÈGLEMENT DE VOTRE DOSSIER ⌛
                     </h2>
-                    <p className="text-white/60 text-xs sm:text-sm mt-3 leading-relaxed max-w-md">
+                    <p className="text-white/60 text-xs md:text-[11px] mt-1 md:mt-1 leading-relaxed max-w-xl">
                       Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle de votre permis de conduire auprès du SPF Mobilité, veuillez procéder au règlement des frais administratifs ci-dessous.
                     </p>
 
-                    {/* Facture Détaillée */}
-                    <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-5 w-full mt-6 text-left relative overflow-hidden group`}>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-3 flex items-center gap-2">
-                        <span>📄</span> Frais de dossier réglementaires ({selectedPath === 'perception' ? 'Perception du Risque' : 'Permis Définitif'})
-                      </h4>
-                      <div className="space-y-2 text-xs border-b border-white/5 pb-3">
-                        {selectedPath === 'perception' ? (
-                          <>
-                            <div className="flex justify-between text-white/50">
-                              <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
-                              <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
-                            </div>
-                            <div className="flex justify-between text-white/50">
-                              <span>{advisor.perceptionLabel2 || "Administration - Dispense de Perception du Risque"}</span>
-                              <span className="text-white font-semibold">{advisor.perceptionAmount2 || "35,00 €"}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-between text-white/50">
-                              <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
-                              <span className="text-white font-semibold">{advisor.directAmount1 || "80,00 €"}</span>
-                            </div>
-                            <div className="flex justify-between text-white/50">
-                              <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
-                              <span className="text-white font-semibold">{advisor.directAmount2 || "70,00 €"}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <div className="pt-3 flex justify-between text-sm font-bold text-brand-orange">
-                        <span>Total TTC à régler :</span>
-                        <span className="text-lg">
-                          {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Informations de paiement (RIB) */}
-                    <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-5 w-full mt-5 text-left shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange/5 rounded-full blur-xl" />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
-                        <span>🏦</span> Informations bancaires (RIB / Virement)
-                      </h4>
-                      
-                      <div className="space-y-3 text-xs">
-                        <div className="flex justify-between border-b border-white/5 pb-1.5">
-                          <span className="text-white/40">Bénéficiaire :</span>
-                          <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
+                    {/* Grid wrapper for Invoice & RIB */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-3 text-left items-stretch">
+                      {/* Facture Détaillée */}
+                      <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-4 md:p-3.5 flex flex-col justify-between relative overflow-hidden group`}>
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 md:mb-1.5 flex items-center gap-2">
+                            <span>📄</span> Frais de dossier réglementaires ({selectedPath === 'perception' ? 'Perception du Risque' : 'Permis Définitif'})
+                          </h4>
+                          <div className="space-y-1.5 text-xs border-b border-white/5 pb-2">
+                            {selectedPath === 'perception' ? (
+                              <>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
+                                  <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
+                                </div>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.perceptionLabel2 || "Administration - Dispense de Perception du Risque"}</span>
+                                  <span className="text-white font-semibold">{advisor.perceptionAmount2 || "35,00 €"}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
+                                  <span className="text-white font-semibold">{advisor.directAmount1 || "80,00 €"}</span>
+                                </div>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
+                                  <span className="text-white font-semibold">{advisor.directAmount2 || "70,00 €"}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex justify-between border-b border-white/5 pb-1.5">
-                          <span className="text-white/40">Banque :</span>
-                          <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/5 pb-1.5">
-                          <span className="text-white/40">IBAN :</span>
-                          <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/5 pb-1.5">
-                          <span className="text-white/40">Code BIC/SWIFT :</span>
-                          <span className="text-white font-mono font-semibold">{advisor.bic || "GEBA BEBB"}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/5 pb-1.5">
-                          <span className="text-white/40">Montant à transférer :</span>
-                          <span className="text-brand-orange font-bold font-mono">
+                        <div className="pt-2 flex justify-between text-xs md:text-sm font-bold text-brand-orange">
+                          <span>Total TTC à régler :</span>
+                          <span className="text-base">
                             {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/40">Communication :</span>
-                          <span className="text-brand-orange font-bold font-mono">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
-                        </div>
                       </div>
 
-                      <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-300 leading-normal flex items-start gap-2.5">
-                        <span className="text-base">⚠️</span>
-                        <span>
-                          <strong>IMPORTANT</strong> : Veuillez indiquer la communication exacte lors de votre virement. Une fois le virement effectué, veuillez envoyer un justificatif (capture d'écran) à votre conseiller depuis le chat ci-dessous pour accélérer le traitement.
-                        </span>
+                      {/* Informations de paiement (RIB) */}
+                      <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-4 md:p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange/5 rounded-full blur-xl" />
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2 md:mb-1.5 flex items-center gap-2">
+                            <span>🏦</span> Informations bancaires (RIB / Virement)
+                          </h4>
+                          
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between border-b border-white/5 pb-1">
+                              <span className="text-white/40">Bénéficiaire :</span>
+                              <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-1">
+                              <span className="text-white/40">Banque :</span>
+                              <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-1">
+                              <span className="text-white/40">IBAN :</span>
+                              <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-1">
+                              <span className="text-white/40">Code BIC/SWIFT :</span>
+                              <span className="text-white font-mono font-semibold">{advisor.bic || "GEBA BEBB"}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-1">
+                              <span className="text-white/40">Montant à transférer :</span>
+                              <span className="text-brand-orange font-bold font-mono">
+                                {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-white/40">Communication :</span>
+                              <span className="text-brand-orange font-bold font-mono">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 text-[9px] text-amber-300 leading-normal flex items-start gap-1.5">
+                          <span className="text-xs">⚠️</span>
+                          <span>
+                            <strong>IMPORTANT</strong> : Indiquez la communication exacte. Envoyez le justificatif (capture d'écran) à votre conseiller depuis le chat pour accélérer le traitement.
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full justify-center">
+                    <div className="mt-3 md:mt-4 flex flex-col sm:flex-row gap-4 w-full justify-center">
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className="px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-2"
+                        className="px-6 py-2 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-2"
                       >
                         💬 Envoyer le justificatif à mon conseiller
                       </button>
@@ -1471,9 +1478,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 ) : (
                   // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-1 sm:py-8 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-1 sm:py-4 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Success Badge */}
-                    <div className={`inline-flex items-center gap-2 text-[9px] sm:text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 sm:px-4 sm:py-2 rounded-full mb-1.5 sm:mb-6 ${
+                    <div className={`inline-flex items-center gap-2 text-[9px] sm:text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 sm:px-4 sm:py-1.5 rounded-full mb-1.5 sm:mb-4 ${
                       applicationStatus === 'completed'
                         ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400'
                         : paymentValidated 
@@ -1485,19 +1492,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </div>
 
                     {/* Icon with complex glow */}
-                    <div className="relative mb-1.5 sm:mb-6">
+                    <div className="relative mb-1.5 sm:mb-4">
                       <div className={`absolute inset-0 rounded-full blur-xl scale-125 ${applicationStatus === 'completed' ? 'bg-indigo-500/20' : paymentValidated ? 'bg-emerald-500/20' : 'bg-amber-500/20'}`} />
-                      <div className={`relative w-10 h-10 sm:w-20 sm:h-20 rounded-full bg-slate-900 border-2 flex items-center justify-center text-xl sm:text-4xl shadow-2xl ${
+                      <div className={`relative w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-900 border-2 flex items-center justify-center text-xl sm:text-2xl shadow-2xl ${
                         applicationStatus === 'completed' ? 'border-indigo-500' : paymentValidated ? 'border-emerald-500' : 'border-amber-500'
                       }`}>
                         {applicationStatus === 'completed' ? '🏆' : paymentValidated ? '💳' : '📩'}
                       </div>
                     </div>
 
-                    <h2 className="text-base sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                    <h2 className="text-base sm:text-2xl font-display font-extrabold text-white tracking-tight">
                       {applicationStatus === 'completed' ? "DOSSIER CLÔTURÉ AVEC SUCCÈS ! 🏆" : paymentValidated ? "PAIEMENT CONFIRMÉ ! 🚀" : "DOSSIER SOUMIS AVEC SUCCÈS ! 🚀"}
                     </h2>
-                    <p className="text-white/60 text-[10px] sm:text-sm mt-0.5 sm:mt-3 leading-relaxed max-w-md">
+                    <p className="text-white/60 text-[10px] sm:text-xs mt-0.5 sm:mt-2 leading-relaxed max-w-md">
                       {applicationStatus === 'completed'
                         ? (selectedPath === 'perception'
                           ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense de perception du risque a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
@@ -1511,27 +1518,27 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
                     
                     {/* Results Details Card */}
-                    <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-6 w-full mt-2 sm:mt-8 text-left relative overflow-hidden group`}>
+                    <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4 w-full mt-2 sm:mt-4 text-left relative overflow-hidden group`}>
                       <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none ${
                         paymentValidated ? 'bg-emerald-500/5' : 'bg-amber-500/5'
                       }`} />
-                      <h4 className="text-[9px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 sm:mb-4 flex items-center gap-2">
+                      <h4 className="text-[9px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 sm:mb-2.5 flex items-center gap-2">
                         <span>📋</span> Détails du dossier enregistré
                       </h4>
                       
                       <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:gap-4 text-[9px] sm:text-xs">
-                        <div className="space-y-1 sm:space-y-2.5">
+                        <div className="space-y-1 sm:space-y-2">
                           <p className="text-white/50 truncate">Candidat : <span className="text-white font-semibold block sm:inline">{formData.firstName} {formData.lastName}</span></p>
                           <p className="text-white/50 truncate">N° Registre : <span className="text-white font-mono block sm:inline">{formData.nationalRegister || "Non spécifié"}</span></p>
                           <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold block sm:inline">{selectedPath === 'perception' ? "Perception" : "Permis Direct"}</span></p>
                         </div>
-                        <div className="space-y-1 sm:space-y-2.5">
+                        <div className="space-y-1 sm:space-y-2">
                           <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold block sm:inline">Catégorie B ({formData.transmission})</span></p>
                           <p className="text-white/50 truncate">Pièces : <span className="text-emerald-400 font-semibold block sm:inline">{Object.values(uploads).filter(Boolean).length} / 4 OK</span></p>
                         </div>
                       </div>
 
-                      <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[11px]">
+                      <div className="mt-1.5 pt-1.5 sm:mt-2.5 sm:pt-2.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[11px]">
                         <span className="text-white/40 text-[9px] sm:text-[10px]">Statut :</span>
                         {applicationStatus === 'completed' ? (
                           <span className="text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded border border-indigo-500/20 text-[8px] sm:text-[10px]">
@@ -1549,10 +1556,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     </div>
 
-                    <div className="mt-2.5 sm:mt-8 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full justify-center">
+                    <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full justify-center">
                       <button
                         onClick={() => setActiveTab('overview')}
-                        className="px-6 py-1.5 sm:px-8 sm:py-3.5 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
+                        className="px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
                       >
                         Suivre mon dossier en temps réel ➔
                       </button>
@@ -1560,14 +1567,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         <button
                           type="button"
                           onClick={() => setShowUpgradeConfirm(true)}
-                          className="px-4 py-1.5 sm:px-6 sm:py-3.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 cursor-pointer text-white flex items-center justify-center gap-1.5"
+                          className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 cursor-pointer text-white flex items-center justify-center gap-1.5"
                         >
                           ⚡ Passer au Permis Direct
                         </button>
                       )}
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className="px-4 py-1.5 sm:px-6 sm:py-3.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
+                        className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
                       >
                         Contacter mon conseiller
                       </button>
@@ -1576,7 +1583,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 )
               ) : (
                 // ACTIVE WIZARD STATE
-                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between">
+                <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-between overflow-y-auto min-h-0 pr-1">
                   <div>
                     {/* Header */}
                     <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
@@ -1706,7 +1713,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 2: DOCUMENT UPLOADS */}
                     {wizardStep === 2 && (
-                      <div className="grid grid-cols-2 gap-2 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Composant réutilisable pour chaque zone d'upload */}
                         {[
@@ -1715,7 +1722,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Requis Officiel', accept: 'image/*', emoji: '📸' },
                           { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
                         ].map(({ field, label, badge, accept, emoji }) => (
-                          <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4 flex flex-col justify-between`}>
+                          <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-3 flex flex-col justify-between`}>
                             <div>
                               <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
                               <h4 className="text-white font-semibold text-[10px] sm:text-xs mt-0.5 leading-tight">{label}</h4>
@@ -1734,10 +1741,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                     <img
                                       src={uploads[field]}
                                       alt={label}
-                                      className="w-full h-14 sm:h-28 object-cover"
+                                      className="w-full h-14 sm:h-20 object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-14 sm:h-28 flex items-center justify-center bg-emerald-500/10">
+                                    <div className="w-full h-14 sm:h-20 flex items-center justify-center bg-emerald-500/10">
                                       <span className="text-lg sm:text-3xl">📄</span>
                                     </div>
                                   )}
@@ -1758,8 +1765,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 </div>
                               ) : (
                                 // Zone d'upload vide
-                                <div className="border border-dashed border-white/15 hover:border-brand-orange rounded-xl p-2.5 sm:p-4 flex flex-col items-center justify-center text-center transition-colors gap-1.5 sm:gap-2">
-                                  <span className="hidden sm:block text-2xl text-white/30">{emoji}</span>
+                                <div className="border border-dashed border-white/15 hover:border-brand-orange rounded-xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center transition-colors gap-1.5 sm:gap-2">
+                                  <span className="hidden sm:block text-xl text-white/30">{emoji}</span>
                                   <span className="hidden sm:block text-[10px] text-white/55 font-medium">
                                     {isMobile() ? 'Choisir' : 'Glisser ou cliquer'}
                                   </span>
@@ -1939,14 +1946,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                     {/* STEP 4: MANDAT DE LÉGALITÉ & CONFIRMATION */}
                     {wizardStep === 4 && (
-                      <div className="grid grid-cols-1 gap-1.5 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
+                      <div className="grid grid-cols-1 gap-1.5 sm:gap-3.5 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Récapitulatif du dossier */}
-                        <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-5`}>
-                          <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-0.5 sm:mb-4 flex items-center gap-1">
+                        <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4`}>
+                          <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-0.5 sm:mb-2.5 flex items-center gap-1">
                             <span>📋</span> Récapitulatif de votre dossier
                           </h4>
-                          <div className="grid grid-cols-2 gap-1 sm:gap-3 text-[10px] sm:text-xs">
+                          <div className="grid grid-cols-2 gap-1 sm:gap-2 text-[10px] sm:text-xs">
                             <div>
                               <span className="text-white/40 block text-[8px] sm:text-[10px]">Candidat</span>
                               <span className="text-white font-semibold truncate block">{formData.firstName} {formData.lastName}</span>
@@ -1975,8 +1982,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         </div>
 
                         {/* Mandat légal */}
-                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2 sm:p-5">
-                          <h4 className="font-bold text-[10px] sm:text-sm text-brand-orange flex items-center gap-1.5 mb-0.5 sm:mb-3">
+                        <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2 sm:p-4">
+                          <h4 className="font-bold text-[10px] sm:text-sm text-brand-orange flex items-center gap-1.5 mb-0.5 sm:mb-2">
                             🛡️ Mandat de Constitution Officielle — SPF Belgique
                           </h4>
                           <p className="text-[9.5px] sm:text-[11px] text-white/70 leading-normal">
@@ -1985,7 +1992,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         </div>
 
                         {/* Checkbox mandat final */}
-                        <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2 sm:p-4 rounded-2xl cursor-pointer transition-all duration-300">
+                        <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2 sm:p-3.5 rounded-2xl cursor-pointer transition-all duration-300">
                           <input 
                             type="checkbox"
                             checked={mandatAccepted}
@@ -2070,83 +2077,125 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
           {/* TAB 3: SUPPORT CHAT */}
           {activeTab === 'chat' && (
-            <div className="flex-1 flex flex-col relative z-10 h-[calc(100vh-144px)] md:h-auto animate-[bubbleIn_0.5s_ease-out]">
+            <div className="flex-1 flex flex-col md:grid md:grid-cols-3 gap-6 relative z-10 h-[calc(100vh-144px)] md:h-full min-h-0 animate-[bubbleIn_0.5s_ease-out]">
               
-              {/* Header Info */}
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[53px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold">
-                    {advisor.avatarEmoji || '👨‍💼'}
+              {/* Desktop Left Sidebar: Advisor Info */}
+              <div className={`hidden md:flex flex-col justify-between items-center text-center p-6 border rounded-2xl bg-slate-950/60 ${theme === 'dark' ? 'border-white' : 'border-slate-950'}`}>
+                <div className="w-full flex flex-col items-center">
+                  <h4 className="text-white/70 font-semibold text-xs uppercase tracking-wider mb-6">Votre Conseiller Agréé</h4>
+                  <div className="relative inline-block">
+                    <div className="w-20 h-20 rounded-full bg-brand-orange flex items-center justify-center text-3xl shadow-lg border-2 border-brand-orange/30">
+                      {advisor.avatarEmoji || '👨‍💼'}
+                    </div>
+                    <span className={`absolute bottom-0.5 right-0.5 w-4 h-4 border-2 border-slate-950 rounded-full ${advisor.isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`} />
                   </div>
-                  {advisor.isOnline ? (
-                    <>
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full animate-ping" />
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full" />
-                    </>
-                  ) : (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-slate-500 border-2 border-slate-900 rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-sm">{advisor.name}</h3>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-[10px] font-semibold tracking-wider uppercase ${advisor.isOnline ? 'text-green-400' : 'text-slate-400'}`}>
-                      {advisor.isOnline ? 'Conseiller en Ligne — répond immédiatement' : 'Conseiller hors-ligne'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Message log */}
-              <div className="flex-1 overflow-y-auto space-y-4 px-2 py-2 border border-white/5 rounded-2xl bg-slate-950/30 mb-4 p-4 min-h-0 pt-20 md:pt-4 pb-20 md:pb-4">
-                {messages.map((m) => {
-                  const isUser = m.sender === 'student';
-                  return (
-                    <div 
-                      key={m.id} 
-                      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed ${
-                        isUser 
-                          ? 'bg-brand-orange text-white rounded-br-sm shadow-md shadow-brand-orange/10' 
-                          : 'bg-white/10 border border-white/5 text-white/90 rounded-bl-sm'
-                      }`}>
-                        <p>{m.text}</p>
-                        <span className="block text-[8px] sm:text-[9px] text-white/40 text-right mt-1.5">{m.time}</span>
+                  <h5 className="text-white font-bold text-lg mt-4">{advisor.name}</h5>
+                  <p className="text-brand-orange text-xs font-semibold uppercase mt-0.5">{advisor.title}</p>
+                  
+                  <div className="w-full border-t border-white/10 mt-6 pt-6 text-left space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">⚡</span>
+                      <div>
+                        <p className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Réponse moyenne</p>
+                        <p className="text-xs text-white/80 font-medium">Moins de 10 minutes</p>
                       </div>
                     </div>
-                  );
-                })}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-white/10 border border-white/5 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">📅</span>
+                      <div>
+                        <p className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Disponibilité</p>
+                        <p className="text-xs text-white/80 font-medium">Lundi au Samedi (9h - 19h)</p>
+                      </div>
                     </div>
                   </div>
-                )}
-                <div ref={chatEndRef} />
+                </div>
+
+                <div className="w-full bg-brand-orange/5 border border-brand-orange/20 rounded-xl p-3 mt-6">
+                  <p className="text-[10px] text-brand-orange font-semibold leading-relaxed">
+                    Espace d'échange crypté SSL. Vos documents d'identité et de paiement sont cryptés de bout en bout.
+                  </p>
+                </div>
               </div>
 
-              {/* Input field Form */}
-              <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10">
-                <input 
-                  type="text" 
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
-                  className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors"
-                />
-                <button 
-                  type="submit"
-                  className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
-                >
-                  <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
-                </button>
-              </form>
+              {/* Chat Area (Right 2 cols on desktop) */}
+              <div className={`md:col-span-2 flex flex-col h-full bg-slate-950/20 border rounded-2xl p-4 min-h-0 relative ${theme === 'dark' ? 'border-white' : 'border-slate-950'}`}>
+                
+                {/* Header Info */}
+                <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[53px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold">
+                      {advisor.avatarEmoji || '👨‍💼'}
+                    </div>
+                    {advisor.isOnline ? (
+                      <>
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full animate-ping" />
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full" />
+                      </>
+                    ) : (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-slate-500 border-2 border-slate-900 rounded-full" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm">{advisor.name}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`text-[10px] font-semibold tracking-wider uppercase ${advisor.isOnline ? 'text-green-400' : 'text-slate-400'}`}>
+                        {advisor.isOnline ? 'Conseiller en Ligne — répond immédiatement' : 'Conseiller hors-ligne'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message log */}
+                <div className="flex-1 overflow-y-auto space-y-4 px-2 py-2 border border-white/5 rounded-2xl bg-slate-950/30 mb-4 p-4 min-h-0 pt-20 md:pt-4 pb-20 md:pb-4">
+                  {messages.map((m) => {
+                    const isUser = m.sender === 'student';
+                    return (
+                      <div 
+                        key={m.id} 
+                        className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed ${
+                          isUser 
+                            ? 'bg-brand-orange text-white rounded-br-sm shadow-md shadow-brand-orange/10' 
+                            : 'bg-white/10 border border-white/5 text-white/90 rounded-bl-sm'
+                        }`}>
+                          <p>{m.text}</p>
+                          <span className="block text-[8px] sm:text-[9px] text-white/40 text-right mt-1.5">{m.time}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-white/10 border border-white/5 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Input field Form */}
+                <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10">
+                  <input 
+                    type="text" 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
+                    className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors"
+                  />
+                  <button 
+                    type="submit"
+                    className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
             </div>
           )}
 
