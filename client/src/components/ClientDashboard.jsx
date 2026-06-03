@@ -899,7 +899,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
           
           {/* User profile card */}
-          <div className="bg-slate-800/60 border border-white/10 rounded-2xl p-4 mb-6">
+          <div className={`bg-slate-800/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-4 mb-6`}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-brand-orange/20 border-2 border-brand-orange/40 flex items-center justify-center flex-shrink-0">
                 <span className="text-brand-orange font-bold text-sm">
@@ -1010,7 +1010,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? 'rounded-none border-0 p-4 md:rounded-[32px] md:border md:border-white/10 md:p-8' : 'rounded-[32px] border border-white/10 p-4 sm:p-8'}`}>
+        <main className={`flex-1 min-w-0 bg-slate-900 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative flex flex-col ${activeTab === 'chat' ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:p-8` : `rounded-[32px] border ${theme === 'dark' ? 'border-white' : 'border-slate-950'} p-4 sm:p-8`}`}>
           {/* Ambient glow behind main area */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1030,7 +1030,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       : "Complétez votre demande pour initier l'obtention de votre permis de conduire."}
                   </p>
                 </div>
-                <div className="bg-slate-800/80 border border-white/10 rounded-2xl px-3 py-1 sm:px-4 sm:py-2 flex items-center gap-2 sm:gap-3">
+                <div className={`bg-slate-800/80 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl px-3 py-1 sm:px-4 sm:py-2 flex items-center gap-2 sm:gap-3`}>
                   <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-orange animate-pulse" />
                   <span className="text-[10px] sm:text-xs font-semibold text-white/95 uppercase tracking-wide">
                     ID Dossier : {isSubmitted ? `#MPB-${user.uid.slice(0, 5).toUpperCase()}` : "MPB-NON-INITIALISÉ"}
@@ -1184,7 +1184,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-1 sm:mt-2">
                 
                 {/* Advisor Card */}
-                <div className="lg:col-span-1 bg-slate-950/60 border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between items-center text-center">
+                <div className={`lg:col-span-1 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-4 sm:p-6 rounded-2xl flex flex-col justify-between items-center text-center`}>
                   <div>
                     <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Votre Conseiller Agréé</h4>
                     <div className="relative inline-block">
@@ -1205,7 +1205,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 </div>
 
                 {/* Info Card / Action Card */}
-                <div className="lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col justify-between">
+                <div className={`lg:col-span-2 bg-gradient-to-br from-slate-950/60 to-slate-950/90 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} p-4 sm:p-6 rounded-2xl flex flex-col justify-between`}>
                   <div>
                     <h4 className="text-white/70 font-semibold text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-4">Statut & Actions Requises</h4>
                     
@@ -1305,7 +1305,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             console.error(err);
                           }
                         }}
-                        className="bg-slate-950/60 border border-white/10 hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer"
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
                       >
                         <div>
                           <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
@@ -1336,7 +1336,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             console.error(err);
                           }
                         }}
-                        className="bg-slate-950/60 border border-white/10 hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer"
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
                       >
                         <div>
                           <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
@@ -1379,7 +1379,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
 
                     {/* Facture Détaillée */}
-                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-5 w-full mt-6 text-left relative overflow-hidden group">
+                    <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-5 w-full mt-6 text-left relative overflow-hidden group`}>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-3 flex items-center gap-2">
                         <span>📄</span> Frais de dossier réglementaires ({selectedPath === 'perception' ? 'Perception du Risque' : 'Permis Définitif'})
                       </h4>
@@ -1511,7 +1511,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
                     
                     {/* Results Details Card */}
-                    <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-6 w-full mt-2 sm:mt-8 text-left relative overflow-hidden group">
+                    <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-6 w-full mt-2 sm:mt-8 text-left relative overflow-hidden group`}>
                       <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none ${
                         paymentValidated ? 'bg-emerald-500/5' : 'bg-amber-500/5'
                       }`} />
@@ -1715,7 +1715,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Requis Officiel', accept: 'image/*', emoji: '📸' },
                           { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
                         ].map(({ field, label, badge, accept, emoji }) => (
-                          <div key={field} className="bg-slate-950/40 border border-white/10 rounded-2xl p-2 sm:p-4 flex flex-col justify-between">
+                          <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4 flex flex-col justify-between`}>
                             <div>
                               <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
                               <h4 className="text-white font-semibold text-[10px] sm:text-xs mt-0.5 leading-tight">{label}</h4>
@@ -1807,7 +1807,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div className="grid grid-cols-2 gap-2 sm:gap-6 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Recap circuit */}
-                        <div className="col-span-2 bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-4">
+                        <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-4`}>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-brand-orange mb-1.5">🛣️ Circuit d'obtention</p>
                           <div className="flex flex-wrap gap-1">
                             {[
@@ -1942,7 +1942,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div className="grid grid-cols-1 gap-1.5 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
 
                         {/* Récapitulatif du dossier */}
-                        <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-2 sm:p-5">
+                        <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-5`}>
                           <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-0.5 sm:mb-4 flex items-center gap-1">
                             <span>📋</span> Récapitulatif de votre dossier
                           </h4>
@@ -2159,36 +2159,48 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t-2 border-x border-emerald-500 rounded-t-3xl px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
-            activeTab === 'overview' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          className={`group flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'overview' 
+              ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <span className="text-xl">🛣️</span>
-          <span className="text-[10px] uppercase tracking-wider">Circuit</span>
+          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'overview' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 4L9 7" />
+          </svg>
+          <span className="text-[10px] uppercase tracking-wider font-semibold">Circuit</span>
         </button>
         
         <button
           onClick={() => setActiveTab('wizard')}
-          className={`relative flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
-            activeTab === 'wizard' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          className={`group relative flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'wizard' 
+              ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <span className="text-xl">📄</span>
-          <span className="text-[10px] uppercase tracking-wider">Demande</span>
+          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'wizard' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span className="text-[10px] uppercase tracking-wider font-semibold">Demande</span>
           {!isSubmitted && (
-            <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-brand-orange animate-ping" />
+            <span className="absolute top-2 right-5 w-2 h-2 rounded-full bg-brand-orange animate-ping" />
           )}
         </button>
 
         <button
           onClick={() => setActiveTab('chat')}
-          className={`relative flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
-            activeTab === 'chat' ? 'text-brand-orange font-bold' : 'text-white/40 hover:text-white/70'
+          className={`group relative flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'chat' 
+              ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <span className="text-xl">💬</span>
-          <span className="text-[10px] uppercase tracking-wider">Conseiller</span>
-          <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900" />
+          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'chat' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <span className="text-[10px] uppercase tracking-wider font-semibold">Conseiller</span>
+          <span className="absolute top-2.5 right-6 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900" />
         </button>
       </nav>
 
@@ -2284,17 +2296,17 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
         /* ── HEADER ── */
         .light-theme header {
-          background-color: #ffffff !important;
-          border-bottom: 1px solid #e2e8f0 !important;
-          box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
-          color: #0f172a !important;
+          background-color: #0f172a !important;
+          border-bottom: 2px solid #10b981 !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+          color: #ffffff !important;
         }
-        .light-theme header * { color: #0f172a !important; }
-        .light-theme header [class*="border-white"]  { border-color: #e2e8f0 !important; }
-        .light-theme header [class*="bg-white"]      { background-color: #f8fafc !important; }
-        .light-theme header [class*="bg-emerald"]    { background-color: #dcfce7 !important; border-color: #86efac !important; }
-        .light-theme header [class*="text-emerald"]  { color: #15803d !important; }
-        .light-theme header [class*="text-white\\/"] { color: #475569 !important; }
+        .light-theme header * { color: #ffffff !important; }
+        .light-theme header [class*="border-white"]  { border-color: rgba(255, 255, 255, 0.1) !important; }
+        .light-theme header [class*="bg-white"]      { background-color: rgba(255, 255, 255, 0.05) !important; }
+        .light-theme header [class*="bg-emerald"]    { background-color: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.2) !important; }
+        .light-theme header [class*="text-emerald"]  { color: #34d399 !important; }
+        .light-theme header [class*="text-white\\/"] { color: rgba(255, 255, 255, 0.5) !important; }
 
         /* ── SIDEBAR ── */
         .light-theme aside {
@@ -2315,7 +2327,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         /* ── MAIN AREA ── */
         .light-theme main {
           background-color: #ffffff !important;
-          border-color: #e2e8f0 !important;
+          border-color: #0f172a !important;
           box-shadow: 0 4px 24px rgba(0,0,0,0.04) !important;
           color: #0f172a !important;
         }
@@ -2377,7 +2389,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           background-color: #dcfce7 !important; color: #15803d !important; border-color: #86efac !important;
         }
         .light-theme main [class*="text-emerald-"] { color: #15803d !important; }
-        .light-theme main [class*="border-emerald"] { border-color: #86efac !important; }
+        .light-theme main [class*="border-emerald"] { border-color: #10b981 !important; border-width: 2px !important; }
         .light-theme main [class*="bg-amber-5"] {
           background-color: #fef9c3 !important; color: #b45309 !important; border-color: #fde68a !important;
         }
