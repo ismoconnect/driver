@@ -92,14 +92,21 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
         </div>
 
         {/* Mobile menu */}
-        <div className={`md:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-64' : 'max-h-0'}`}>
-          <div className="bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-6 py-4 flex flex-col gap-4">
-            {links.map(link => (
+        <div 
+          className={`md:hidden fixed inset-x-0 top-20 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-white/5 transition-all duration-300 ${
+            menuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+          }`}
+        >
+          <div className="px-6 py-12 flex flex-col gap-6 items-center justify-center">
+            {links.map((link, i) => (
               <a
                 key={link.label}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="text-white/80 font-medium text-sm hover:text-brand-orange transition-colors py-1"
+                className={`text-lg font-bold tracking-wide text-white/80 hover:text-brand-orange transition-all duration-300 transform ${
+                  menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+                }`}
+                style={{ transitionDelay: `${i * 50}ms` }}
               >
                 {link.label}
               </a>
@@ -107,7 +114,10 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
             <a
               href="#contact"
               onClick={() => setMenuOpen(false)}
-              className="w-full text-center bg-brand-orange text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-orange-dark transition-colors"
+              className={`w-full max-w-xs text-center bg-brand-orange text-white px-6 py-3.5 rounded-full text-sm font-semibold hover:bg-brand-orange-dark shadow-lg shadow-brand-orange/20 transition-all duration-300 transform active:scale-95 ${
+                menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+              }`}
+              style={{ transitionDelay: `${links.length * 50}ms` }}
             >
               Nous contacter
             </a>
@@ -118,22 +128,26 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
                   setMenuOpen(false);
                   onOpenDashboard('login');
                 }}
-                className="w-full text-center border border-white/30 text-white hover:border-white hover:bg-white/10 px-6 py-3 rounded-full text-sm font-bold transition-colors cursor-pointer"
+                className={`w-full max-w-xs text-center bg-white/5 border border-white/15 text-white hover:bg-white/10 px-6 py-3.5 rounded-full text-sm font-bold transition-all duration-300 transform active:scale-95 ${
+                  menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+                }`}
+                style={{ transitionDelay: `${(links.length + 1) * 50}ms` }}
               >
                 👤 Mon Espace client
               </button>
             ) : (
-              <>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onOpenDashboard('login');
-                  }}
-                  className="w-full text-center bg-brand-orange text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-brand-orange-dark transition-colors cursor-pointer"
-                >
-                  Connexion
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenDashboard('login');
+                }}
+                className={`w-full max-w-xs text-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-full text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all duration-300 transform active:scale-95 cursor-pointer ${
+                  menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+                }`}
+                style={{ transitionDelay: `${(links.length + 1) * 50}ms` }}
+              >
+                Connexion
+              </button>
             )}
           </div>
         </div>
