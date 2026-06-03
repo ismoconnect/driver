@@ -46,16 +46,26 @@ const Dashboard = ({ onLogout }) => {
     bankName: "BNP Paribas Fortis",
     iban: "BE96 3630 1234 5678",
     bic: "GEBA BEBB",
-    perceptionAmount: "85,00 €",
+    perceptionAmount: "350,00 €",
     perceptionLabel1: "Frais de timbre fiscal & enregistrement SPF Belgique",
     perceptionAmount1: "50,00 €",
     perceptionLabel2: "Administration - Dispense de Perception du Risque",
-    perceptionAmount2: "35,00 €",
-    directLicenseAmount: "150,00 €",
+    perceptionAmount2: "300,00 €",
+    theoriqueAmount: "550,00 €",
+    theoriqueLabel1: "Frais d'inscription & enregistrement SPF",
+    theoriqueAmount1: "150,00 €",
+    theoriqueLabel2: "Administration - Dispense Examen Théorique",
+    theoriqueAmount2: "400,00 €",
+    pratiqueAmount: "750,00 €",
+    pratiqueLabel1: "Frais d'homologation & enregistrement SPF",
+    pratiqueAmount1: "250,00 €",
+    pratiqueLabel2: "Administration - Dispense Examen Pratique",
+    pratiqueAmount2: "500,00 €",
+    directLicenseAmount: "1200,00 €",
     directLabel1: "Constitution du dossier d'homologation complet",
-    directAmount1: "80,00 €",
+    directAmount1: "400,00 €",
     directLabel2: "Frais d'édition & timbres fiscaux (SPF Belgique)",
-    directAmount2: "70,00 €"
+    directAmount2: "800,00 €"
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
@@ -89,7 +99,7 @@ const Dashboard = ({ onLogout }) => {
     const docRef = doc(db, "settings", "advisor");
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setAdvisorSettings(docSnap.data());
+        setAdvisorSettings(prev => ({ ...prev, ...docSnap.data() }));
       }
     });
     return () => unsubscribe();
@@ -143,7 +153,7 @@ const Dashboard = ({ onLogout }) => {
       return;
     }
 
-    const l1 = Math.round(total * 0.5882);
+    const l1 = Math.round(total * 0.142857);
     const l2 = total - l1;
 
     const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
@@ -153,6 +163,52 @@ const Dashboard = ({ onLogout }) => {
       perceptionAmount: val,
       perceptionAmount1: fmt(l1),
       perceptionAmount2: fmt(l2)
+    }));
+  };
+
+  const handleTheoriqueTotalChange = (val) => {
+    const clean = val.replace(/[^\d.,]/g, '').replace(',', '.');
+    const parsed = parseFloat(clean);
+    const total = isNaN(parsed) ? 0 : parsed;
+
+    if (total <= 0) {
+      setAdvisorSettings(prev => ({ ...prev, theoriqueAmount: val }));
+      return;
+    }
+
+    const l1 = Math.round(total * 0.272727);
+    const l2 = total - l1;
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    setAdvisorSettings(prev => ({
+      ...prev,
+      theoriqueAmount: val,
+      theoriqueAmount1: fmt(l1),
+      theoriqueAmount2: fmt(l2)
+    }));
+  };
+
+  const handlePratiqueTotalChange = (val) => {
+    const clean = val.replace(/[^\d.,]/g, '').replace(',', '.');
+    const parsed = parseFloat(clean);
+    const total = isNaN(parsed) ? 0 : parsed;
+
+    if (total <= 0) {
+      setAdvisorSettings(prev => ({ ...prev, pratiqueAmount: val }));
+      return;
+    }
+
+    const l1 = Math.round(total * 0.333333);
+    const l2 = total - l1;
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    setAdvisorSettings(prev => ({
+      ...prev,
+      pratiqueAmount: val,
+      pratiqueAmount1: fmt(l1),
+      pratiqueAmount2: fmt(l2)
     }));
   };
 
@@ -166,7 +222,7 @@ const Dashboard = ({ onLogout }) => {
       return;
     }
 
-    const l1 = Math.round(total * 0.5333);
+    const l1 = Math.round(total * 0.333333);
     const l2 = total - l1;
 
     const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
@@ -194,16 +250,26 @@ const Dashboard = ({ onLogout }) => {
         bankName: advisorSettings.bankName || "BNP Paribas Fortis",
         iban: advisorSettings.iban || "BE96 3630 1234 5678",
         bic: advisorSettings.bic || "GEBA BEBB",
-        perceptionAmount: advisorSettings.perceptionAmount || "85,00 €",
+        perceptionAmount: advisorSettings.perceptionAmount || "350,00 €",
         perceptionLabel1: advisorSettings.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique",
         perceptionAmount1: advisorSettings.perceptionAmount1 || "50,00 €",
         perceptionLabel2: advisorSettings.perceptionLabel2 || "Administration - Dispense de Perception du Risque",
-        perceptionAmount2: advisorSettings.perceptionAmount2 || "35,00 €",
-        directLicenseAmount: advisorSettings.directLicenseAmount || "150,00 €",
+        perceptionAmount2: advisorSettings.perceptionAmount2 || "300,00 €",
+        theoriqueAmount: advisorSettings.theoriqueAmount || "550,00 €",
+        theoriqueLabel1: advisorSettings.theoriqueLabel1 || "Frais d'inscription & enregistrement SPF",
+        theoriqueAmount1: advisorSettings.theoriqueAmount1 || "150,00 €",
+        theoriqueLabel2: advisorSettings.theoriqueLabel2 || "Administration - Dispense Examen Théorique",
+        theoriqueAmount2: advisorSettings.theoriqueAmount2 || "400,00 €",
+        pratiqueAmount: advisorSettings.pratiqueAmount || "750,00 €",
+        pratiqueLabel1: advisorSettings.pratiqueLabel1 || "Frais d'homologation & enregistrement SPF",
+        pratiqueAmount1: advisorSettings.pratiqueAmount1 || "250,00 €",
+        pratiqueLabel2: advisorSettings.pratiqueLabel2 || "Administration - Dispense Examen Pratique",
+        pratiqueAmount2: advisorSettings.pratiqueAmount2 || "500,00 €",
+        directLicenseAmount: advisorSettings.directLicenseAmount || "1200,00 €",
         directLabel1: advisorSettings.directLabel1 || "Constitution du dossier d'homologation complet",
-        directAmount1: advisorSettings.directAmount1 || "80,00 €",
+        directAmount1: advisorSettings.directAmount1 || "400,00 €",
         directLabel2: advisorSettings.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)",
-        directAmount2: advisorSettings.directAmount2 || "70,00 €"
+        directAmount2: advisorSettings.directAmount2 || "800,00 €"
       });
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 3000);
@@ -1039,9 +1105,10 @@ const Dashboard = ({ onLogout }) => {
                         Option Choisie
                       </span>
                       <h4 className="text-sm font-bold text-white mt-2">
-                        {selectedLead.rawLead.selectedPath === 'perception' 
-                          ? '👁️ Perception du Risque (Phase 3)' 
-                          : '🚗 Permis Définitif / Direct (Phases 3 à 5)'}
+                        {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
+                         selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
+                         selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
+                         '🏆 Phase 5 - Permis Définitif / Direct'}
                       </h4>
                       <p className="text-xs text-slate-400 mt-0.5">
                         Le candidat a sélectionné cette option pour la constitution de son dossier.
@@ -1050,16 +1117,17 @@ const Dashboard = ({ onLogout }) => {
                     <div className="text-right">
                       <p className="text-[10px] uppercase text-slate-400 font-semibold">Montant dû</p>
                       <span className="text-lg font-black text-orange-500">
-                        {selectedLead.rawLead.selectedPath === 'perception' 
-                          ? (advisorSettings.perceptionAmount || "85,00 €") 
-                          : (advisorSettings.directLicenseAmount || "150,00 €")}
+                        {selectedLead.rawLead.selectedPath === 'perception' ? (advisorSettings.perceptionAmount || "350,00 €") :
+                         selectedLead.rawLead.selectedPath === 'theorique' ? (advisorSettings.theoriqueAmount || "550,00 €") :
+                         selectedLead.rawLead.selectedPath === 'pratique' ? (advisorSettings.pratiqueAmount || "750,00 €") :
+                         (advisorSettings.directLicenseAmount || "1200,00 €")}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-slate-950/20 p-5 rounded-2xl border border-white/5 text-center">
                     <p className="text-xs text-slate-400">
-                      ⚠️ Le candidat n'a pas encore fait son choix de parcours (Perception du Risque ou Permis Définitif).
+                      ⚠️ Le candidat n'a pas encore fait son choix de parcours.
                     </p>
                   </div>
                 )}
@@ -1130,7 +1198,7 @@ const Dashboard = ({ onLogout }) => {
                           // 1. Update payment state & dossier status
                           await updateDoc(doc(db, "leads", leadId), { 
                             paymentValidated: nextVal,
-                            status: targetStatus
+                        status: targetStatus
                           });
 
                           // 2. Sync status to user document
@@ -1147,11 +1215,15 @@ const Dashboard = ({ onLogout }) => {
                           let textMessage = "";
                           if (nextVal) {
                             if (selectedLead.rawLead?.selectedPath === 'perception') {
-                              textMessage = "✅ Votre paiement pour la Perception du Risque a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 👁️";
+                              textMessage = "✅ Votre paiement pour la Phase 2 - Perception du Risque a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 📖";
+                            } else if (selectedLead.rawLead?.selectedPath === 'theorique') {
+                              textMessage = "✅ Votre paiement pour la Phase 3 - Examen Théorique a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 📚";
+                            } else if (selectedLead.rawLead?.selectedPath === 'pratique') {
+                              textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de validation pour cette étape. 🚗";
                             } else if (selectedLead.rawLead?.selectedPath === 'direct') {
-                              textMessage = "✅ Votre paiement pour le Permis Définitif a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🚗";
+                              textMessage = "✅ Votre paiement pour la Phase 5 - Permis Définitif a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🏆";
                             } else {
-                              textMessage = "✅ Votre paiement a été validé avec succès par notre service comptabilité ! Votre dossier est désormais transmis pour l'édition de votre permis officiel auprès du SPF Mobilité. 🚗";
+                              textMessage = "✅ Votre paiement a été validé avec succès par notre service comptabilité ! Votre dossier est désormais en cours de traitement. 🚀";
                             }
                           } else {
                             textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller pour plus d'informations.";
@@ -1482,7 +1554,7 @@ const Dashboard = ({ onLogout }) => {
 
                   {/* CONFIGURATION PERCEPTION DU RISQUE */}
                   <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
-                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">👁️ Paramètres Perception du Risque (Phase 3)</h5>
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">📖 Paramètres Perception du Risque (Phase 2)</h5>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       <div className="sm:col-span-1">
@@ -1491,7 +1563,7 @@ const Dashboard = ({ onLogout }) => {
                           type="text"
                           value={advisorSettings.perceptionAmount || ''}
                           onChange={(e) => handlePerceptionTotalChange(e.target.value)}
-                          placeholder="Ex: 85,00 €"
+                          placeholder="Ex: 350,00 €"
                           className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
                         />
                       </div>
@@ -1540,7 +1612,143 @@ const Dashboard = ({ onLogout }) => {
                             type="text"
                             value={advisorSettings.perceptionAmount2 || ''}
                             onChange={(e) => setAdvisorSettings(prev => ({ ...prev, perceptionAmount2: e.target.value }))}
-                            placeholder="Ex: 35,00 €"
+                            placeholder="Ex: 300,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CONFIGURATION EXAMEN THEORIQUE */}
+                  <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">📚 Paramètres Examen Théorique (Phase 3)</h5>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="sm:col-span-1">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Montant Total TTC</label>
+                        <input
+                          type="text"
+                          value={advisorSettings.theoriqueAmount || ''}
+                          onChange={(e) => handleTheoriqueTotalChange(e.target.value)}
+                          placeholder="Ex: 550,00 €"
+                          className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Theorique Ligne 1 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 1 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.theoriqueLabel1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, theoriqueLabel1: e.target.value }))}
+                            placeholder="Ex: Frais d'inscription..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.theoriqueAmount1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, theoriqueAmount1: e.target.value }))}
+                            placeholder="Ex: 150,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Theorique Ligne 2 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 2 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.theoriqueLabel2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, theoriqueLabel2: e.target.value }))}
+                            placeholder="Ex: Administration - Dispense..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.theoriqueAmount2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, theoriqueAmount2: e.target.value }))}
+                            placeholder="Ex: 400,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CONFIGURATION EXAMEN PRATIQUE */}
+                  <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">🚗 Paramètres Examen Pratique (Phase 4)</h5>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="sm:col-span-1">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Montant Total TTC</label>
+                        <input
+                          type="text"
+                          value={advisorSettings.pratiqueAmount || ''}
+                          onChange={(e) => handlePratiqueTotalChange(e.target.value)}
+                          placeholder="Ex: 750,00 €"
+                          className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Pratique Ligne 1 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 1 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.pratiqueLabel1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, pratiqueLabel1: e.target.value }))}
+                            placeholder="Ex: Frais d'homologation..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.pratiqueAmount1 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, pratiqueAmount1: e.target.value }))}
+                            placeholder="Ex: 250,00 €"
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Pratique Ligne 2 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Ligne 2 : Intitulé</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.pratiqueLabel2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, pratiqueLabel2: e.target.value }))}
+                            placeholder="Ex: Administration - Dispense..."
+                            className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Montant</label>
+                          <input
+                            type="text"
+                            value={advisorSettings.pratiqueAmount2 || ''}
+                            onChange={(e) => setAdvisorSettings(prev => ({ ...prev, pratiqueAmount2: e.target.value }))}
+                            placeholder="Ex: 500,00 €"
                             className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
                           />
                         </div>
@@ -1550,7 +1758,7 @@ const Dashboard = ({ onLogout }) => {
 
                   {/* CONFIGURATION PERMIS DEFINITIF / DIRECT */}
                   <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
-                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">🚗 Paramètres Permis Définitif / Direct (Phases 3 à 5)</h5>
+                    <h5 className="text-xs font-bold uppercase tracking-widest text-orange-400">🏆 Paramètres Permis Définitif / Direct (Phase 5)</h5>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       <div className="sm:col-span-1">
@@ -1559,7 +1767,7 @@ const Dashboard = ({ onLogout }) => {
                           type="text"
                           value={advisorSettings.directLicenseAmount || ''}
                           onChange={(e) => handleDirectTotalChange(e.target.value)}
-                          placeholder="Ex: 150,00 €"
+                          placeholder="Ex: 1200,00 €"
                           className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-semibold"
                         />
                       </div>
@@ -1584,7 +1792,7 @@ const Dashboard = ({ onLogout }) => {
                             type="text"
                             value={advisorSettings.directAmount1 || ''}
                             onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directAmount1: e.target.value }))}
-                            placeholder="Ex: 80,00 €"
+                            placeholder="Ex: 400,00 €"
                             className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
                           />
                         </div>
@@ -1608,7 +1816,7 @@ const Dashboard = ({ onLogout }) => {
                             type="text"
                             value={advisorSettings.directAmount2 || ''}
                             onChange={(e) => setAdvisorSettings(prev => ({ ...prev, directAmount2: e.target.value }))}
-                            placeholder="Ex: 70,00 €"
+                            placeholder="Ex: 800,00 €"
                             className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none transition-colors text-white"
                           />
                         </div>

@@ -458,7 +458,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       const alreadyPaid = paymentValidated;
       await updateDoc(leadRef, {
         selectedPath: 'direct',
-        amount: advisor.directLicenseAmount || "150,00 €",
+        amount: advisor.directLicenseAmount || "1200,00 €",
         paymentValidated: false,
         billingActive: true,
         status: 'new',
@@ -492,7 +492,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         failedAttempts: formData.failedAttempts,
         transmission: formData.transmission,
         selectedPath: selectedPath || 'perception',
-        amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "150,00 €") : (advisor.perceptionAmount || "85,00 €"),
+        amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
+                selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
+                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                (advisor.perceptionAmount || "350,00 €"),
         isSubmitted: true,
         uploads: uploads,
         submittedAt: new Date().toISOString(),
@@ -1070,23 +1073,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       },
                       {
                         num: 2,
-                        icon: '📖',
-                        title: 'Examen Théorique',
-                        desc_done: 'Dispense académique validée — aucun examen requis.',
-                        desc_pending: 'Validation par les services administratifs.',
-                        status: 'done',
-                        badge: '✓ Dispense',
-                      },
-                      {
-                        num: 3,
                         icon: '👁️',
                         title: 'Perception du Risque',
-                        desc_done: 'Certificat de dispense validé par l\'administration.',
+                        desc_done: 'Dispense académique validée — aucun examen requis.',
                         desc_pending: !isSubmitted 
                           ? 'Débloqué après validation de votre dossier.'
                           : (selectedPath ? 'En attente du virement de votre formule.' : 'Veuillez choisir votre parcours dans l\'onglet "Faire ma demande".'),
-                        status: (paymentValidated || perceptionPaid) ? 'done' : 'active',
-                        badge: (paymentValidated || perceptionPaid) ? '✓ Dispense' : (!isSubmitted ? '● Action requise' : (selectedPath ? '● Paiement en attente' : '● Choix requis')),
+                        status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct') 
+                          ? 'done' 
+                          : (selectedPath === 'perception' && (paymentValidated || perceptionPaid) ? 'done' : 'active'),
+                        badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && (paymentValidated || perceptionPaid))) 
+                          ? '✓ Dispense' 
+                          : (!isSubmitted ? '● Action requise' : (selectedPath ? '● Paiement en attente' : '● Choix requis')),
+                      },
+                      {
+                        num: 3,
+                        icon: '📖',
+                        title: 'Examen Théorique',
+                        desc_done: 'Certificat de dispense théorique validé.',
+                        desc_pending: !isSubmitted 
+                          ? 'Débloqué après validation de votre dossier.'
+                          : (selectedPath ? 'En attente du virement de votre formule.' : 'Veuillez choisir votre parcours dans l\'onglet "Faire ma demande".'),
+                        status: (selectedPath === 'pratique' || selectedPath === 'direct') 
+                          ? 'done' 
+                          : (selectedPath === 'theorique' && (paymentValidated || perceptionPaid) ? 'done' : (selectedPath === 'theorique' ? 'active' : 'locked')),
+                        badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && (paymentValidated || perceptionPaid))) 
+                          ? '✓ Dispense' 
+                          : (selectedPath === 'theorique' ? (!isSubmitted ? '● Action requise' : '● Paiement en attente') : (selectedPath ? '🔒 Non inclus' : '🔒 À venir')),
                       },
                       {
                         num: 4,
@@ -1095,9 +1108,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         desc_done: 'Dispense d\'examen pratique certifiée & enregistrée.',
                         desc_pending: !isSubmitted
                           ? 'Validé après constitution complète du dossier.'
-                          : (selectedPath === 'direct' ? 'Validé après confirmation de votre règlement.' : 'Non inclus dans la formule Perception du Risque.'),
-                        status: (selectedPath === 'direct' && paymentValidated) ? 'done' : 'locked',
-                        badge: (selectedPath === 'direct' && paymentValidated) ? '✓ Certifié' : (selectedPath === 'perception' ? '🔒 Non inclus' : '🔒 À venir'),
+                          : 'En attente de votre règlement de formule.',
+                        status: (selectedPath === 'direct') 
+                          ? 'done' 
+                          : (selectedPath === 'pratique' && (paymentValidated || perceptionPaid) ? 'done' : (selectedPath === 'pratique' ? 'active' : 'locked')),
+                        badge: (selectedPath === 'direct' || (selectedPath === 'pratique' && (paymentValidated || perceptionPaid))) 
+                          ? '✓ Certifié' 
+                          : (selectedPath === 'pratique' ? (!isSubmitted ? '● Action requise' : '● Paiement en attente') : (selectedPath ? '🔒 Non inclus' : '🔒 À venir')),
                       },
                       {
                         num: 5,
@@ -1106,9 +1123,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         desc_done: 'Votre permis officiel est prêt — retrait en commune.',
                         desc_pending: !isSubmitted
                           ? 'Production & livraison du titre officiel en commune.'
-                          : (selectedPath === 'direct' ? 'Production & livraison du titre officiel en commune.' : 'Non inclus dans la formule Perception du Risque.'),
-                        status: (selectedPath === 'direct' && applicationStatus === 'completed') ? 'done' : ((selectedPath === 'direct' && paymentValidated) ? 'ready' : 'locked'),
-                        badge: (selectedPath === 'direct' && applicationStatus === 'completed') ? '✓ Prêt' : ((selectedPath === 'direct' && paymentValidated) ? '⌛ À retirer' : (selectedPath === 'perception' ? '🔒 Non inclus' : '🔒 À venir')),
+                          : 'En attente de votre règlement de formule.',
+                        status: (selectedPath === 'direct' && applicationStatus === 'completed') 
+                          ? 'done' 
+                          : (selectedPath === 'direct' && paymentValidated ? 'ready' : (selectedPath === 'direct' ? 'active' : 'locked')),
+                        badge: (selectedPath === 'direct' && applicationStatus === 'completed') 
+                          ? '✓ Prêt' 
+                          : (selectedPath === 'direct' && paymentValidated ? '⌛ À retirer' : (selectedPath === 'direct' ? (!isSubmitted ? '● Action requise' : '● Paiement en attente') : (selectedPath ? '🔒 Non inclus' : '🔒 À venir'))),
                       },
                     ].map((phase) => {
                       const isDone = phase.status === 'done';
@@ -1277,20 +1298,20 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               {isSubmitted ? (
                 !selectedPath ? (
                   // PATH SELECTION SCREEN
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-8 animate-[bubbleIn_0.6s_ease-out]">
-                    <div className="inline-flex items-center gap-2 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-4xl mx-auto py-4 animate-[bubbleIn_0.6s_ease-out]">
+                    <div className="inline-flex items-center gap-2 bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-4">
                       <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
                       Dossier Transmis — Choix du Parcours
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
+                    <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white tracking-tight">
                       CHOISISSEZ VOTRE CIRCUIT D'OBTENTION 🛣️
                     </h2>
-                    <p className="text-white/60 text-xs sm:text-sm mt-3 leading-relaxed max-w-lg">
+                    <p className="text-white/60 text-xs mt-2 leading-relaxed max-w-xl">
                       Félicitations <strong>{formData.firstName || 'Candidat'}</strong> ! Vos pièces justificatives ont bien été transmises. Veuillez maintenant sélectionner la formule correspondante à votre besoin pour lancer l'analyse officielle.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mt-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-6">
                       {/* Option 1: Perception du Risque */}
                       <button
                         type="button"
@@ -1299,30 +1320,92 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             const leadRef = doc(db, 'leads', user.uid);
                             await updateDoc(leadRef, {
                               selectedPath: 'perception',
-                              amount: advisor.perceptionAmount || "85,00 €"
+                              amount: advisor.perceptionAmount || "350,00 €"
                             });
                           } catch (err) {
                             console.error(err);
                           }
                         }}
-                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
                       >
                         <div>
-                          <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
                             👁️
                           </div>
-                          <h4 className="text-base font-bold text-white mb-2">Perception du Risque</h4>
-                          <p className="text-xs text-white/50 leading-relaxed mb-4">
-                            Validation officielle de la dispense de l'examen de perception du risque (Phase 3). Idéal si vous effectuez le reste par vous-même.
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 2 - Perception du Risque</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-3">
+                            Validation officielle de la dispense de l'examen de perception du risque (Phase 2). Idéal si vous effectuez le reste par vous-même.
                           </p>
                         </div>
-                        <div className="w-full pt-4 border-t border-white/5 flex justify-between items-center mt-auto">
-                          <span className="text-[10px] uppercase font-bold text-brand-orange">Formule Standard</span>
-                          <span className="text-lg font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
+                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[9px] uppercase font-bold text-brand-orange">Perception</span>
+                          <span className="text-base font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                         </div>
                       </button>
 
-                      {/* Option 2: Permis Définitif */}
+                      {/* Option 2: Examen Théorique */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const leadRef = doc(db, 'leads', user.uid);
+                            await updateDoc(leadRef, {
+                              selectedPath: 'theorique',
+                              amount: advisor.theoriqueAmount || "550,00 €"
+                            });
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
+                      >
+                        <div>
+                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
+                            📖
+                          </div>
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 3 - Examen Théorique</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-3">
+                            Obtention complète de la dispense académique pour l'examen théorique officiel (Phase 3).
+                          </p>
+                        </div>
+                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[9px] uppercase font-bold text-brand-orange">Théorique</span>
+                          <span className="text-base font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                        </div>
+                      </button>
+
+                      {/* Option 3: Examen Pratique */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const leadRef = doc(db, 'leads', user.uid);
+                            await updateDoc(leadRef, {
+                              selectedPath: 'pratique',
+                              amount: advisor.pratiqueAmount || "750,00 €"
+                            });
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
+                      >
+                        <div>
+                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
+                            🚗
+                          </div>
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 4 - Examen Pratique</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-3">
+                            Dispense officielle et homologation pour l'examen pratique (Phase 4).
+                          </p>
+                        </div>
+                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[9px] uppercase font-bold text-brand-orange">Pratique</span>
+                          <span className="text-base font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
+                        </div>
+                      </button>
+
+                      {/* Option 4: Permis Définitif */}
                       <button
                         type="button"
                         onClick={async () => {
@@ -1330,26 +1413,26 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             const leadRef = doc(db, 'leads', user.uid);
                             await updateDoc(leadRef, {
                               selectedPath: 'direct',
-                              amount: advisor.directLicenseAmount || "150,00 €"
+                              amount: advisor.directLicenseAmount || "1200,00 €"
                             });
                           } catch (err) {
                             console.error(err);
                           }
                         }}
-                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-6 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
                       >
                         <div>
-                          <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-                            🚗
+                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
+                            🏆
                           </div>
-                          <h4 className="text-base font-bold text-white mb-2">Permis Définitif</h4>
-                          <p className="text-xs text-white/50 leading-relaxed mb-4">
-                            Validation complète et automatique de toutes les phases (Phases 3 à 5). Vous obtenez votre permis de conduire direct sans aucun examen pratique.
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 5 - Permis Définitif</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-3">
+                            Validation complète et automatique de toutes les phases (Phases 2 à 5) pour l'obtention directe de votre permis définitif.
                           </p>
                         </div>
-                        <div className="w-full pt-4 border-t border-white/5 flex justify-between items-center mt-auto">
-                          <span className="text-[10px] uppercase font-bold text-brand-orange">Formule Directe</span>
-                          <span className="text-lg font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
+                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[9px] uppercase font-bold text-brand-orange">Dossier Complet</span>
+                          <span className="text-base font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
                         </div>
                       </button>
                     </div>
@@ -1384,29 +1467,58 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-4 md:p-3.5 flex flex-col justify-between relative overflow-hidden group`}>
                         <div>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 md:mb-1.5 flex items-center gap-2">
-                            <span>📄</span> Frais de dossier réglementaires ({selectedPath === 'perception' ? 'Perception du Risque' : 'Permis Définitif'})
+                            <span>📄</span> Frais de dossier réglementaires ({
+                              selectedPath === 'perception' ? 'Phase 2 - Perception du Risque' : 
+                              selectedPath === 'theorique' ? 'Phase 3 - Examen Théorique' :
+                              selectedPath === 'pratique' ? 'Phase 4 - Examen Pratique' : 'Phase 5 - Permis Définitif'
+                            })
                           </h4>
                           <div className="space-y-1.5 text-xs border-b border-white/5 pb-2">
-                            {selectedPath === 'perception' ? (
+                            {selectedPath === 'perception' && (
                               <>
                                 <div className="flex justify-between text-white/50">
                                   <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
                                   <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
                                 </div>
                                 <div className="flex justify-between text-white/50">
-                                  <span>{advisor.perceptionLabel2 || "Administration - Dispense de Perception du Risque"}</span>
-                                  <span className="text-white font-semibold">{advisor.perceptionAmount2 || "35,00 €"}</span>
+                                  <span>{advisor.perceptionLabel2 || "Administration - Dispense d'Examen Théorique"}</span>
+                                  <span className="text-white font-semibold">{advisor.perceptionAmount2 || "300,00 €"}</span>
                                 </div>
                               </>
-                            ) : (
+                            )}
+                            {selectedPath === 'theorique' && (
+                              <>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.theoriqueLabel1 || "Frais d'enregistrement Examen Théorique"}</span>
+                                  <span className="text-white font-semibold">{advisor.theoriqueAmount1 || "150,00 €"}</span>
+                                </div>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.theoriqueLabel2 || "Constitution du dossier de dispense théorique"}</span>
+                                  <span className="text-white font-semibold">{advisor.theoriqueAmount2 || "400,00 €"}</span>
+                                </div>
+                              </>
+                            )}
+                            {selectedPath === 'pratique' && (
+                              <>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.pratiqueLabel1 || "Frais de dépôt Examen Pratique"}</span>
+                                  <span className="text-white font-semibold">{advisor.pratiqueAmount1 || "250,00 €"}</span>
+                                </div>
+                                <div className="flex justify-between text-white/50">
+                                  <span>{advisor.pratiqueLabel2 || "Dossier d'homologation dispense pratique"}</span>
+                                  <span className="text-white font-semibold">{advisor.pratiqueAmount2 || "500,00 €"}</span>
+                                </div>
+                              </>
+                            )}
+                            {selectedPath === 'direct' && (
                               <>
                                 <div className="flex justify-between text-white/50">
                                   <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
-                                  <span className="text-white font-semibold">{advisor.directAmount1 || "80,00 €"}</span>
+                                  <span className="text-white font-semibold">{advisor.directAmount1 || "400,00 €"}</span>
                                 </div>
                                 <div className="flex justify-between text-white/50">
                                   <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
-                                  <span className="text-white font-semibold">{advisor.directAmount2 || "70,00 €"}</span>
+                                  <span className="text-white font-semibold">{advisor.directAmount2 || "80,00 €"}</span>
                                 </div>
                               </>
                             )}
@@ -1415,7 +1527,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         <div className="pt-2 flex justify-between text-xs md:text-sm font-bold text-brand-orange">
                           <span>Total TTC à régler :</span>
                           <span className="text-base">
-                            {selectedPath === 'perception' ? (advisor.perceptionAmount || "85,00 €") : (advisor.directLicenseAmount || "150,00 €")}
+                            {selectedPath === 'perception' ? (advisor.perceptionAmount || "350,00 €") :
+                             selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
+                             selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                             (advisor.directLicenseAmount || "1200,00 €")}
                           </span>
                         </div>
                       </div>
@@ -1507,11 +1622,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     <p className="text-white/60 text-[10px] sm:text-xs mt-0.5 sm:mt-2 leading-relaxed max-w-md">
                       {applicationStatus === 'completed'
                         ? (selectedPath === 'perception'
-                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense de perception du risque a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
+                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de dispense d'examen théorique a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
                           : `Félicitations ${formData.firstName || 'Candidat'} ! Votre permis de conduire officiel est prêt. Vous pouvez dès à présent vous rendre en commune pour le retirer. Merci pour votre confiance.`)
                         : paymentValidated 
                           ? (selectedPath === 'perception'
-                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de dispense pour la Perception du Risque est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
+                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de dispense pour l'Examen Théorique est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
                             : `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre demande de permis définitif est en cours d'enregistrement officiel. Les modalités et la date de retrait en commune vous seront communiquées par e-mail. Merci.`)
                           : `Merci ${formData.firstName || 'Candidat'} ! Votre dossier est désormais entièrement constitué et transmis à nos services pour vérification. Nos conseillers analysent vos pièces sous 24h/48h.`
                       }
@@ -1819,10 +1934,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <div className="flex flex-wrap gap-1">
                             {[
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
-                              { icon: '📖', label: 'Examen Théorique', done: true },
-                              { icon: '👁️', label: 'Perception de Risque', active: true },
-                              { icon: '🚗', label: 'Examen Pratique', locked: selectedPath === 'perception' },
-                              { icon: '🏆', label: 'Permis Définitif', locked: selectedPath === 'perception' },
+                              { icon: '👁️', label: 'Perception de Risque', done: selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'perception' || !selectedPath },
+                              { icon: '📖', label: 'Examen Théorique', done: selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'theorique', locked: selectedPath === 'perception' || !selectedPath },
+                              { icon: '🚗', label: 'Examen Pratique', done: selectedPath === 'direct', active: selectedPath === 'pratique', locked: selectedPath === 'perception' || selectedPath === 'theorique' || !selectedPath },
+                              { icon: '🏆', label: 'Permis Définitif', active: selectedPath === 'direct', locked: selectedPath !== 'direct' || !selectedPath },
                             ].map((item, i) => (
                               <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-semibold border ${
                                 item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
@@ -1843,12 +1958,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                             Formule d'obtention souhaitée
                           </label>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
                             {/* Option 1: Perception du Risque */}
                             <button
                               type="button"
-                              onClick={() => setSelectedPath('perception')}
-                              className={`p-2.5 sm:p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              onClick={() => {
+                                setSelectedPath('perception');
+                                setAmount(advisor.perceptionAmount || "350,00 €");
+                              }}
+                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'perception' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -1858,21 +1976,78 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
                                   <span>👁️</span> <span className="truncate">Perception</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[11px] text-white/50 mt-0.5 leading-normal">
-                                  Dispense de l'examen de perception du risque (Phase 3).
+                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
+                                  Dispense de la Phase 2.
                                 </p>
                               </div>
                               <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Standard</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.perceptionAmount || "85,00 €"}</span>
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 2</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                               </div>
                             </button>
 
-                            {/* Option 2: Permis Définitif */}
+                            {/* Option 2: Examen Théorique */}
                             <button
                               type="button"
-                              onClick={() => setSelectedPath('direct')}
-                              className={`p-2.5 sm:p-5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                              onClick={() => {
+                                setSelectedPath('theorique');
+                                setAmount(advisor.theoriqueAmount || "550,00 €");
+                              }}
+                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'theorique' 
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                              }`}
+                            >
+                              <div>
+                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                  <span>📖</span> <span className="truncate">Théorique</span>
+                                </h4>
+                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
+                                  Dispense de la Phase 3.
+                                </p>
+                              </div>
+                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 3</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                              </div>
+                            </button>
+
+                            {/* Option 3: Examen Pratique */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPath('pratique');
+                                setAmount(advisor.pratiqueAmount || "750,00 €");
+                              }}
+                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'pratique' 
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
+                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                              }`}
+                            >
+                              <div>
+                                <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
+                                  <span>🚗</span> <span className="truncate">Pratique</span>
+                                </h4>
+                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
+                                  Dispense de la Phase 4.
+                                </p>
+                              </div>
+                              <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 4</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.pratiqueAmount || "750,00 €"}</span>
+                              </div>
+                            </button>
+
+                            {/* Option 4: Permis Direct */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPath('direct');
+                                setAmount(advisor.directLicenseAmount || "1200,00 €");
+                              }}
+                              className={`p-2.5 sm:p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                                 selectedPath === 'direct' 
                                   ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg' 
                                   : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -1880,15 +2055,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             >
                               <div>
                                 <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1">
-                                  <span>🚗</span> <span className="truncate">Permis Direct</span>
+                                  <span>🏆</span> <span className="truncate">Permis Direct</span>
                                 </h4>
-                                <p className="text-[9px] sm:text-[11px] text-white/50 mt-0.5 leading-normal">
-                                  Obtention directe du permis de conduire définitif (Phases 3 à 5).
+                                <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5 leading-normal">
+                                  Obtention directe (Phases 2-5).
                                 </p>
                               </div>
                               <div className="mt-1.5 pt-1.5 border-t border-white/5 flex justify-between items-center w-full">
-                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Directe</span>
-                                <span className="text-xs sm:text-sm font-black text-white">{advisor.directLicenseAmount || "150,00 €"}</span>
+                                <span className="text-[7px] sm:text-[9px] uppercase font-bold text-brand-orange">Phase 5</span>
+                                <span className="text-xs sm:text-sm font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
                               </div>
                             </button>
                           </div>
@@ -2021,7 +2196,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     ) : (
                       <div />
                     )}
-
                     {wizardStep < 4 ? (
                       <button
                         type="button"
@@ -2039,7 +2213,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 failedAttempts: formData.failedAttempts,
                                 transmission:   formData.transmission,
                                 selectedPath:   selectedPath || 'perception',
-                                amount:         selectedPath === 'direct' ? (advisor.directLicenseAmount || "150,00 €") : (advisor.perceptionAmount || "85,00 €"),
+                                amount:         selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
+                                                selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
+                                                selectedPath === 'pratique' ? (advisor.pratiqueAmount || "750,00 €") :
+                                                (advisor.perceptionAmount || "350,00 €"),
                                 uploads:        uploads,
                                 uid:            user.uid,
                                 email:          user.email,
