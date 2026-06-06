@@ -513,6 +513,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       await updateDoc(userRef, {
         status: 'new'
       });
+
+      // Send automated advisor message for formula initiation
+      try {
+        const messagesRef = collection(db, 'chats', user.uid, 'messages');
+        const chatDocRef = doc(db, 'chats', user.uid);
+        const formulaName = targetPath === 'perception' ? 'Perception du Risque' : targetPath === 'pratique' ? 'Examen Pratique' : targetPath === 'theorique' ? 'Examen Théorique' : 'Permis Direct';
+        const textMessage = `Félicitations ${formData.firstName || 'Candidat'} ! J'ai bien reçu votre demande de changement de formule. Nous venons d'initier votre formule '${formulaName}'. Nous vous invitons à régler votre acompte de 200,00 € par virement bancaire pour démarrer. 🚀`;
+
+        await addDoc(messagesRef, {
+          sender: 'advisor',
+          text: textMessage,
+          timestamp: serverTimestamp()
+        });
+
+        await setDoc(chatDocRef, {
+          userId: user.uid,
+          userName: `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || user.email,
+          userEmail: user.email,
+          lastMessageText: textMessage,
+          lastMessageTime: serverTimestamp(),
+          unreadByAdmin: false,
+          unreadByClient: true
+        }, { merge: true });
+      } catch (chatErr) {
+        console.error("Failed to write migration chat message:", chatErr);
+      }
+
       setActiveTab('wizard');
       setShowUpgradeConfirm(false);
     } catch (err) {
@@ -1643,9 +1670,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier est en cours d'analyse par nos conseillers. Afin de finaliser et de valider l'enregistrement et de procéder à l'édition officielle ${
                           selectedPath === 'perception' ? "de votre Certificat de perception du risque" :
                           selectedPath === 'theorique' ? "de votre Certificat d'examen théorique" :
-                          selectedPath === 'pratique' ? "de votre Certificat d'examen pratique" :
                           "de votre permis de conduire"
-                        } auprès du SPF Mobilité, veuillez procéder au règlement de l'acompte ci-dessous. Le reste sera soldé lorsque le certificat sera disponible et prêt à être retiré.`
+                        } auprès du SPF Mobilité, veuillez procéder au règlement de l'acompte ci-dessous. Le reste sera soldé lorsque ${
+                          selectedPath === 'perception' ? "l'attestation sera disponible et prête à être retirée." :
+                          selectedPath === 'theorique' ? "le certificat sera disponible et prêt à être retiré." :
+                          "le permis definitif sera disponible et prêt à être retiré."
+                        }`
                       )}
                     </p>
 

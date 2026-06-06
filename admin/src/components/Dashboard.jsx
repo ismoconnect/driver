@@ -1197,19 +1197,19 @@ const Dashboard = ({ onLogout }) => {
                     num: 2,
                     icon: '📖',
                     title: selectedPath === 'theorique' ? `Phase 2 : Examen Théorique — ${splitDetails.total}` : 'Phase 2 : Examen Théorique',
-                    desc: (selectedPath === 'pratique' || selectedPath === 'direct')
+                    desc: (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'Certificat de dispense théorique validé.'
                       : (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'Certificat de dispense théorique validé (payé).'
                       : (selectedPath === 'theorique')
                       ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
                       : 'En attente de la progression ou non incluse.',
-                    status: (selectedPath === 'pratique' || selectedPath === 'direct')
+                    status: (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'done'
                       : (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'done'
                       : (selectedPath === 'theorique' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
+                    badge: (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
                       ? '✓ Dispense'
                       : (selectedPath === 'theorique' ? '● Action requise' : '🔒 Non inclus'),
                   },
@@ -1217,17 +1217,19 @@ const Dashboard = ({ onLogout }) => {
                     num: 3,
                     icon: '👁️',
                     title: selectedPath === 'perception' ? `Phase 3 : Perception du Risque — ${splitDetails.total}` : 'Phase 3 : Perception du Risque',
-                    desc: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                    desc: (selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'Dispense académique validée — aucun examen requis.'
                       : (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'Dispense académique validée — aucun examen requis (payé).'
-                      : 'Phase active : nécessite l\'activation de la facturation et la validation des virements.',
-                    status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                      : (selectedPath === 'perception')
+                      ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
+                      : 'En attente de la progression ou non incluse.',
+                    status: (selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'done'
                       : (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'done'
                       : (selectedPath === 'perception' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
+                    badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
                       ? '✓ Dispense'
                       : (selectedPath === 'perception' ? '● Action requise' : '🔒 Non inclus'),
                   },
@@ -1522,7 +1524,7 @@ const Dashboard = ({ onLogout }) => {
                                           let textMessage = "";
                                           if (nextVal) {
                                             if (isSplit) {
-                                              textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
+                                              textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : selectedLead.rawLead?.selectedPath === 'pratique' ? 'Pratique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
                                             } else {
                                               textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
                                             }
