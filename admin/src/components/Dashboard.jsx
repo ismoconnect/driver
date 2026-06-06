@@ -543,7 +543,12 @@ const Dashboard = ({ onLogout }) => {
         if (leadToReset.rawLead && leadToReset.rawLead.id) {
           await updateDoc(doc(db, "leads", leadToReset.rawLead.id), { 
             status: "new",
-            isSubmitted: false
+            isSubmitted: false,
+            billingActive: false,
+            paymentValidated: false,
+            soldeValidated: false,
+            selectedPath: "",
+            attestationUrl: ""
           });
         }
         if (leadToReset.rawUser && leadToReset.rawUser.uid) {
@@ -1146,7 +1151,6 @@ const Dashboard = ({ onLogout }) => {
                                 <span className="text-[8px] text-slate-500 font-mono break-all">{url}</span>
                               </div>
                             ) : (
-                              /* Manquant */
                               <div className="w-full rounded-2xl border-2 border-dashed border-white/10 bg-slate-900/40 flex flex-col items-center justify-center gap-2 py-8">
                                 <span className="text-2xl opacity-20">{meta.icon}</span>
                                 <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">Non reçu</span>
@@ -1172,48 +1176,98 @@ const Dashboard = ({ onLogout }) => {
                 const currentStatus = selectedLead.status || 'new';
 
                 const pathName = selectedLead.rawLead?.selectedPath || '';
-                let step4Title = "Étape 4 : Paiement initial";
-                let step4Desc = "Vérifiez votre compte bancaire. Dès que le virement est reçu, validez pour démarrer le traitement.";
-                let step5Title = "Étape 5 : Régler le Solde Restant";
-                let step5Desc = "Valider dès réception du solde final pour finaliser le dossier financièrement.";
-                let step2InfoNote = null;
+                const selectedPath = pathName;
+                const paymentValidated = isPaymentValidated;
 
-                if (pathName === 'perception') {
-                  step4Title = `Étape 4 : Valider l'acompte (Phase 2 - Perception) — ${splitDetails.firstPayment}`;
-                  step4Desc = isPaymentValidated 
-                    ? "L'acompte pour la Phase 2 (Perception du Risque) a été reçu et validé." 
-                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 2 (Perception).`;
-                  step5Title = `Étape 5 : Valider le solde (Phase 2 - Perception) — ${splitDetails.secondPayment}`;
-                  step5Desc = isSoldeValidated
-                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 2 payée en totalité.`
-                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 2.`;
-                } else if (pathName === 'theorique') {
-                  step2InfoNote = "💡 Phase 2 (Perception du Risque) est dispensée d'office pour cette formule.";
-                  step4Title = `Étape 4 : Valider l'acompte (Phase 3 - Examen Théorique) — ${splitDetails.firstPayment}`;
-                  step4Desc = isPaymentValidated 
-                    ? "L'acompte pour la Phase 3 (Examen Théorique) a été reçu et validé." 
-                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 3 (Examen Théorique).`;
-                  step5Title = `Étape 5 : Valider le solde (Phase 3 - Examen Théorique) — ${splitDetails.secondPayment}`;
-                  step5Desc = isSoldeValidated
-                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 3 payée en totalité.`
-                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 3.`;
-                } else if (pathName === 'pratique') {
-                  step2InfoNote = "💡 Phase 2 (Perception) et Phase 3 (Théorique) sont dispensées d'office.";
-                  step4Title = `Étape 4 : Valider le paiement complet (Phase 4 - Examen Pratique) — ${splitDetails.total}`;
-                  step4Desc = isPaymentValidated
-                    ? "Paiement total reçu. Phase 4 (Examen Pratique) validée."
-                    : `Vérifiez la réception du virement complet de ${splitDetails.total} pour valider la Phase 4.`;
-                } else if (pathName === 'direct') {
-                  step2InfoNote = "💡 Phases 2, 3 et 4 (Perception, Théorie et Pratique) sont dispensées d'office.";
-                  step4Title = `Étape 4 : Valider l'acompte (Phase 5 - Permis Définitif) — ${splitDetails.firstPayment}`;
-                  step4Desc = isPaymentValidated 
-                    ? "L'acompte pour la Phase 5 (Permis Définitif) a été reçu et validé." 
-                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 5.`;
-                  step5Title = `Étape 5 : Valider le solde (Phase 5 - Permis Définitif) — ${splitDetails.secondPayment}`;
-                  step5Desc = isSoldeValidated
-                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 5 payée en totalité.`
-                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 5.`;
-                }
+                // Determine status and configuration for each phase
+                const phases = [
+                  {
+                    num: 1,
+                    icon: '📋',
+                    title: 'Phase 1 : Affiliation Candidat',
+                    desc: 'Compte agréé & affilié à notre réseau officiel. Le candidat est actif sur la plateforme.',
+                    status: 'done',
+                    badge: '✓ Agréé',
+                  },
+                  {
+                    num: 2,
+                    icon: '👁️',
+                    title: selectedPath === 'perception' ? `Phase 2 : Perception du Risque — ${splitDetails.total}` : 'Phase 2 : Perception du Risque',
+                    desc: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'Dispense académique validée — aucun examen requis.'
+                      : (selectedPath === 'perception' && (paymentValidated || isPaymentValidated))
+                      ? 'Dispense académique validée — aucun examen requis (payé).'
+                      : 'Phase active : nécessite l\'activation de la facturation et la validation des virements.',
+                    status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'done'
+                      : (selectedPath === 'perception' && (paymentValidated || isPaymentValidated))
+                      ? 'done'
+                      : (selectedPath === 'perception' ? 'active' : 'locked'),
+                    badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && (paymentValidated || isPaymentValidated)))
+                      ? '✓ Dispense'
+                      : (selectedPath === 'perception' ? '● Action requise' : '🔒 Non inclus'),
+                  },
+                  {
+                    num: 3,
+                    icon: '📖',
+                    title: selectedPath === 'theorique' ? `Phase 3 : Examen Théorique — ${splitDetails.total}` : 'Phase 3 : Examen Théorique',
+                    desc: (selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'Certificat de dispense théorique validé.'
+                      : (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated))
+                      ? 'Certificat de dispense théorique validé (payé).'
+                      : (selectedPath === 'theorique')
+                      ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
+                      : 'En attente de la progression ou non incluse.',
+                    status: (selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'done'
+                      : (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated))
+                      ? 'done'
+                      : (selectedPath === 'theorique' ? 'active' : 'locked'),
+                    badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated)))
+                      ? '✓ Dispense'
+                      : (selectedPath === 'theorique' ? '● Action requise' : '🔒 Non inclus'),
+                  },
+                  {
+                    num: 4,
+                    icon: '🚗',
+                    title: selectedPath === 'pratique' ? `Phase 4 : Examen Pratique — ${splitDetails.total}` : 'Phase 4 : Examen Pratique',
+                    desc: (selectedPath === 'direct')
+                      ? 'Dispense d\'examen pratique certifiée & enregistrée.'
+                      : (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated))
+                      ? 'Dispense d\'examen pratique certifiée & enregistrée (payé).'
+                      : (selectedPath === 'pratique')
+                      ? 'Phase active : nécessite l\'activation de la facturation et la validation du paiement complet.'
+                      : 'En attente de la progression ou non incluse.',
+                    status: (selectedPath === 'direct')
+                      ? 'done'
+                      : (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated))
+                      ? 'done'
+                      : (selectedPath === 'pratique' ? 'active' : 'locked'),
+                    badge: (selectedPath === 'direct' || (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated)))
+                      ? '✓ Certifié'
+                      : (selectedPath === 'pratique' ? '● Action requise' : '🔒 Non inclus'),
+                  },
+                  {
+                    num: 5,
+                    icon: '🏆',
+                    title: selectedPath === 'direct' ? `Phase 5 : Permis Définitif — ${splitDetails.total}` : 'Phase 5 : Permis Définitif',
+                    desc: (selectedPath === 'direct' && currentStatus === 'completed')
+                      ? 'Votre permis officiel est prêt — retrait en commune.'
+                      : (selectedPath === 'direct' && (paymentValidated || isPaymentValidated))
+                      ? 'Votre permis officiel est validé (payé).'
+                      : (selectedPath === 'direct')
+                      ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
+                      : 'En attente de la progression ou non incluse.',
+                    status: (selectedPath === 'direct' && currentStatus === 'completed')
+                      ? 'done'
+                      : (selectedPath === 'direct' && (paymentValidated || isPaymentValidated))
+                      ? 'done'
+                      : (selectedPath === 'direct' ? 'active' : 'locked'),
+                    badge: (selectedPath === 'direct' && currentStatus === 'completed')
+                      ? '✓ Prêt'
+                      : (selectedPath === 'direct' ? '● Action requise' : '🔒 Non inclus'),
+                  }
+                ];
 
                 let activeStep = 2;
                 let nextActionLabel = "Sélectionner la formule du candidat";
@@ -1279,409 +1333,337 @@ const Dashboard = ({ onLogout }) => {
                       {/* Vertical connector line background */}
                       <div className="absolute left-[31px] sm:left-[39px] top-6 bottom-6 w-0.5 border-l-2 border-dashed border-slate-800 pointer-events-none" />
 
-                      {/* --- STEP 1 : Affiliation (Always completed) --- */}
-                      <div className="relative flex gap-6 pb-10 transition-all duration-300">
-                        {/* Timeline Circle */}
-                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                            ✓
-                          </div>
-                        </div>
+                      {/* Render Phases 1 to 5 dynamically */}
+                      {phases.map((phase) => {
+                        const isDone = phase.status === 'done';
+                        const isActive = phase.status === 'active';
+                        const isLocked = phase.status === 'locked';
 
-                        {/* Step Card Content */}
-                        <div className="flex-1 bg-slate-950/40 border border-emerald-500/10 rounded-2xl p-5">
-                          <div className="flex justify-between items-start gap-4 flex-wrap">
-                            <div>
-                              <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Étape 1 : Affiliation Candidat</span>
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Agrée</span>
-                              </div>
-                              <p className="text-xs text-slate-400">Compte agréé & affilié à notre réseau officiel. Le candidat est actif sur la plateforme.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* --- STEP 2 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 2 ? 'opacity-40' : ''}`}>
-                        {/* Timeline Circle */}
-                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                          {hasSelectedPath ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                              ✓
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500 border border-orange-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-orange-500/20 animate-pulse">
-                              2
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 2 ? 'border-orange-500/30 bg-orange-500/[0.02] shadow-[0_0_20px_rgba(249,115,22,0.05)]' : 'border-white/5'}`}>
-                          <div className="flex justify-between items-start gap-4 flex-wrap">
-                            <div>
-                              <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-orange-500">Étape 2 : Formule du Candidat</span>
-                                {hasSelectedPath ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 animate-pulse">👉 Action requise</span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400">Le parcours d'apprentissage sélectionné pour le candidat.</p>
-                            </div>
-                            {hasSelectedPath && !isEditingPath && (
-                              <button
-                                onClick={() => setIsEditingPath(true)}
-                                className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 rounded-lg text-[10px] font-bold transition-all"
-                              >
-                                ✏️ Modifier
-                              </button>
-                            )}
-                          </div>
-
-                          {(!hasSelectedPath || isEditingPath) ? (
-                            <div className="mt-4 p-4 bg-slate-900/40 border border-orange-500/20 rounded-xl flex flex-col gap-3">
-                              <p className="text-xs font-bold text-slate-300">
-                                {isEditingPath ? "Modifier la formule attribuée au candidat :" : "⚠️ Aucune formule sélectionnée. Sélectionnez un parcours ci-dessous :"}
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                                {[
-                                  { path: 'perception', label: '📖 Perception', desc: 'Phase 2', amount: advisorSettings.perceptionAmount || "350,00 €" },
-                                  { path: 'theorique', label: '📚 Théorique', desc: 'Phase 3', amount: advisorSettings.theoriqueAmount || "550,00 €" },
-                                  { path: 'pratique', label: '🚗 Pratique', desc: 'Phase 4', amount: advisorSettings.pratiqueAmount || "2100,00 €" },
-                                  { path: 'direct', label: '🏆 Direct', desc: 'Phase 5', amount: advisorSettings.directLicenseAmount || "1200,00 €" }
-                                ].map((opt) => (
-                                  <button
-                                    key={opt.path}
-                                    disabled={updating}
-                                    onClick={() => handleSelectPath(opt.path)}
-                                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
-                                      selectedLead.rawLead?.selectedPath === opt.path
-                                        ? 'bg-orange-500/10 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.15)]'
-                                        : 'bg-slate-950 hover:bg-slate-900 border-white/5 text-slate-400 hover:text-white'
-                                    }`}
-                                  >
-                                    <span className="text-xs font-black">{opt.label}</span>
-                                    <span className="text-[9px] text-slate-500 font-medium">{opt.desc}</span>
-                                    <span className="text-[10px] font-bold text-orange-500">{opt.amount}</span>
-                                  </button>
-                                ))}
-                              </div>
-                              {isEditingPath && (
-                                <button
-                                  onClick={() => setIsEditingPath(false)}
-                                  className="mt-1 self-end text-[10px] font-bold text-slate-500 hover:text-slate-300 underline"
-                                >
-                                  Annuler
-                                </button>
+                        return (
+                          <div key={phase.num} className="relative flex gap-6 pb-10 transition-all duration-300">
+                            {/* Timeline Circle */}
+                            <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                              {isDone ? (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                  ✓
+                                </div>
+                              ) : isActive ? (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500 border border-orange-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-orange-500/20 animate-pulse">
+                                  {phase.num}
+                                </div>
+                              ) : (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
+                                  {phase.num}
+                                </div>
                               )}
                             </div>
-                          ) : (
-                            <div className="mt-3 flex flex-col bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
-                              <div className="flex items-center justify-between">
+
+                            {/* Step Card Content */}
+                            <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${isActive ? 'border-orange-500/30 bg-orange-500/[0.02] shadow-[0_0_20px_rgba(249,115,22,0.05)]' : 'border-white/5'}`}>
+                              <div className="flex justify-between items-start gap-4 flex-wrap">
                                 <div>
-                                  <h4 className="text-xs font-black text-white">
-                                    {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
-                                     selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
-                                     selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
-                                     '🏆 Phase 5 - Permis Définitif / Direct'}
-                                  </h4>
-                                  <p className="text-[10px] text-slate-400 mt-0.5">Validé et enregistré.</p>
+                                  <div className="flex items-center gap-2.5 mb-1">
+                                    <span className={`text-xs font-black uppercase tracking-wider ${isDone ? 'text-emerald-400' : isActive ? 'text-orange-500' : 'text-slate-500'}`}>
+                                      {phase.title}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                                      isDone
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                        : isActive
+                                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20 animate-pulse'
+                                        : 'bg-white/5 text-slate-500 border-white/5'
+                                    }`}>
+                                      {phase.badge}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-400">{phase.desc}</p>
                                 </div>
-                                <div className="text-right">
-                                  <span className="text-xs font-black text-orange-500">{splitDetails.total}</span>
-                                </div>
-                              </div>
-                              {step2InfoNote && (
-                                <div className="mt-2.5 pt-2.5 border-t border-white/5 text-[10px] font-bold text-emerald-400 flex items-center gap-1.5">
-                                  <span>{step2InfoNote}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* --- STEP 3 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 3 ? 'opacity-40 pointer-events-none' : ''}`}>
-                        {/* Timeline Circle */}
-                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                          {isBillingActive ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                              ✓
-                            </div>
-                          ) : activeStep === 3 ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500 border border-amber-400 text-slate-950 flex items-center justify-center text-xs font-black ring-4 ring-amber-500/20 animate-pulse">
-                              3
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              3
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 3 ? 'border-amber-500/30 bg-amber-500/[0.02] shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'border-white/5'}`}>
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div>
-                              <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-amber-500">Étape 3 : Lancer la Facturation (Visibilité RIB)</span>
-                                {isBillingActive ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Activé</span>
-                                ) : activeStep === 3 ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">👉 Action requise</span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                                {/* Formule Selection or Modification (Only in Phase 2 or when editing) */}
+                                {phase.num === 2 && (
+                                  <>
+                                    {hasSelectedPath && !isEditingPath && (
+                                      <button
+                                        onClick={() => setIsEditingPath(true)}
+                                        className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 rounded-lg text-[10px] font-bold transition-all"
+                                      >
+                                        ✏️ Modifier la formule
+                                      </button>
+                                    )}
+                                  </>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-400 leading-relaxed">
-                                Rendre visible le devis détaillé et les coordonnées du RIB de {advisorSettings.beneficiary} sur le profil client.
-                              </p>
-                            </div>
-                            {hasSelectedPath && (
-                              <button
-                                disabled={updating}
-                                onClick={async () => {
-                                  if (!selectedLead) return;
-                                  setUpdating(true);
-                                  try {
-                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                    await updateDoc(doc(db, "leads", leadId), { 
-                                      billingActive: !isBillingActive
-                                    });
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
-                                  setUpdating(false);
-                                }}
-                                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
-                                  isBillingActive
-                                    ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-emerald-500/30'
-                                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
-                                }`}
-                              >
-                                {isBillingActive ? '🔴 Désactiver la facture' : '⚡ Activer la facture & RIB'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* --- STEP 4 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 4 ? 'opacity-40 pointer-events-none' : ''}`}>
-                        {/* Timeline Circle */}
-                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                          {isPaymentValidated ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                              ✓
-                            </div>
-                          ) : activeStep === 4 ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-emerald-500/20 animate-pulse">
-                              4
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              4
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 4 ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]' : 'border-white/5'}`}>
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div>
-                              <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                                  {step4Title}
-                                </span>
-                                {isPaymentValidated ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
-                                ) : activeStep === 4 ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">👉 Action requise</span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 leading-relaxed">
-                                {step4Desc}
-                              </p>
-                            </div>
-                            {isBillingActive && (
-                              <button
-                                disabled={updating}
-                                onClick={async () => {
-                                  if (!selectedLead) return;
-                                  setUpdating(true);
-                                  try {
-                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                    const nextVal = !isPaymentValidated;
-                                    
-                                    const targetStatus = nextVal ? (isSplit ? 'processing' : 'completed') : 'new';
-
-                                    await updateDoc(doc(db, "leads", leadId), { 
-                                      paymentValidated: nextVal,
-                                      status: targetStatus
-                                    });
-
-                                    if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                                      await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
-                                        status: targetStatus
-                                      });
-                                    }
-
-                                    const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                                    const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                                    
-                                    let textMessage = "";
-                                    if (nextVal) {
-                                      if (isSplit) {
-                                        textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
-                                      } else {
-                                        textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
-                                      }
-                                    } else {
-                                      textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller.";
-                                    }
-
-                                    await addDoc(messagesRef, {
-                                      sender: 'advisor',
-                                      text: textMessage,
-                                      timestamp: serverTimestamp()
-                                    });
-
-                                    await setDoc(chatDocRef, {
-                                      lastMessageText: textMessage,
-                                      lastMessageTime: serverTimestamp(),
-                                      unreadByClient: true
-                                    }, { merge: true });
-
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
-                                  setUpdating(false);
-                                }}
-                                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
-                                  isPaymentValidated
-                                    ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30'
-                                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400'
-                                }`}
-                              >
-                                {isPaymentValidated ? "🔴 Annuler le paiement" : `✓ Valider le virement (${isSplit ? splitDetails.firstPayment : splitDetails.total})`}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* --- STEP 5 (SOLDE - Optionnel) --- */}
-                      {isSplit && (
-                        <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 5 ? 'opacity-40 pointer-events-none' : ''}`}>
-                          {/* Timeline Circle */}
-                          <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                            {isSoldeValidated ? (
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                                ✓
-                              </div>
-                            ) : activeStep === 5 ? (
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-500 border border-indigo-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-indigo-500/20 animate-pulse">
-                                5
-                              </div>
-                            ) : (
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                                5
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Step Card Content */}
-                          <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 5 ? 'border-indigo-500/30 bg-indigo-500/[0.02] shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                              <div>
-                                <div className="flex items-center gap-2.5 mb-1">
-                                  <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
-                                    {step5Title}
-                                  </span>
-                                  {isSoldeValidated ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
-                                  ) : activeStep === 5 ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">👉 Action requise</span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                              {/* Path selection buttons */}
+                              {phase.num === 2 && (!hasSelectedPath || isEditingPath) && (
+                                <div className="mt-4 p-4 bg-slate-900/40 border border-orange-500/20 rounded-xl flex flex-col gap-3">
+                                  <p className="text-xs font-bold text-slate-300">
+                                    {isEditingPath ? "Modifier la formule attribuée au candidat :" : "⚠️ Aucune formule sélectionnée. Sélectionnez un parcours ci-dessous :"}
+                                  </p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                                    {[
+                                      { path: 'perception', label: '📖 Perception', desc: 'Phase 2', amount: advisorSettings.perceptionAmount || "350,00 €" },
+                                      { path: 'theorique', label: '📚 Théorique', desc: 'Phase 3', amount: advisorSettings.theoriqueAmount || "550,00 €" },
+                                      { path: 'pratique', label: '🚗 Pratique', desc: 'Phase 4', amount: advisorSettings.pratiqueAmount || "2100,00 €" },
+                                      { path: 'direct', label: '🏆 Direct', desc: 'Phase 5', amount: advisorSettings.directLicenseAmount || "1200,00 €" }
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.path}
+                                        disabled={updating}
+                                        onClick={() => handleSelectPath(opt.path)}
+                                        className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                                          selectedLead.rawLead?.selectedPath === opt.path
+                                            ? 'bg-orange-500/10 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                                            : 'bg-slate-950 hover:bg-slate-900 border-white/5 text-slate-400 hover:text-white'
+                                        }`}
+                                      >
+                                        <span className="text-xs font-black">{opt.label}</span>
+                                        <span className="text-[9px] text-slate-500 font-medium">{opt.desc}</span>
+                                        <span className="text-[10px] font-bold text-orange-500">{opt.amount}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {isEditingPath && (
+                                    <button
+                                      onClick={() => setIsEditingPath(false)}
+                                      className="mt-1 self-end text-[10px] font-bold text-slate-500 hover:text-slate-300 underline"
+                                    >
+                                      Annuler
+                                    </button>
                                   )}
                                 </div>
-                                <p className="text-xs text-slate-400 leading-relaxed">
-                                  {step5Desc}
-                                </p>
-                              </div>
-                              {isPaymentValidated && (
-                                <button
-                                  disabled={updating}
-                                  onClick={async () => {
-                                    if (!selectedLead) return;
-                                    setUpdating(true);
-                                    try {
-                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                      const nextSoldeVal = !isSoldeValidated;
-                                      
-                                      const targetStatus = nextSoldeVal ? 'completed' : 'processing';
+                              )}
 
-                                      await updateDoc(doc(db, "leads", leadId), { 
-                                        soldeValidated: nextSoldeVal,
-                                        status: targetStatus
-                                      });
+                              {/* Phase Active controls: Billing activation & validation of Payment/Solde */}
+                              {isActive && hasSelectedPath && !isEditingPath && (
+                                <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-4">
+                                  {/* Sub-step 3.1: Active Billing & RIB */}
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-slate-900/20 border border-white/5 rounded-xl">
+                                    <div>
+                                      <h5 className="text-xs font-bold text-slate-300">Action 1 : Lancer la Facturation (Visibilité RIB)</h5>
+                                      <p className="text-[10px] text-slate-500">Rendre visible le devis détaillé et le RIB sur le profil du client.</p>
+                                    </div>
+                                    <button
+                                      disabled={updating}
+                                      onClick={async () => {
+                                        if (!selectedLead) return;
+                                        setUpdating(true);
+                                        try {
+                                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                          await updateDoc(doc(db, "leads", leadId), { 
+                                            billingActive: !isBillingActive
+                                          });
+                                        } catch (err) {
+                                          console.error(err);
+                                        }
+                                        setUpdating(false);
+                                      }}
+                                      className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
+                                        isBillingActive
+                                          ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-emerald-500/30'
+                                          : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
+                                      }`}
+                                    >
+                                      {isBillingActive ? '🔴 Désactiver la facture' : '⚡ Activer la facture & RIB'}
+                                    </button>
+                                  </div>
 
-                                      if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                                        await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
-                                          status: targetStatus
-                                        });
-                                      }
+                                  {/* Sub-step 3.2: Validate Payment (Acompte or Full Payment) */}
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-slate-900/20 border border-white/5 rounded-xl">
+                                    <div>
+                                      <h5 className="text-xs font-bold text-slate-300">
+                                        {isSplit
+                                          ? `Action 2 : Valider l'acompte de la formule — ${splitDetails.firstPayment}`
+                                          : `Action 2 : Valider le paiement complet — ${splitDetails.total}`
+                                        }
+                                      </h5>
+                                      <p className="text-[10px] text-slate-500">
+                                        {isPaymentValidated
+                                          ? "Paiement reçu et validé. Le dossier est en cours de traitement."
+                                          : !isBillingActive
+                                          ? "⚠️ Activez la facture d'abord pour débloquer cette étape."
+                                          : `Vérifiez la réception du virement de ${isSplit ? splitDetails.firstPayment : splitDetails.total} pour démarrer.`
+                                        }
+                                      </p>
+                                    </div>
+                                    <button
+                                      disabled={updating || !isBillingActive}
+                                      onClick={async () => {
+                                        if (!selectedLead) return;
+                                        setUpdating(true);
+                                        try {
+                                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                          const nextVal = !isPaymentValidated;
+                                          const targetStatus = nextVal ? (isSplit ? 'processing' : 'completed') : 'new';
 
-                                      const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                                      const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                                      
-                                      let textMessage = "";
-                                      if (nextSoldeVal) {
-                                        textMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
-                                      } else {
-                                        textMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
-                                      }
+                                          await updateDoc(doc(db, "leads", leadId), { 
+                                            paymentValidated: nextVal,
+                                            status: targetStatus
+                                          });
 
-                                      await addDoc(messagesRef, {
-                                        sender: 'advisor',
-                                        text: textMessage,
-                                        timestamp: serverTimestamp()
-                                      });
+                                          if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                            await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                              status: targetStatus
+                                            });
+                                          }
 
-                                      await setDoc(chatDocRef, {
-                                        lastMessageText: textMessage,
-                                        lastMessageTime: serverTimestamp(),
-                                        unreadByClient: true
-                                      }, { merge: true });
+                                          const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                          const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                          
+                                          let textMessage = "";
+                                          if (nextVal) {
+                                            if (isSplit) {
+                                              textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
+                                            } else {
+                                              textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
+                                            }
+                                          } else {
+                                            textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller.";
+                                          }
 
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                    setUpdating(false);
-                                  }}
-                                  className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
-                                    isSoldeValidated
-                                      ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30'
-                                      : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500'
-                                  }`}
-                                >
-                                  {isSoldeValidated ? '🔴 Annuler le solde' : `✓ Valider le solde (${splitDetails.secondPayment})`}
-                                </button>
+                                          await addDoc(messagesRef, {
+                                            sender: 'advisor',
+                                            text: textMessage,
+                                            timestamp: serverTimestamp()
+                                          });
+
+                                          await setDoc(chatDocRef, {
+                                            lastMessageText: textMessage,
+                                            lastMessageTime: serverTimestamp(),
+                                            unreadByClient: true
+                                          }, { merge: true });
+
+                                        } catch (err) {
+                                          console.error(err);
+                                        }
+                                        setUpdating(false);
+                                      }}
+                                      className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
+                                        !isBillingActive
+                                          ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
+                                          : isPaymentValidated
+                                          ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30'
+                                          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400'
+                                      }`}
+                                    >
+                                      {isPaymentValidated ? "🔴 Annuler le paiement" : `✓ Valider le virement (${isSplit ? splitDetails.firstPayment : splitDetails.total})`}
+                                    </button>
+                                  </div>
+
+                                  {/* Sub-step 3.3: Validate Solde (If split payments apply) */}
+                                  {isSplit && (
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-slate-900/20 border border-white/5 rounded-xl">
+                                      <div>
+                                        <h5 className="text-xs font-bold text-slate-300">
+                                          Action 3 : Valider le solde de la formule — {splitDetails.secondPayment}
+                                        </h5>
+                                        <p className="text-[10px] text-slate-500">
+                                          {isSoldeValidated
+                                            ? "Solde reçu et validé. Phase payée en totalité."
+                                            : !isPaymentValidated
+                                            ? "⚠️ Validez l'acompte (Action 2) d'abord pour débloquer cette étape."
+                                            : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore financièrement.`
+                                          }
+                                        </p>
+                                      </div>
+                                      <button
+                                        disabled={updating || !isPaymentValidated}
+                                        onClick={async () => {
+                                          if (!selectedLead) return;
+                                          setUpdating(true);
+                                          try {
+                                            const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                            const textMessage = "";
+                                            const nextSoldeVal = !isSoldeValidated;
+                                            const targetStatus = nextSoldeVal ? 'completed' : 'processing';
+
+                                            await updateDoc(doc(db, "leads", leadId), { 
+                                              soldeValidated: nextSoldeVal,
+                                              status: targetStatus
+                                            });
+
+                                            if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                              await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                                status: targetStatus
+                                              });
+                                            }
+
+                                            const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                            const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                            
+                                            let responseMessage = "";
+                                            if (nextSoldeVal) {
+                                              responseMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
+                                            } else {
+                                              responseMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
+                                            }
+
+                                            await addDoc(messagesRef, {
+                                              sender: 'advisor',
+                                              text: responseMessage,
+                                              timestamp: serverTimestamp()
+                                            });
+
+                                            await setDoc(chatDocRef, {
+                                              lastMessageText: responseMessage,
+                                              lastMessageTime: serverTimestamp(),
+                                              unreadByClient: true
+                                            }, { merge: true });
+
+                                          } catch (err) {
+                                            console.error(err);
+                                          }
+                                          setUpdating(false);
+                                        }}
+                                        className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
+                                          !isPaymentValidated
+                                            ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
+                                            : isSoldeValidated
+                                            ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30'
+                                            : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500'
+                                        }`}
+                                      >
+                                        {isSoldeValidated ? '🔴 Annuler le solde' : `✓ Valider le solde (${splitDetails.secondPayment})`}
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Action Finale : Terminer la Phase */}
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mt-2">
+                                    <div>
+                                      <h5 className="text-xs font-bold text-slate-300">Action Finale : Clôturer & Valider la Phase</h5>
+                                      <p className="text-[10px] text-slate-500">
+                                        {selectedLead.status === 'completed'
+                                          ? 'La phase est marquée comme terminée.'
+                                          : (isSplit ? !isSoldeValidated : !isPaymentValidated)
+                                          ? '⚠️ Veuillez d\'abord valider l\'intégralité des règlements de cette phase.'
+                                          : 'Cliquez pour finaliser cette phase et débloquer les étapes suivantes.'
+                                        }
+                                      </p>
+                                    </div>
+                                    <button
+                                      disabled={updating || (selectedLead.status !== 'completed' && (isSplit ? !isSoldeValidated : !isPaymentValidated))}
+                                      onClick={() => handleUpdateStatus(selectedLead.status === 'completed' ? 'processing' : 'completed')}
+                                      className={`w-64 justify-center flex items-center px-4 py-2 rounded-lg font-black text-xs transition-all duration-300 border cursor-pointer ${
+                                        selectedLead.status === 'completed'
+                                          ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
+                                          : (selectedLead.status !== 'completed' && (isSplit ? !isSoldeValidated : !isPaymentValidated))
+                                          ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
+                                          : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                                      }`}
+                                    >
+                                      {selectedLead.status === 'completed' ? '🔴 Annuler la validation (En Cours)' : '✓ Terminer'}
+                                    </button>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })}
 
                       {/* --- STEP 6: DOCUMENTS & FINALISATION --- */}
-                      <div className={`relative flex gap-6 transition-all duration-300 ${activeStep < 6 ? 'opacity-40 pointer-events-none' : ''}`}>
+                      <div className="relative flex gap-6 transition-all duration-300">
                         {/* Timeline Circle */}
                         <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                           {hasAttestation && currentStatus === 'completed' ? (
@@ -1705,7 +1687,7 @@ const Dashboard = ({ onLogout }) => {
                             <div>
                               <div className="flex items-center gap-2.5 mb-1">
                                 <span className="text-xs font-black uppercase tracking-wider text-violet-400">
-                                  Étape 6 : Document Officiel & Statut Final
+                                  Phase 6 : Document Officiel & Statut Final
                                 </span>
                                 {hasAttestation && currentStatus === 'completed' ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Dossier Terminé</span>
@@ -1873,10 +1855,36 @@ const Dashboard = ({ onLogout }) => {
                               </div>
                             </details>
 
-                            {/* Status Update Actions - inline */}
+                            {/* Action Finale : Terminer la Phase (Phase 6) */}
+                            {activeStep === 6 && (
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mt-4">
+                                <div>
+                                  <h5 className="text-xs font-bold text-slate-300">Action Finale : Clôturer & Valider la Phase</h5>
+                                  <p className="text-[10px] text-slate-500">
+                                    {selectedLead.status === 'completed'
+                                      ? 'La phase est marquée comme terminée.'
+                                      : 'Cliquez pour finaliser cette phase et clore définitivement le dossier.'
+                                    }
+                                  </p>
+                                </div>
+                                <button
+                                  disabled={updating}
+                                  onClick={() => handleUpdateStatus(selectedLead.status === 'completed' ? 'processing' : 'completed')}
+                                  className={`w-64 justify-center flex items-center px-4 py-2 rounded-lg font-black text-xs transition-all duration-300 border cursor-pointer ${
+                                    selectedLead.status === 'completed'
+                                      ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
+                                      : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                                  }`}
+                                >
+                                  {selectedLead.status === 'completed' ? '🔴 Annuler la validation (En Cours)' : '✓ Terminer'}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Status Indicators - read-only evolution */}
                             <div className="mt-4 pt-4 border-t border-white/5">
                               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                                Statut du dossier :
+                                Évolution du dossier :
                               </p>
                               <div className="flex gap-2">
                                 {[
@@ -1884,22 +1892,20 @@ const Dashboard = ({ onLogout }) => {
                                   { status: 'processing', label: '🟡 En Cours' },
                                   { status: 'completed', label: '🟣 Terminé' }
                                 ].map((st) => (
-                                  <button
+                                  <div
                                     key={st.status}
-                                    disabled={updating}
-                                    onClick={() => handleUpdateStatus(st.status)}
-                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center cursor-pointer ${
+                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center select-none ${
                                       selectedLead.status === st.status
                                         ? st.status === 'new'
                                           ? 'bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/40'
                                           : st.status === 'processing'
                                           ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/40'
                                           : 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] ring-2 ring-indigo-400/40'
-                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                                        : 'bg-white/5 text-slate-500 border border-white/5 opacity-55'
                                     }`}
                                   >
                                     {st.label}
-                                  </button>
+                                  </div>
                                 ))}
                               </div>
                             </div>
