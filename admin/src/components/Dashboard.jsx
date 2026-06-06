@@ -265,15 +265,6 @@ const Dashboard = ({ onLogout }) => {
     const clean = totalStr.replace(/[^\d.,]/g, '').replace(',', '.');
     const totalNum = parseFloat(clean) || 0;
 
-    if (selectedPath === 'pratique') {
-      return {
-        isSplit: false,
-        total: totalStr,
-        firstPayment: totalStr,
-        secondPayment: null
-      };
-    }
-
     const firstPaymentNum = Math.min(200, totalNum);
     const secondPaymentNum = Math.max(0, totalNum - firstPaymentNum);
 
@@ -540,12 +531,25 @@ const Dashboard = ({ onLogout }) => {
     if (window.confirm("Voulez-vous vraiment réinitialiser ce dossier au statut 'Nouveau' ?")) {
       setUpdating(true);
       try {
+        const uid = leadToReset?.uid;
+        if (uid) {
+          // Delete all chat messages
+          const messagesRef = collection(db, "chats", uid, "messages");
+          const msgsSnap = await getDocs(messagesRef);
+          const deletePromises = msgsSnap.docs.map(doc => deleteDoc(doc.ref));
+          await Promise.all(deletePromises);
+
+          // Delete the parent chat document
+          await deleteDoc(doc(db, "chats", uid));
+        }
+
         if (leadToReset.rawLead && leadToReset.rawLead.id) {
           await updateDoc(doc(db, "leads", leadToReset.rawLead.id), { 
             status: "new",
             isSubmitted: false,
             billingActive: false,
             paymentValidated: false,
+            soldeInitiated: false,
             soldeValidated: false,
             selectedPath: "",
             attestationUrl: ""
@@ -1172,12 +1176,12 @@ const Dashboard = ({ onLogout }) => {
                 const splitDetails = getAdminSplitPaymentDetails(selectedLead.rawLead);
                 const isSplit = splitDetails.isSplit;
                 const isSoldeValidated = !!selectedLead.rawLead?.soldeValidated;
+                const isSoldeInitiated = !!selectedLead.rawLead?.soldeInitiated;
                 const hasAttestation = !!selectedLead.rawLead?.attestationUrl;
                 const currentStatus = selectedLead.status || 'new';
 
                 const pathName = selectedLead.rawLead?.selectedPath || '';
                 const selectedPath = pathName;
-                const paymentValidated = isPaymentValidated;
 
                 // Determine status and configuration for each phase
                 const phases = [
@@ -1191,41 +1195,41 @@ const Dashboard = ({ onLogout }) => {
                   },
                   {
                     num: 2,
-                    icon: '👁️',
-                    title: selectedPath === 'perception' ? `Phase 2 : Perception du Risque — ${splitDetails.total}` : 'Phase 2 : Perception du Risque',
-                    desc: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
-                      ? 'Dispense académique validée — aucun examen requis.'
-                      : (selectedPath === 'perception' && (paymentValidated || isPaymentValidated))
-                      ? 'Dispense académique validée — aucun examen requis (payé).'
-                      : 'Phase active : nécessite l\'activation de la facturation et la validation des virements.',
-                    status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
-                      ? 'done'
-                      : (selectedPath === 'perception' && (paymentValidated || isPaymentValidated))
-                      ? 'done'
-                      : (selectedPath === 'perception' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && (paymentValidated || isPaymentValidated)))
-                      ? '✓ Dispense'
-                      : (selectedPath === 'perception' ? '● Action requise' : '🔒 Non inclus'),
-                  },
-                  {
-                    num: 3,
                     icon: '📖',
-                    title: selectedPath === 'theorique' ? `Phase 3 : Examen Théorique — ${splitDetails.total}` : 'Phase 3 : Examen Théorique',
+                    title: selectedPath === 'theorique' ? `Phase 2 : Examen Théorique — ${splitDetails.total}` : 'Phase 2 : Examen Théorique',
                     desc: (selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'Certificat de dispense théorique validé.'
-                      : (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'Certificat de dispense théorique validé (payé).'
                       : (selectedPath === 'theorique')
                       ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
                       : 'En attente de la progression ou non incluse.',
                     status: (selectedPath === 'pratique' || selectedPath === 'direct')
                       ? 'done'
-                      : (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'done'
                       : (selectedPath === 'theorique' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && (paymentValidated || isPaymentValidated)))
+                    badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
                       ? '✓ Dispense'
                       : (selectedPath === 'theorique' ? '● Action requise' : '🔒 Non inclus'),
+                  },
+                  {
+                    num: 3,
+                    icon: '👁️',
+                    title: selectedPath === 'perception' ? `Phase 3 : Perception du Risque — ${splitDetails.total}` : 'Phase 3 : Perception du Risque',
+                    desc: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'Dispense académique validée — aucun examen requis.'
+                      : (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
+                      ? 'Dispense académique validée — aucun examen requis (payé).'
+                      : 'Phase active : nécessite l\'activation de la facturation et la validation des virements.',
+                    status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct')
+                      ? 'done'
+                      : (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
+                      ? 'done'
+                      : (selectedPath === 'perception' ? 'active' : 'locked'),
+                    badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
+                      ? '✓ Dispense'
+                      : (selectedPath === 'perception' ? '● Action requise' : '🔒 Non inclus'),
                   },
                   {
                     num: 4,
@@ -1233,17 +1237,17 @@ const Dashboard = ({ onLogout }) => {
                     title: selectedPath === 'pratique' ? `Phase 4 : Examen Pratique — ${splitDetails.total}` : 'Phase 4 : Examen Pratique',
                     desc: (selectedPath === 'direct')
                       ? 'Dispense d\'examen pratique certifiée & enregistrée.'
-                      : (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'pratique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'Dispense d\'examen pratique certifiée & enregistrée (payé).'
                       : (selectedPath === 'pratique')
                       ? 'Phase active : nécessite l\'activation de la facturation et la validation du paiement complet.'
                       : 'En attente de la progression ou non incluse.',
                     status: (selectedPath === 'direct')
                       ? 'done'
-                      : (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'pratique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'done'
                       : (selectedPath === 'pratique' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'direct' || (selectedPath === 'pratique' && (paymentValidated || isPaymentValidated)))
+                    badge: (selectedPath === 'direct' || (selectedPath === 'pratique' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed')))
                       ? '✓ Certifié'
                       : (selectedPath === 'pratique' ? '● Action requise' : '🔒 Non inclus'),
                   },
@@ -1253,17 +1257,17 @@ const Dashboard = ({ onLogout }) => {
                     title: selectedPath === 'direct' ? `Phase 5 : Permis Définitif — ${splitDetails.total}` : 'Phase 5 : Permis Définitif',
                     desc: (selectedPath === 'direct' && currentStatus === 'completed')
                       ? 'Votre permis officiel est prêt — retrait en commune.'
-                      : (selectedPath === 'direct' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'direct' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'Votre permis officiel est validé (payé).'
                       : (selectedPath === 'direct')
                       ? 'Phase active : nécessite l\'activation de la facturation et la validation des virements.'
                       : 'En attente de la progression ou non incluse.',
                     status: (selectedPath === 'direct' && currentStatus === 'completed')
                       ? 'done'
-                      : (selectedPath === 'direct' && (paymentValidated || isPaymentValidated))
+                      : (selectedPath === 'direct' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? 'done'
                       : (selectedPath === 'direct' ? 'active' : 'locked'),
-                    badge: (selectedPath === 'direct' && currentStatus === 'completed')
+                    badge: (selectedPath === 'direct' && ((isSplit ? isSoldeValidated : isPaymentValidated) || currentStatus === 'completed'))
                       ? '✓ Prêt'
                       : (selectedPath === 'direct' ? '● Action requise' : '🔒 Non inclus'),
                   }
@@ -1496,10 +1500,15 @@ const Dashboard = ({ onLogout }) => {
                                           const nextVal = !isPaymentValidated;
                                           const targetStatus = nextVal ? (isSplit ? 'processing' : 'completed') : 'new';
 
-                                          await updateDoc(doc(db, "leads", leadId), { 
+                                          const updatePayload = {
                                             paymentValidated: nextVal,
                                             status: targetStatus
-                                          });
+                                          };
+                                          if (!nextVal) {
+                                            updatePayload.soldeInitiated = false;
+                                            updatePayload.soldeValidated = false;
+                                          }
+                                          await updateDoc(doc(db, "leads", leadId), updatePayload);
 
                                           if (selectedLead.rawUser && selectedLead.rawUser.uid) {
                                             await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
@@ -1550,7 +1559,7 @@ const Dashboard = ({ onLogout }) => {
                                     </button>
                                   </div>
 
-                                  {/* Sub-step 3.3: Validate Solde (If split payments apply) */}
+                                                                    {/* Sub-step 3.3: Validate Solde (If split payments apply) */}
                                   {isSplit && (
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-slate-900/20 border border-white/5 rounded-xl">
                                       <div>
@@ -1562,69 +1571,125 @@ const Dashboard = ({ onLogout }) => {
                                             ? "Solde reçu et validé. Phase payée en totalité."
                                             : !isPaymentValidated
                                             ? "⚠️ Validez l'acompte (Action 2) d'abord pour débloquer cette étape."
-                                            : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore financièrement.`
+                                            : !isSoldeInitiated
+                                            ? "⚠️ Le paiement du solde doit être initié pour le candidat."
+                                            : `Le paiement a été initié. Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore financièrement.`
                                           }
                                         </p>
                                       </div>
-                                      <button
-                                        disabled={updating || !isPaymentValidated}
-                                        onClick={async () => {
-                                          if (!selectedLead) return;
-                                          setUpdating(true);
-                                          try {
-                                            const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                            const textMessage = "";
-                                            const nextSoldeVal = !isSoldeValidated;
-                                            const targetStatus = nextSoldeVal ? 'completed' : 'processing';
+                                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                        <button
+                                          disabled={updating || !isPaymentValidated || isSoldeValidated}
+                                          onClick={async () => {
+                                            if (!selectedLead) return;
+                                            setUpdating(true);
+                                            try {
+                                              const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                              const nextVal = !isSoldeInitiated;
+                                              await updateDoc(doc(db, "leads", leadId), { 
+                                                soldeInitiated: nextVal
+                                              });
+                                              
+                                              const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                              const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                              
+                                              let responseMessage = "";
+                                              if (nextVal) {
+                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : "certificat d'examen pratique";
+                                                const adj = selectedLead.rawLead?.selectedPath === 'perception' ? "prête" : "prêt";
+                                                responseMessage = `⚡ Votre ${docName} est ${adj} ! Vous pouvez dès à présent régler le solde restant de ${splitDetails.secondPayment} par virement bancaire.`;
+                                              } else {
+                                                responseMessage = "ℹ️ La demande de règlement du solde a été annulée.";
+                                              }
 
-                                            await updateDoc(doc(db, "leads", leadId), { 
-                                              soldeValidated: nextSoldeVal,
-                                              status: targetStatus
-                                            });
+                                              await addDoc(messagesRef, {
+                                                sender: 'advisor',
+                                                text: responseMessage,
+                                                timestamp: serverTimestamp()
+                                              });
 
-                                            if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                                              await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                              await setDoc(chatDocRef, {
+                                                lastMessageText: responseMessage,
+                                                lastMessageTime: serverTimestamp(),
+                                                unreadByClient: true
+                                              }, { merge: true });
+
+                                            } catch (err) {
+                                              console.error(err);
+                                            }
+                                            setUpdating(false);
+                                          }}
+                                          className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border justify-center flex items-center cursor-pointer ${
+                                            !isPaymentValidated || isSoldeValidated
+                                              ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
+                                              : isSoldeInitiated
+                                              ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-amber-500/30'
+                                              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
+                                          }`}
+                                        >
+                                          {isSoldeInitiated ? "🔴 Annuler l'initiation" : `⚡ Initier le paiement (${splitDetails.secondPayment})`}
+                                        </button>
+                                        <button
+                                          disabled={updating || !isPaymentValidated || !isSoldeInitiated}
+                                          onClick={async () => {
+                                            if (!selectedLead) return;
+                                            setUpdating(true);
+                                            try {
+                                              const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                              const nextSoldeVal = !isSoldeValidated;
+                                              const targetStatus = nextSoldeVal ? 'completed' : 'processing';
+
+                                              await updateDoc(doc(db, "leads", leadId), { 
+                                                soldeValidated: nextSoldeVal,
                                                 status: targetStatus
                                               });
+
+                                              if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                                await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                                  status: targetStatus
+                                                });
+                                              }
+
+                                              const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                              const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                              
+                                              let responseMessage = "";
+                                              if (nextSoldeVal) {
+                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : "certificat d'examen pratique";
+                                                const agreement = selectedLead.rawLead?.selectedPath === 'perception' ? "validée" : "validé";
+                                                responseMessage = `✅ Le solde de votre formule a été validé ! Votre ${docName} est maintenant officiellement ${agreement} et disponible. 🏆`;
+                                              } else {
+                                                responseMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
+                                              }
+
+                                              await addDoc(messagesRef, {
+                                                sender: 'advisor',
+                                                text: responseMessage,
+                                                timestamp: serverTimestamp()
+                                              });
+
+                                              await setDoc(chatDocRef, {
+                                                lastMessageText: responseMessage,
+                                                lastMessageTime: serverTimestamp(),
+                                                unreadByClient: true
+                                              }, { merge: true });
+
+                                            } catch (err) {
+                                              console.error(err);
                                             }
-
-                                            const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                                            const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                                            
-                                            let responseMessage = "";
-                                            if (nextSoldeVal) {
-                                              responseMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
-                                            } else {
-                                              responseMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
-                                            }
-
-                                            await addDoc(messagesRef, {
-                                              sender: 'advisor',
-                                              text: responseMessage,
-                                              timestamp: serverTimestamp()
-                                            });
-
-                                            await setDoc(chatDocRef, {
-                                              lastMessageText: responseMessage,
-                                              lastMessageTime: serverTimestamp(),
-                                              unreadByClient: true
-                                            }, { merge: true });
-
-                                          } catch (err) {
-                                            console.error(err);
-                                          }
-                                          setUpdating(false);
-                                        }}
-                                        className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
-                                          !isPaymentValidated
-                                            ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
-                                            : isSoldeValidated
-                                            ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30'
-                                            : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500'
-                                        }`}
-                                      >
-                                        {isSoldeValidated ? '🔴 Annuler le solde' : `✓ Valider le solde (${splitDetails.secondPayment})`}
-                                      </button>
+                                            setUpdating(false);
+                                          }}
+                                          className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border justify-center flex items-center cursor-pointer ${
+                                            !isPaymentValidated || !isSoldeInitiated
+                                              ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
+                                              : isSoldeValidated
+                                              ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30'
+                                              : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400'
+                                          }`}
+                                        >
+                                          {isSoldeValidated ? '🔴 Annuler le solde' : `✓ Valider le solde (${splitDetails.secondPayment})`}
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
 

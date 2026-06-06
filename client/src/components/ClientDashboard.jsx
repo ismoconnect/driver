@@ -53,7 +53,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [billingActive, setBillingActive] = useState(false);
   const [paymentValidated, setPaymentValidated] = useState(false);
   const [soldeValidated, setSoldeValidated] = useState(false);
-  const [selectedPath, setSelectedPath] = useState('perception');
+  const [soldeInitiated, setSoldeInitiated] = useState(false);
+  const [selectedPath, setSelectedPath] = useState('theorique');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const [attestationUrl, setAttestationUrl] = useState('');
@@ -68,7 +69,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     nationalRegister: '',
     failedAttempts: '0',
     transmission: 'Manuel',
-    licenseCategory: 'B',
+    licenseCategory: 'Permis B (Voiture)',
   });
 
   // Simulated uploads state
@@ -108,15 +109,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     const totalStr = getTotalAmount();
     const clean = totalStr.replace(/[^\d.,]/g, '').replace(',', '.');
     const totalNum = parseFloat(clean) || 0;
-
-    if (selectedPath === 'pratique') {
-      return {
-        isSplit: false,
-        total: totalStr,
-        firstPayment: totalStr,
-        secondPayment: null
-      };
-    }
 
     const firstPaymentNum = Math.min(200, totalNum);
     const secondPaymentNum = Math.max(0, totalNum - firstPaymentNum);
@@ -206,7 +198,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Auto-scroll to bottom of chat
   useEffect(() => {
     if (activeTab === 'chat' && chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      chatEndRef.current.scrollIntoView({ behavior: 'auto' });
     }
   }, [messages, activeTab]);
 
@@ -249,14 +241,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               nationalRegister: leadData?.nationalRegister || '',
               failedAttempts: leadData?.failedAttempts || '0',
               transmission: leadData?.transmission || 'Manuel',
-              licenseCategory: leadData?.licenseCategory || 'B',
+              licenseCategory: leadData?.licenseCategory || 'Permis B (Voiture)',
             });
             setIsSubmitted(leadData?.isSubmitted || false);
             setBillingActive(leadData?.billingActive || false);
             setPaymentValidated(leadData?.paymentValidated || false);
             setSoldeValidated(leadData?.soldeValidated || false);
+            setSoldeInitiated(leadData?.soldeInitiated || false);
             setAttestationUrl(leadData?.attestationUrl || '');
-            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'perception') : 'perception');
+            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'theorique') : 'theorique');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
             
@@ -275,14 +268,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               nationalRegister: '',
               failedAttempts: '0',
               transmission: 'Manuel',
-              licenseCategory: 'B',
+              licenseCategory: 'Permis B (Voiture)',
             });
             setIsSubmitted(false);
             setBillingActive(false);
             setPaymentValidated(false);
             setSoldeValidated(false);
             setAttestationUrl('');
-            setSelectedPath('perception');
+            setSelectedPath('theorique');
             setPerceptionPaid(false);
             setUploads({
               idFront: null,
@@ -309,9 +302,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setBillingActive(data.billingActive === true);
             setPaymentValidated(data.paymentValidated === true);
             setSoldeValidated(data.soldeValidated === true);
+            setSoldeInitiated(data.soldeInitiated === true);
             setAttestationUrl(data.attestationUrl || '');
             if (data.isSubmitted) {
-              setSelectedPath(data.selectedPath || 'perception');
+              setSelectedPath(data.selectedPath || 'theorique');
             }
             setPerceptionPaid(data.perceptionPaid === true);
             setApplicationStatus(data.status || 'new');
@@ -503,6 +497,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       let targetAmount = advisor.directLicenseAmount || "1200,00 €";
       if (targetPath === 'theorique') targetAmount = advisor.theoriqueAmount || "550,00 €";
       else if (targetPath === 'pratique') targetAmount = advisor.pratiqueAmount || "2100,00 €";
+      else if (targetPath === 'perception') targetAmount = advisor.perceptionAmount || "350,00 €";
 
       await updateDoc(leadRef, {
         selectedPath: targetPath,
@@ -510,7 +505,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         paymentValidated: false,
         billingActive: true,
         status: 'new',
-        perceptionPaid: alreadyPaid
+        perceptionPaid: alreadyPaid,
+        soldeInitiated: false,
+        soldeValidated: false
       });
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
@@ -539,13 +536,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         nationalRegister: formData.nationalRegister,
         failedAttempts: formData.failedAttempts,
         transmission: formData.transmission,
-        licenseCategory: formData.licenseCategory || 'B',
-        selectedPath: selectedPath || 'perception',
+        licenseCategory: formData.licenseCategory || 'Permis B (Voiture)',
+        selectedPath: selectedPath || 'theorique',
         amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
                 selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
                 selectedPath === 'pratique' ? (advisor.pratiqueAmount || "2100,00 €") :
                 (advisor.perceptionAmount || "350,00 €"),
         isSubmitted: true,
+        billingActive: true,
         uploads: uploads,
         submittedAt: new Date().toISOString(),
         uid: user.uid,
@@ -1116,15 +1114,47 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     style={{ 
                       width: !isSubmitted 
                         ? '20%' 
-                        : selectedPath === 'perception' 
-                        ? '30%' 
-                        : selectedPath === 'theorique' 
-                        ? (applicationStatus === 'completed' ? '50%' : '30%') 
-                        : selectedPath === 'pratique' 
-                        ? (applicationStatus === 'completed' ? '70%' : '50%') 
-                        : selectedPath === 'direct' 
-                        ? (applicationStatus === 'completed' ? '80%' : '70%') 
-                        : '20%' 
+                        : (() => {
+                            const p2Status = (billingActive && (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct')) 
+                              ? 'done' 
+                              : (selectedPath === 'theorique' && applicationStatus === 'completed' ? 'done'
+                                : (selectedPath === 'theorique' || selectedPath === 'perception') ? 'active'
+                                : 'locked');
+
+                            const p3Status = (billingActive && (selectedPath === 'pratique' || selectedPath === 'direct')) 
+                              ? 'done' 
+                              : (selectedPath === 'perception' && applicationStatus === 'completed' ? 'done'
+                                : selectedPath === 'perception' && billingActive ? 'active'
+                                : 'locked');
+
+                            const p4Status = (billingActive && selectedPath === 'direct') 
+                              ? 'done' 
+                              : (selectedPath === 'pratique' && (applicationStatus === 'completed') ? 'done' : (selectedPath === 'pratique' ? 'active' : 'locked'));
+
+                            const p5Status = (selectedPath === 'direct' && applicationStatus === 'completed') 
+                              ? 'done' 
+                              : (selectedPath === 'direct' && paymentValidated ? 'ready' : (selectedPath === 'direct' ? 'active' : 'locked'));
+
+                            let lastUnlocked = 1;
+                            if (p2Status !== 'locked') {
+                              lastUnlocked = 2;
+                              if (p3Status !== 'locked') {
+                                lastUnlocked = 3;
+                                if (p4Status !== 'locked') {
+                                  lastUnlocked = 4;
+                                  if (p5Status !== 'locked') {
+                                    lastUnlocked = 5;
+                                  }
+                                }
+                              }
+                            }
+
+                            if (lastUnlocked === 1) return '10%';
+                            if (lastUnlocked === 2) return '30%';
+                            if (lastUnlocked === 3) return '50%';
+                            if (lastUnlocked === 4) return '70%';
+                            return '88%';
+                          })()
                     }}
                   />
 
@@ -1141,33 +1171,51 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       },
                       {
                         num: 2,
-                        icon: '👁️',
-                        title: 'Perception du Risque',
-                        desc_done: 'Dispense académique validée — aucun examen requis.',
-                        desc_pending: !isSubmitted 
-                          ? 'Débloqué après validation de votre dossier.'
-                          : (selectedPath ? 'En attente du virement de votre formule.' : 'Veuillez choisir votre parcours dans l\'onglet "Faire ma demande".'),
-                        status: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct') 
-                          ? 'done' 
-                          : (selectedPath === 'perception' && (paymentValidated || perceptionPaid || applicationStatus === 'completed') ? 'done' : 'active'),
-                        badge: (selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && (paymentValidated || perceptionPaid || applicationStatus === 'completed'))) 
-                          ? '✓ Dispense' 
-                          : (!isSubmitted ? '● Action requise' : (selectedPath ? '● Paiement en attente' : '● Choix requis')),
-                      },
-                      {
-                        num: 3,
                         icon: '📖',
                         title: 'Examen Théorique',
                         desc_done: 'Certificat de dispense théorique validé.',
                         desc_pending: !isSubmitted 
                           ? 'Débloqué après validation de votre dossier.'
-                          : (selectedPath ? 'En attente du virement de votre formule.' : 'Veuillez choisir votre parcours dans l\'onglet "Faire ma demande".'),
-                        status: (selectedPath === 'pratique' || selectedPath === 'direct') 
-                          ? 'done' 
-                          : (selectedPath === 'theorique' && (paymentValidated || perceptionPaid || applicationStatus === 'completed') ? 'done' : (selectedPath === 'theorique' ? 'active' : 'locked')),
-                        badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && (paymentValidated || perceptionPaid || applicationStatus === 'completed'))) 
+                          : (billingActive && !paymentValidated)
+                          ? 'En attente de votre règlement d\'acompte.'
+                          : (billingActive && selectedPath === 'theorique' && !soldeValidated)
+                          ? 'En attente de votre règlement de solde.'
+                          : (selectedPath === 'theorique'
+                            ? 'Dossier complet et en cours de validation.'
+                            : 'Formule non sélectionnée.'),
+                        status: (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && applicationStatus === 'completed')) 
+                          ? 'done'
+                          : (selectedPath === 'theorique' && billingActive) 
+                          ? 'active'
+                          : 'locked',
+                        badge: (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && applicationStatus === 'completed')) 
+                          ? '✓ Validé' 
+                          : (billingActive && selectedPath === 'theorique' && !paymentValidated)
+                          ? '● Paiement en attente'
+                          : (billingActive && selectedPath === 'theorique' && !soldeValidated)
+                          ? '● Paiement en attente'
+                          : (selectedPath === 'theorique'
+                            ? (!isSubmitted ? '● Action requise' : '● Prérequis')
+                            : '🔒 Non inclus'),
+                      },
+                      {
+                        num: 3,
+                        icon: '👁️',
+                        title: 'Perception du Risque',
+                        desc_done: 'Dispense académique validée — aucun examen requis.',
+                        desc_pending: !isSubmitted 
+                          ? 'Débloqué après validation du Théorique.'
+                          : (selectedPath === 'perception' ? 'Débloqué après le prérequis Théorique.' : 'En attente de votre formule.'),
+                        status: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && applicationStatus === 'completed')) 
+                          ? 'done'
+                          : (selectedPath === 'perception' && paymentValidated) 
+                          ? 'active'
+                          : 'locked',
+                        badge: (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && applicationStatus === 'completed')) 
                           ? '✓ Dispense' 
-                          : (selectedPath === 'theorique' ? (!isSubmitted ? '● Action requise' : '● Paiement en attente') : (selectedPath ? '🔒 Non inclus' : '🔒 À venir')),
+                          : (selectedPath === 'perception' && paymentValidated && !soldeValidated) 
+                          ? '● Paiement en attente' 
+                          : (selectedPath === 'perception' ? '🔒 Après Théorique' : '🔒 Non inclus'),
                       },
                       {
                         num: 4,
@@ -1177,10 +1225,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         desc_pending: !isSubmitted
                           ? 'Validé après constitution complète du dossier.'
                           : 'En attente de votre règlement de formule.',
-                        status: (selectedPath === 'direct') 
+                        status: (billingActive && selectedPath === 'direct') 
                           ? 'done' 
-                          : (selectedPath === 'pratique' && (paymentValidated || perceptionPaid || applicationStatus === 'completed') ? 'done' : (selectedPath === 'pratique' ? 'active' : 'locked')),
-                        badge: (selectedPath === 'direct' || (selectedPath === 'pratique' && (paymentValidated || perceptionPaid || applicationStatus === 'completed'))) 
+                          : (selectedPath === 'pratique' && (applicationStatus === 'completed') ? 'done' : (selectedPath === 'pratique' ? 'active' : 'locked')),
+                        badge: (billingActive && selectedPath === 'direct' || (selectedPath === 'pratique' && (applicationStatus === 'completed'))) 
                           ? '✓ Certifié' 
                           : (selectedPath === 'pratique' ? (!isSubmitted ? '● Action requise' : '● Paiement en attente') : (selectedPath ? '🔒 Non inclus' : '🔒 À venir')),
                       },
@@ -1373,8 +1421,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         ) : (
                           <>
                             ⚡ Changer de formule ({
-                              selectedPath === 'perception' ? 'Théorie, Pratique, Direct' :
-                              selectedPath === 'theorique' ? 'Pratique, Direct' :
+                              selectedPath === 'perception' ? 'Pratique, Direct' :
+                              selectedPath === 'theorique' ? 'Perception, Pratique, Direct' :
                               'Direct'
                             })
                           </>
@@ -1420,38 +1468,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-6">
-                      {/* Option 1: Perception du Risque */}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const leadRef = doc(db, 'leads', user.uid);
-                            await updateDoc(leadRef, {
-                              selectedPath: 'perception',
-                              amount: advisor.perceptionAmount || "350,00 €"
-                            });
-                          } catch (err) {
-                            console.error(err);
-                          }
-                        }}
-                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
-                      >
-                        <div>
-                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
-                            👁️
-                          </div>
-                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 2 - Perception du Risque</h4>
-                          <p className="text-xs text-white/50 leading-relaxed mb-3">
-                            Validation officielle de la dispense de l'examen de perception du risque (Phase 2). Idéal si vous effectuez le reste par vous-même.
-                          </p>
-                        </div>
-                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
-                          <span className="text-[9px] uppercase font-bold text-brand-orange">Perception</span>
-                          <span className="text-base font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
-                        </div>
-                      </button>
-
-                      {/* Option 2: Examen Théorique */}
+                      {/* Option 1: Examen Théorique */}
                       <button
                         type="button"
                         onClick={async () => {
@@ -1471,14 +1488,45 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
                             📖
                           </div>
-                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 3 - Examen Théorique</h4>
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 2 - Examen Théorique</h4>
                           <p className="text-xs text-white/50 leading-relaxed mb-3">
-                            Obtention complète de la dispense académique pour l'examen théorique officiel (Phase 3).
+                            Obtention complète de la dispense académique pour l'examen théorique officiel (Phase 2).
                           </p>
                         </div>
                         <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
                           <span className="text-[9px] uppercase font-bold text-brand-orange">Théorique</span>
                           <span className="text-base font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                        </div>
+                      </button>
+
+                      {/* Option 2: Perception du Risque */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const leadRef = doc(db, 'leads', user.uid);
+                            await updateDoc(leadRef, {
+                              selectedPath: 'perception',
+                              amount: advisor.perceptionAmount || "350,00 €"
+                            });
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} hover:border-brand-orange hover:bg-slate-950/90 rounded-3xl p-5 text-left transition-all duration-300 transform hover:scale-[1.02] flex flex-col justify-between h-full group shadow-lg cursor-pointer`}
+                      >
+                        <div>
+                          <div className="w-10 h-10 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
+                            👁️
+                          </div>
+                          <h4 className="text-sm font-bold text-white mb-1.5">Phase 3 - Perception du Risque</h4>
+                          <p className="text-xs text-white/50 leading-relaxed mb-3">
+                            Validation officielle de la dispense de l'examen de perception du risque (Phase 3). Idéal si vous effectuez le reste par vous-même.
+                          </p>
+                        </div>
+                        <div className="w-full pt-3 border-t border-white/5 flex justify-between items-center mt-auto">
+                          <span className="text-[9px] uppercase font-bold text-brand-orange">Perception</span>
+                          <span className="text-base font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                         </div>
                       </button>
 
@@ -1545,210 +1593,273 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </button>
                     </div>
                   </div>
-                ) : billingActive && applicationStatus !== 'completed' && (!paymentValidated || (applicationStatus === 'completed' && getSplitPaymentDetails().isSplit && !soldeValidated)) ? (
+                ) : isSubmitted && applicationStatus !== 'completed' && (!paymentValidated || (getSplitPaymentDetails().isSplit && !soldeValidated)) ? (
                   // BILLING STATE WITH RIB
-                  <div className="flex-1 flex flex-col items-center justify-start text-center max-w-xl md:max-w-4xl mx-auto py-1 md:py-2 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-start text-center max-w-xl md:max-w-4xl mx-auto py-0.5 md:py-1 animate-[bubbleIn_0.6s_ease-out]">
                     {/* Premium Danger/Alert Badge */}
-                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold tracking-widest uppercase px-3.5 py-1 md:py-1 rounded-full mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      {paymentValidated ? "Règlement Requis — Solde Final" : "Règlement Requis — Émission en cours"}
+                    <div className={`inline-flex items-center gap-2 text-[9.5px] font-bold tracking-widest uppercase px-3 py-0.5 rounded-full mb-1 ${
+                      paymentValidated && !soldeInitiated
+                        ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400'
+                        : 'bg-amber-500/10 border border-amber-500/25 text-amber-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                        paymentValidated && !soldeInitiated ? 'bg-emerald-400' : 'bg-amber-400'
+                      }`} />
+                      {paymentValidated && soldeInitiated ? "Règlement Requis — Solde Final" : paymentValidated ? "Acompte Validé — Attestation en cours" : "Règlement Requis — Acompte"}
                     </div>
 
                     {/* Icon with complex glow */}
-                    <div className="relative mb-3 md:hidden">
+                    <div className="relative mb-2 md:hidden">
                       <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl scale-125" />
                       <div className="relative w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center text-2xl shadow-2xl">
                         💳
                       </div>
                     </div>
 
-                    <h2 className="text-xl md:text-lg font-display font-extrabold text-white tracking-tight">
-                      {paymentValidated ? (
-                        selectedPath === 'perception' ? "VOTRE ATTESTATION DE PERCEPTION EST DISPONIBLE ! 📄" :
-                        selectedPath === 'theorique' ? "VOTRE DISPENSE D'EXAMEN EST DISPONIBLE ! 📄" :
-                        "VOTRE PERMIS DE CONDUIRE EST DISPONIBLE ! 🏆"
+                    <h2 className="text-lg md:text-base font-display font-extrabold text-white tracking-tight mb-0.5">
+                      {paymentValidated && soldeInitiated ? (
+                        selectedPath === 'perception' ? "VOTRE ATTESTATION EST PRÊTE — SOLDE À RÉGLER 📄" :
+                        "DOCUMENT DISPONIBLE — SOLDE À RÉGLER 📄"
+                      ) : paymentValidated ? (
+                        "ACOMPTE REÇU — ATTESTATION EN COURS D'ÉDITION ⏳"
                       ) : "RÈGLEMENT DE VOTRE DOSSIER ⌛"}
                     </h2>
-                    <p className="text-white/60 text-xs md:text-[11px] mt-1 md:mt-1 leading-relaxed max-w-xl">
-                      {paymentValidated ? (
-                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre ${
-                          selectedPath === 'perception' ? "attestation de perception" :
-                          selectedPath === 'theorique' ? "dispense d'examen théorique" :
-                          "permis de conduire"
-                        } est disponible ! Pour finaliser son obtention et pouvoir la télécharger, veuillez régler le solde restant de votre formule ci-dessous.`
+                    <p className="text-white/50 text-[10px] md:text-[10.5px] mt-0.5 leading-relaxed max-w-2xl">
+                       {paymentValidated && soldeInitiated ? (
+                        selectedPath === 'perception' ? (
+                          `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de perception est prête ! Pour la télécharger, veuillez régler le solde restant de ${getSplitPaymentDetails().secondPayment} ci-dessous.`
+                        ) : selectedPath === 'theorique' ? (
+                          `Félicitations ${formData.firstName || 'Candidat'} ! Votre Certificat d'examen théorique est prêt ! Pour le télécharger ou le retirer en commune, veuillez régler le solde restant de ${getSplitPaymentDetails().secondPayment} ci-dessous.`
+                        ) : (
+                          `Félicitations ${formData.firstName || 'Candidat'} ! Votre permis de conduire est prêt ! Pour le télécharger ou le retirer en commune, veuillez régler le solde restant de ${getSplitPaymentDetails().secondPayment} ci-dessous.`
+                        )
+                      ) : paymentValidated ? (
+                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre acompte de ${getSplitPaymentDetails().firstPayment} a bien été reçu et validé. Votre ${
+                          selectedPath === 'perception' ? "attestation de perception est en cours d'édition. Le solde restant vous sera demandé dès qu'elle sera prête." :
+                          selectedPath === 'theorique' ? "Certificat d'examen est en cours d'édition. Le solde restant vous sera demandé dès qu'il sera prêt." :
+                          "dossier est en cours d'édition. Le solde restant vous sera demandé dès qu'il sera prêt."
+                        } Merci pour votre confiance.`
                       ) : (
-                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier a été analysé et validé par nos conseillers. Afin de finaliser l'enregistrement et de procéder à l'édition officielle ${
-                          selectedPath === 'perception' ? "de votre attestation de perception" :
-                          selectedPath === 'theorique' ? "de votre dispense d'examen théorique" :
-                          selectedPath === 'pratique' ? "de votre dispense d'examen pratique" :
+                        `Félicitations ${formData.firstName || 'Candidat'} ! Votre dossier est en cours d'analyse par nos conseillers. Afin de finaliser et de valider l'enregistrement et de procéder à l'édition officielle ${
+                          selectedPath === 'perception' ? "de votre Certificat de perception du risque" :
+                          selectedPath === 'theorique' ? "de votre Certificat d'examen théorique" :
+                          selectedPath === 'pratique' ? "de votre Certificat d'examen pratique" :
                           "de votre permis de conduire"
-                        } auprès du SPF Mobilité, veuillez procéder au règlement des frais administratifs ci-dessous.`
+                        } auprès du SPF Mobilité, veuillez procéder au règlement de l'acompte ci-dessous. Le reste sera soldé lorsque le certificat sera disponible et prêt à être retiré.`
                       )}
                     </p>
 
-                    {/* Grid wrapper for Invoice & RIB */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4 w-full mt-3 text-left items-stretch">
-                      {/* Facture Détaillée */}
-                      <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-3 md:p-3.5 flex flex-col justify-between relative overflow-hidden group`}>
-                        <div>
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 md:mb-1.5 flex items-center gap-2">
-                            <span>📄</span> Frais de dossier réglementaires ({
-                              selectedPath === 'perception' ? 'Phase 2 - Perception du Risque' : 
-                              selectedPath === 'theorique' ? 'Phase 3 - Examen Théorique' :
-                              selectedPath === 'pratique' ? 'Phase 4 - Examen Pratique' : 'Phase 5 - Permis Définitif'
-                            })
-                          </h4>
-                          <div className="space-y-1.5 text-xs border-b border-white/5 pb-2">
-                            {selectedPath === 'perception' && (
-                              <>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
-                                  <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
-                                </div>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.perceptionLabel2 || "Administration - Dispense d'Examen Théorique"}</span>
-                                  <span className="text-white font-semibold">{advisor.perceptionAmount2 || "300,00 €"}</span>
-                                </div>
-                              </>
-                            )}
-                            {selectedPath === 'theorique' && (
-                              <>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.theoriqueLabel1 || "Frais d'enregistrement Examen Théorique"}</span>
-                                  <span className="text-white font-semibold">{advisor.theoriqueAmount1 || "150,00 €"}</span>
-                                </div>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.theoriqueLabel2 || "Constitution du dossier de dispense théorique"}</span>
-                                  <span className="text-white font-semibold">{advisor.theoriqueAmount2 || "400,00 €"}</span>
-                                </div>
-                              </>
-                            )}
-                            {selectedPath === 'pratique' && (
-                              <>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.pratiqueLabel1 || "Frais de dépôt Examen Pratique"}</span>
-                                  <span className="text-white font-semibold">{advisor.pratiqueAmount1 || "700,00 €"}</span>
-                                </div>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.pratiqueLabel2 || "Dossier d'homologation dispense pratique (30h à 70€/h)"}</span>
-                                  <span className="text-white font-semibold">{advisor.pratiqueAmount2 || "1400,00 €"}</span>
-                                </div>
-                              </>
-                            )}
-                            {selectedPath === 'direct' && (
-                              <>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
-                                  <span className="text-white font-semibold">{advisor.directAmount1 || "400,00 €"}</span>
-                                </div>
-                                <div className="flex justify-between text-white/50">
-                                  <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
-                                  <span className="text-white font-semibold">{advisor.directAmount2 || "80,00 €"}</span>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                    {/* Unified Premium Compact Billing Card */}
+                    <div className="bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-3 md:p-3.5 w-full mt-1.5 text-left relative overflow-hidden shadow-2xl">
+                      {/* Decorative ambient light */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
+
+                      {/* Section 1: Récapitulatif */}
+                      <div className="border-b border-white/10 pb-2 md:pb-1.5 mb-2 md:mb-2">
+                        <h4 className="text-[9.5px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 flex items-center gap-1.5">
+                          <span>📋</span> Récapitulatif de votre dossier enregistré
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-0.5 md:gap-y-1 text-[9.5px] md:text-[10.5px]">
+                          <p className="text-white/50 truncate">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
+                          <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} ({formData.transmission})</span></p>
+                          <p className="text-white/50 truncate">Pièces jointes : <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 OK</span></p>
+                          <p className="text-white/50 truncate">N° Registre : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
+                          <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold">{
+                            selectedPath === 'perception' ? "Perception" : 
+                            selectedPath === 'theorique' ? "Examen Théorique" :
+                            selectedPath === 'pratique' ? "Examen Pratique" :
+                            "Permis Direct"
+                          }</span></p>
+                          <p className="text-white/50 truncate">Statut : <span className="text-amber-400 font-semibold">En attente de paiement</span></p>
                         </div>
-                        <div className="pt-2 border-t border-white/5 space-y-1 text-xs font-bold">
-                          {getSplitPaymentDetails().isSplit ? (
-                            <>
-                              <div className="flex justify-between text-white/50">
-                                <span>Total de la formule :</span>
-                                <span className="text-white">{getSplitPaymentDetails().total}</span>
+                      </div>
+
+                      {/* Section 2: Details & RIB */}
+                      {(!paymentValidated || soldeInitiated) ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 items-stretch">
+                          {/* Facture Détaillée */}
+                          <div className={`bg-slate-950/40 border border-white/5 rounded-xl p-3 md:p-3 flex flex-col justify-between relative overflow-hidden group`}>
+                            <div>
+                              <h4 className="text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 md:mb-1.5 flex items-center gap-1.5">
+                                <span>📄</span> Frais de dossier réglementaires
+                              </h4>
+                              <div className="space-y-0.5 md:space-y-1 text-[10.5px] md:text-xs border-b border-white/5 pb-1.5">
+                                {selectedPath === 'perception' && (
+                                  <>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.perceptionLabel1 || "Frais de timbre fiscal & enregistrement SPF Belgique"}</span>
+                                      <span className="text-white font-semibold">{advisor.perceptionAmount1 || "50,00 €"}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.perceptionLabel2 || "Administration - Dispense d'Examen Théorique"}</span>
+                                      <span className="text-white font-semibold">{advisor.perceptionAmount2 || "300,00 €"}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {selectedPath === 'theorique' && (
+                                  <>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.theoriqueLabel1 || "Frais d'enregistrement Examen Théorique"}</span>
+                                      <span className="text-white font-semibold">{advisor.theoriqueAmount1 || "150,00 €"}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.theoriqueLabel2 || "Constitution du dossier de dispense théorique"}</span>
+                                      <span className="text-white font-semibold">{advisor.theoriqueAmount2 || "400,00 €"}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {selectedPath === 'pratique' && (
+                                  <>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.pratiqueLabel1 || "Frais de dépôt Examen Pratique"}</span>
+                                      <span className="text-white font-semibold">{advisor.pratiqueAmount1 || "700,00 €"}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.pratiqueLabel2 || "Dossier d'homologation dispense pratique (30h à 70€/h)"}</span>
+                                      <span className="text-white font-semibold">{advisor.pratiqueAmount2 || "1400,00 €"}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {selectedPath === 'direct' && (
+                                  <>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.directLabel1 || "Constitution du dossier d'homologation complet"}</span>
+                                      <span className="text-white font-semibold">{advisor.directAmount1 || "400,00 €"}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/50">
+                                      <span>{advisor.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)"}</span>
+                                      <span className="text-white font-semibold">{advisor.directAmount2 || "80,00 €"}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                              <div className="flex justify-between text-brand-orange text-[13px] md:text-sm">
-                                <span>Acompte à régler (1er virement) :</span>
-                                <span className="text-base font-black">{getSplitPaymentDetails().firstPayment}</span>
-                              </div>
-                              {getSplitPaymentDetails().secondPayment && (
-                                <div className="flex justify-between text-white/35 text-[10px]">
-                                  <span>Solde ({
-                                    selectedPath === 'perception' ? "à l'obtention de l'attestation de perception" :
-                                    selectedPath === 'theorique' ? "à l'obtention de la dispense d'examen" :
-                                    "à l'obtention du permis de conduire"
-                                  }) :</span>
-                                  <span>{getSplitPaymentDetails().secondPayment}</span>
+                            </div>
+                            <div className="pt-1.5 space-y-0.5 text-[10.5px] md:text-xs font-bold mt-1.5 md:mt-2">
+                              {getSplitPaymentDetails().isSplit ? (
+                                <>
+                                  <div className="flex justify-between text-white/50">
+                                    <span>Total de la formule :</span>
+                                    <span className="text-white">{getSplitPaymentDetails().total}</span>
+                                  </div>
+                                  {paymentValidated ? (
+                                    <>
+                                      <div className="flex justify-between text-white/35 text-[9.5px]">
+                                        <span>Acompte versé (reçu) :</span>
+                                        <span className="text-emerald-400 font-semibold">✓ {getSplitPaymentDetails().firstPayment}</span>
+                                      </div>
+                                      <div className="flex justify-between text-brand-orange text-[12px] md:text-sm">
+                                        <span>Solde restant à régler :</span>
+                                        <span className="text-sm md:text-base font-black">{getSplitPaymentDetails().secondPayment}</span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="flex justify-between text-brand-orange text-[12px] md:text-sm">
+                                        <span>Acompte à régler (1er virement) :</span>
+                                        <span className="text-sm md:text-base font-black">{getSplitPaymentDetails().firstPayment}</span>
+                                      </div>
+                                      {getSplitPaymentDetails().secondPayment && (
+                                        <div className="flex justify-between text-white/35 text-[9.5px]">
+                                          <span>Solde ({
+                                            selectedPath === 'perception' ? "à l'obtention de l'attestation de perception" :
+                                            selectedPath === 'theorique' ? "à l'obtention du certificat d'examen" :
+                                            "à l'obtention du permis de conduire"
+                                          }) :</span>
+                                          <span>{getSplitPaymentDetails().secondPayment}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="flex justify-between text-brand-orange text-[12px] md:text-sm">
+                                  <span>Total TTC à régler :</span>
+                                  <span className="text-sm md:text-base font-black">{getSplitPaymentDetails().total}</span>
                                 </div>
                               )}
-                            </>
-                          ) : (
-                            <div className="flex justify-between text-brand-orange text-sm md:text-base">
-                              <span>Total TTC à régler :</span>
-                              <span className="text-base font-black">{getSplitPaymentDetails().total}</span>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                          </div>
 
-                      {/* Informations de paiement (RIB) */}
-                      <div className="bg-slate-905 border border-brand-orange/30 rounded-2xl p-3 md:p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-brand-orange/5 rounded-full blur-xl" />
-                        <div>
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2 md:mb-1.5 flex items-center gap-2">
-                            <span>🏦</span> Informations bancaires (RIB / Virement)
-                          </h4>
+                          {/* Informations de paiement (RIB) */}
+                          <div className="bg-slate-950/40 border border-brand-orange/20 rounded-xl p-3 md:p-3 flex flex-col justify-between relative overflow-hidden">
+                            <div>
+                              <h4 className="text-[10.5px] md:text-xs font-bold uppercase tracking-wider text-amber-400 mb-1 flex items-center gap-1.5">
+                                <span>🏦</span> Informations bancaires (RIB / Virement)
+                              </h4>
+                              
+                              <div className="space-y-0.5 md:space-y-1 text-[10.5px] md:text-xs">
+                                <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                  <span className="text-white/40">Bénéficiaire :</span>
+                                  <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                  <span className="text-white/40">Banque :</span>
+                                  <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                  <span className="text-white/40">IBAN :</span>
+                                  <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                  <span className="text-white/40">Code BIC/SWIFT :</span>
+                                  <span className="text-white font-mono font-semibold">{advisor.bic || "GEBA BEBB"}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                  <span className="text-white/40">Montant à transférer :</span>
+                                  <span className="text-brand-orange font-black font-mono text-xs md:text-sm">
+                                    {getTransferAmount()}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/40">Communication :</span>
+                                  <span className="text-brand-orange font-bold font-mono">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
+                                </div>
+                              </div>
+                            </div>
 
-                          {getSplitPaymentDetails().isSplit && (
-                            <div className="mb-2.5 px-2.5 py-1.5 rounded-xl bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[9.5px] font-bold uppercase tracking-wider text-center leading-normal">
-                              💡 Acompte de 200 € à régler pour lancer le dossier, le solde ({getSplitPaymentDetails().secondPayment}) {
-                                selectedPath === 'perception' ? "à l'obtention de l'attestation de perception" :
-                                selectedPath === 'theorique' ? "à l'obtention de la dispense d'examen" :
-                                "à l'obtention du document"
-                              }.
-                            </div>
-                          )}
-                          
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex justify-between border-b border-white/5 pb-1">
-                              <span className="text-white/40">Bénéficiaire :</span>
-                              <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-white/5 pb-1">
-                              <span className="text-white/40">Banque :</span>
-                              <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-white/5 pb-1">
-                              <span className="text-white/40">IBAN :</span>
-                              <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-white/5 pb-1">
-                              <span className="text-white/40">Code BIC/SWIFT :</span>
-                              <span className="text-white font-mono font-semibold">{advisor.bic || "GEBA BEBB"}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-white/5 pb-1">
-                              <span className="text-white/40">Montant à transférer :</span>
-                              <span className="text-brand-orange font-black font-mono text-sm">
-                                {getTransferAmount()}
+                            <div className="mt-1.5 md:mt-2 bg-amber-500/10 border border-amber-500/20 rounded-lg p-1.5 md:p-2 text-[8.5px] md:text-[9px] text-amber-300 leading-normal flex items-start gap-1">
+                              <span className="text-[10px]">⚠️</span>
+                              <span>
+                                <strong>IMPORTANT</strong> : Indiquez la communication exacte. Envoyez le justificatif (capture d'écran) à votre conseiller depuis le chat.
                               </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-white/40">Communication :</span>
-                              <span className="text-brand-orange font-bold font-mono">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
                             </div>
                           </div>
                         </div>
-
-                        <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 text-[9px] text-amber-300 leading-normal flex items-start gap-1.5">
-                          <span className="text-xs">⚠️</span>
-                          <span>
-                            <strong>IMPORTANT</strong> : Indiquez la communication exacte. Envoyez le justificatif (capture d'écran) à votre conseiller depuis le chat pour accélérer le traitement.
-                          </span>
+                      ) : (
+                        /* État d'attente: acompte payé, solde pas encore initié */
+                        <div className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl py-8 px-5 md:py-10 md:px-6 flex flex-col items-center gap-4 text-center transition-all duration-300">
+                          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-2xl md:text-3xl shadow-xl shadow-emerald-500/5 animate-pulse">
+                            ⏳
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="text-base md:text-lg font-bold text-emerald-400">Votre acompte a bien été reçu !</h4>
+                            <p className="text-xs md:text-sm text-white/60 leading-relaxed max-w-xl mx-auto">
+                              Nous travaillons actuellement à l'édition officielle de votre {
+                                selectedPath === 'theorique' ? "Certificat d'examen" :
+                                selectedPath === 'perception' ? "attestation de perception de risque" :
+                                "document officiel"
+                              }.
+                            </p>
+                            <p className="text-[10.5px] md:text-xs text-white/45 leading-relaxed max-w-md mx-auto">
+                              Vous serez notifié ici et par e-mail dès que le solde restant ({getSplitPaymentDetails().secondPayment}) sera à régler.
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="mt-3 md:mt-4 flex flex-col sm:flex-row gap-4 w-full justify-center">
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className="px-6 py-2 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-2"
+                        className="px-6 py-2 rounded-xl text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-2"
                       >
-                        💬 Envoyer le justificatif à mon conseiller
+                        {paymentValidated && !soldeInitiated ? "💬 Contacter mon conseiller" : "💬 Envoyer le justificatif à mon conseiller"}
                       </button>
                     </div>
                   </div>
                 ) : (
                   // SUCCESS STATE (RÉSULTAT DE L'ANALYSE)
-                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-1 sm:py-4 animate-[bubbleIn_0.6s_ease-out]">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto py-1 sm:py-4 animate-[bubbleIn_0.6s_ease-out] w-full">
                     {/* Premium Success Badge */}
                     <div className={`inline-flex items-center gap-2 text-[9px] sm:text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 sm:px-4 sm:py-1.5 rounded-full mb-1.5 sm:mb-4 ${
                       applicationStatus === 'completed'
@@ -1778,11 +1889,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       {applicationStatus === 'completed'
                         ? (selectedPath === 'perception'
                           ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre attestation de perception a été validée officiellement. Elle est désormais disponible et vous a été envoyée par e-mail. Merci pour votre confiance.`
+                          : selectedPath === 'theorique'
+                          ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre Certificat d'examen théorique officiel est prêt. Vous pouvez dès à présent le télécharger ou vous rendre en commune pour le retirer. Merci pour votre confiance.`
                           : `Félicitations ${formData.firstName || 'Candidat'} ! Votre permis de conduire officiel est prêt. Vous pouvez dès à présent vous rendre en commune pour le retirer. Merci pour votre confiance.`)
                         : paymentValidated 
                           ? (selectedPath === 'perception'
-                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre attestation de perception est en cours d'édition. Sa disponibilité vous sera communiquée par e-mail. Merci.`
-                            : `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement a été reçu et validé. Votre demande de permis définitif est en cours d'enregistrement officiel. Les modalités et la date de retrait en commune vous seront communiquées par e-mail. Merci.`)
+                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre acompte de ${getSplitPaymentDetails().firstPayment || "200,00 €"} a bien été reçu et validé. Votre attestation de perception est en cours d'édition. Le solde restant vous sera demandé dès qu'elle sera prête. Merci pour votre confiance.`
+                            : selectedPath === 'theorique'
+                            ? `Félicitations ${formData.firstName || 'Candidat'} ! Votre second paiement de ${getSplitPaymentDetails().secondPayment || "350,00 €"} a été reçu et validé. Votre Certificat d'examen théorique est en cours d'enregistrement officiel. Les modalités de retrait en commune vous seront communiquées par e-mail. Merci.`
+                            : `Félicitations ${formData.firstName || 'Candidat'} ! Votre paiement de ${getSplitPaymentDetails().total} a été reçu et validé. Votre demande de permis définitif est en cours d'enregistrement officiel. Les modalités et la date de retrait en commune vous seront communiquées par e-mail. Merci.`)
                           : `Merci ${formData.firstName || 'Candidat'} ! Votre dossier est désormais entièrement constitué et transmis à nos services pour vérification. Nos conseillers analysent vos pièces sous 24h/48h.`
                       }
                     </p>
@@ -1796,14 +1911,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         <span>📋</span> Détails du dossier enregistré
                       </h4>
                       
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:gap-4 text-[9px] sm:text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 sm:gap-4 text-[9px] sm:text-xs">
                         <div className="space-y-1 sm:space-y-2">
                           <p className="text-white/50 truncate">Candidat : <span className="text-white font-semibold block sm:inline">{formData.firstName} {formData.lastName}</span></p>
                           <p className="text-white/50 truncate">N° Registre : <span className="text-white font-mono block sm:inline">{formData.nationalRegister || "Non spécifié"}</span></p>
                           <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold block sm:inline">{selectedPath === 'perception' ? "Perception" : "Permis Direct"}</span></p>
                         </div>
                         <div className="space-y-1 sm:space-y-2">
-                          <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold block sm:inline">Catégorie {formData.licenseCategory || 'B'} ({formData.transmission})</span></p>
+                          <p className="text-white/50">Permis : <span className="text-brand-orange font-semibold block sm:inline">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} ({formData.transmission})</span></p>
                           <p className="text-white/50 truncate">Pièces : <span className="text-emerald-400 font-semibold block sm:inline">{Object.values(uploads).filter(Boolean).length} / 4 OK</span></p>
                         </div>
                       </div>
@@ -1837,20 +1952,20 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     </div>
 
-                    <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full justify-center">
+                    <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 w-full">
                       {applicationStatus === 'completed' && attestationUrl && (
                         <a
                           href={attestationUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-1.5"
+                          className="flex-1 w-full px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_20px_rgba(99,102,241,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center gap-1.5"
                         >
                           📥 Télécharger mon attestation
                         </a>
                       )}
                       <button
                         onClick={() => setActiveTab('overview')}
-                        className="px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white"
+                        className="flex-1 w-full px-6 py-1.5 sm:px-8 sm:py-2.5 rounded-xl text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark shadow-[0_8px_20px_rgba(255,152,0,0.25)] transition-all duration-300 transform hover:scale-[1.02] cursor-pointer text-white flex items-center justify-center"
                       >
                         Suivre mon dossier en temps réel ➔
                       </button>
@@ -1861,7 +1976,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             type="button"
                             disabled={isPaymentPending}
                             onClick={() => setShowUpgradeConfirm(true)}
-                            className={`px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                            className={`flex-1 w-full px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 ${
                               isPaymentPending
                                 ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
                                 : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.02] shadow-[0_8px_20px_rgba(99,102,241,0.25)] cursor-pointer text-white'
@@ -1872,8 +1987,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             ) : (
                               <>
                                 ⚡ Changer de formule ({
-                                  selectedPath === 'perception' ? 'Théorie, Pratique, Direct' :
-                                  selectedPath === 'theorique' ? 'Pratique, Direct' :
+                                  selectedPath === 'perception' ? 'Pratique, Direct' :
+                                  selectedPath === 'theorique' ? 'Perception, Pratique, Direct' :
                                   'Direct'
                                 })
                               </>
@@ -1883,7 +1998,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       })()}
                       <button
                         onClick={() => setActiveTab('chat')}
-                        className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full text-xs font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90"
+                        className="flex-1 w-full px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-xl text-xs font-bold bg-white/5 border border-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer text-white/90 flex items-center justify-center"
                       >
                         Contacter mon conseiller
                       </button>
@@ -2128,8 +2243,8 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <div className="flex flex-wrap gap-1">
                             {[
                               { icon: '📋', label: 'Affiliation Candidat', done: true },
-                              { icon: '👁️', label: 'Perception de Risque', done: selectedPath === 'theorique' || selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'perception' || !selectedPath },
-                              { icon: '📖', label: 'Examen Théorique', done: selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'theorique', locked: selectedPath === 'perception' || !selectedPath },
+                              { icon: '📖', label: 'Examen Théorique', done: selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'theorique' || !selectedPath },
+                              { icon: '👁️', label: 'Perception de Risque', done: selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'perception', locked: selectedPath === 'theorique' || !selectedPath },
                               { icon: '🚗', label: 'Examen Pratique', done: selectedPath === 'direct', active: selectedPath === 'pratique', locked: selectedPath === 'perception' || selectedPath === 'theorique' || !selectedPath },
                               { icon: '🏆', label: 'Permis Définitif', active: selectedPath === 'direct', locked: selectedPath !== 'direct' || !selectedPath },
                             ].map((item, i) => (
@@ -2158,35 +2273,35 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                               </label>
                               <select
                                 name="licenseCategory"
-                                value={formData.licenseCategory || 'B'}
+                                value={formData.licenseCategory || 'Permis B (Voiture)'}
                                 onChange={handleInputChange}
                                 className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white/80"
                               >
                                 <optgroup label="Voitures & Véhicules légers" className="bg-slate-900 text-white font-bold">
-                                  <option value="B">Permis B (Voiture)</option>
-                                  <option value="B96">Permis B96 (Voiture + Remorque)</option>
-                                  <option value="BE">Permis BE (Voiture + Remorque lourde)</option>
+                                  <option value="Permis B (Voiture)">Permis B (Voiture)</option>
+                                  <option value="Permis B96 (Voiture + Remorque)">Permis B96 (Voiture + Remorque)</option>
+                                  <option value="Permis BE (Voiture + Remorque lourde)">Permis BE (Voiture + Remorque lourde)</option>
                                 </optgroup>
                                 <optgroup label="Deux-roues & Motos" className="bg-slate-900 text-white font-bold">
-                                  <option value="AM">Permis AM (Cyclomoteur 50cc)</option>
-                                  <option value="A1">Permis A1 (Moto légère 125cc)</option>
-                                  <option value="A2">Permis A2 (Moto moyenne ≤ 35kW)</option>
-                                  <option value="A">Permis A (Moto lourde &gt; 35kW)</option>
+                                  <option value="Permis AM (Cyclomoteur 50cc)">Permis AM (Cyclomoteur 50cc)</option>
+                                  <option value="Permis A1 (Moto légère 125cc)">Permis A1 (Moto légère 125cc)</option>
+                                  <option value="Permis A2 (Moto moyenne ≤ 35kW)">Permis A2 (Moto moyenne ≤ 35kW)</option>
+                                  <option value="Permis A (Moto lourde > 35kW)">Permis A (Moto lourde &gt; 35kW)</option>
                                 </optgroup>
                                 <optgroup label="Camions (Transport de marchandises)" className="bg-slate-900 text-white font-bold">
-                                  <option value="C1">Permis C1 (Camion 3.5t - 7.5t)</option>
-                                  <option value="C1E">Permis C1E (Camion 3.5t - 7.5t + Remorque)</option>
-                                  <option value="C">Permis C (Camion &gt; 3.5t)</option>
-                                  <option value="CE">Permis CE (Camion + Remorque lourde)</option>
+                                  <option value="Permis C1 (Camion 3.5t - 7.5t)">Permis C1 (Camion 3.5t - 7.5t)</option>
+                                  <option value="Permis C1E (Camion 3.5t - 7.5t + Remorque)">Permis C1E (Camion 3.5t - 7.5t + Remorque)</option>
+                                  <option value="Permis C (Camion > 3.5t)">Permis C (Camion &gt; 3.5t)</option>
+                                  <option value="Permis CE (Camion + Remorque lourde)">Permis CE (Camion + Remorque lourde)</option>
                                 </optgroup>
                                 <optgroup label="Autobus & Autocars" className="bg-slate-900 text-white font-bold">
-                                  <option value="D1">Permis D1 (Minibus max 16 passagers)</option>
-                                  <option value="D1E">Permis D1E (Minibus + Remorque)</option>
-                                  <option value="D">Permis D (Bus / Autocar)</option>
-                                  <option value="DE">Permis DE (Bus + Remorque lourde)</option>
+                                  <option value="Permis D1 (Minibus max 16 passagers)">Permis D1 (Minibus max 16 passagers)</option>
+                                  <option value="Permis D1E (Minibus + Remorque)">Permis D1E (Minibus + Remorque)</option>
+                                  <option value="Permis D (Bus / Autocar)">Permis D (Bus / Autocar)</option>
+                                  <option value="Permis DE (Bus + Remorque lourde)">Permis DE (Bus + Remorque lourde)</option>
                                 </optgroup>
                                 <optgroup label="Autres" className="bg-slate-900 text-white font-bold">
-                                  <option value="G">Permis G (Tracteur agricole)</option>
+                                  <option value="Permis G (Tracteur agricole)">Permis G (Tracteur agricole)</option>
                                 </optgroup>
                               </select>
                             </div>
@@ -2245,39 +2360,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             Formule d'obtention souhaitée
                           </label>
                           <div className="grid grid-cols-2 gap-1.5">
-                            {/* Option 1: Perception du Risque */}
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                setSelectedPath('perception');
-                                if (user) {
-                                  try {
-                                    await updateDoc(doc(db, 'leads', user.uid), {
-                                      selectedPath: 'perception',
-                                      amount: advisor.perceptionAmount || "350,00 €"
-                                    });
-                                  } catch (e) { console.error(e); }
-                                }
-                              }}
-                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
-                                selectedPath === 'perception'
-                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
-                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
-                              }`}
-                            >
-                              <div>
-                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
-                                  <span>👁️</span> <span className="truncate">Perception</span>
-                                </h4>
-                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 2 — Perception du Risque.</p>
-                              </div>
-                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
-                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 2</span>
-                                <span className="text-[10px] font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
-                              </div>
-                            </button>
-
-                            {/* Option 2: Examen Théorique */}
+                            {/* Option 1: Examen Théorique (Phase 2) */}
                             <button
                               type="button"
                               onClick={async () => {
@@ -2301,13 +2384,46 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
                                   <span>📖</span> <span className="truncate">Théorique</span>
                                 </h4>
-                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2 &amp; 3 — Perception + Théorique.</p>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 2 — Examen Théorique.</p>
                               </div>
                               <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
-                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 3</span>
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 2</span>
                                 <span className="text-[10px] font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
                               </div>
                             </button>
+
+                            {/* Option 2: Perception du Risque (Phase 3) */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setSelectedPath('perception');
+                                if (user) {
+                                  try {
+                                    await updateDoc(doc(db, 'leads', user.uid), {
+                                      selectedPath: 'perception',
+                                      amount: advisor.perceptionAmount || "350,00 €"
+                                    });
+                                  } catch (e) { console.error(e); }
+                                }
+                              }}
+                              className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                                selectedPath === 'perception'
+                                  ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
+                                  : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
+                              }`}
+                            >
+                              <div>
+                                <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
+                                  <span>👁️</span> <span className="truncate">Perception</span>
+                                </h4>
+                                <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 3 — Perception du Risque.</p>
+                              </div>
+                              <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 3</span>
+                                <span className="text-[10px] font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
+                              </div>
+                            </button>
+
 
                             {/* Option 3: Examen Pratique */}
                             <button
@@ -2401,7 +2517,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             </div>
                             <div>
                               <span className="text-white/40 block text-[8px]">Permis souhaité</span>
-                              <span className="text-brand-orange font-semibold">Cat. B — {formData.transmission}</span>
+                              <span className="text-brand-orange font-semibold">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} — {formData.transmission}</span>
                             </div>
                             <div>
                               <span className="text-white/40 block text-[8px]">Adresse</span>
@@ -2737,13 +2853,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               Sélectionnez la formule vers laquelle vous souhaitez migrer. Vos validations préalables seront conservées.
             </p>
             <div className="flex flex-col gap-3.5 w-full mb-6">
-              {selectedPath === 'perception' && (
+
+              {selectedPath === 'theorique' && (
                 <button
-                  onClick={() => handleUpgradeToPath('theorique')}
+                  onClick={() => handleUpgradeToPath('perception')}
                   className="w-full px-5 py-3 rounded-2xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:scale-[1.01] transition-all duration-300 cursor-pointer text-left flex justify-between items-center"
                 >
-                  <span>📚 Passer au Théorique</span>
-                  <span className="font-mono text-[10px] opacity-75">{advisor.theoriqueAmount || "550,00 €"}</span>
+                  <span>👁️ Passer à la Perception du Risque</span>
+                  <span className="font-mono text-[10px] opacity-75">{advisor.perceptionAmount || "350,00 €"}</span>
                 </button>
               )}
               {(selectedPath === 'perception' || selectedPath === 'theorique') && (
