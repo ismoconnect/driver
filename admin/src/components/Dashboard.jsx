@@ -13,6 +13,11 @@ const Dashboard = ({ onLogout }) => {
   const [attestationUploadStatus, setAttestationUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success' | 'error'
   const [attestationUploadProgress, setAttestationUploadProgress] = useState(0);
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('adminActiveTab') || 'overview');
+  const [isEditingPath, setIsEditingPath] = useState(false);
+
+  useEffect(() => {
+    setIsEditingPath(false);
+  }, [selectedLeadUid]);
 
   // Admin Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('adminTheme') || 'dark');
@@ -488,6 +493,21 @@ const Dashboard = ({ onLogout }) => {
       }
     } catch (err) {
       console.error(err);
+    }
+    setUpdating(false);
+  };
+
+  const handleSelectPath = async (pathName) => {
+    if (!selectedLead) return;
+    setUpdating(true);
+    try {
+      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+      await updateDoc(doc(db, "leads", leadId), { 
+        selectedPath: pathName
+      });
+      setIsEditingPath(false);
+    } catch (err) {
+      console.error("Error setting path:", err);
     }
     setUpdating(false);
   };
@@ -1140,448 +1160,687 @@ const Dashboard = ({ onLogout }) => {
                 );
               })()}
 
-              {/* === FACTURATION & RIB === */}
-              <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col gap-6">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-0 ml-1">Facturation & Réglement</h3>
-                
-                {/* Option de Parcours Choisie */}
-                {selectedLead.rawLead?.selectedPath ? (
-                  <div className="bg-slate-950/60 p-5 rounded-2xl border border-orange-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <span className="text-[9px] font-black uppercase tracking-wider bg-orange-500/15 border border-orange-500/30 text-orange-500 px-2.5 py-1 rounded">
-                        Option Choisie
-                      </span>
-                      <h4 className="text-sm font-bold text-white mt-2">
-                        {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
-                         selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
-                         selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
-                         '🏆 Phase 5 - Permis Définitif / Direct'}
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Le candidat a sélectionné cette option pour la constitution de son dossier.
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] uppercase text-slate-400 font-semibold">Montant dû</p>
-                      <span className="text-lg font-black text-orange-500">
-                        {selectedLead.rawLead.selectedPath === 'perception' ? (advisorSettings.perceptionAmount || "350,00 €") :
-                         selectedLead.rawLead.selectedPath === 'theorique' ? (advisorSettings.theoriqueAmount || "550,00 €") :
-                         selectedLead.rawLead.selectedPath === 'pratique' ? (advisorSettings.pratiqueAmount || "2100,00 €") :
-                         (advisorSettings.directLicenseAmount || "1200,00 €")}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-slate-950/20 p-5 rounded-2xl border border-white/5 text-center">
-                    <p className="text-xs text-slate-400">
-                      ⚠️ Le candidat n'a pas encore fait son choix de parcours.
-                    </p>
-                  </div>
-                )}
+              {/* === FIL DE PRODUCTION & SUIVI CHRONOLOGIQUE DU DOSSIER === */}
+              {(() => {
+                const hasSelectedPath = !!selectedLead.rawLead?.selectedPath;
+                const isBillingActive = !!selectedLead.rawLead?.billingActive;
+                const isPaymentValidated = !!selectedLead.rawLead?.paymentValidated;
+                const splitDetails = getAdminSplitPaymentDetails(selectedLead.rawLead);
+                const isSplit = splitDetails.isSplit;
+                const isSoldeValidated = !!selectedLead.rawLead?.soldeValidated;
+                const hasAttestation = !!selectedLead.rawLead?.attestationUrl;
+                const currentStatus = selectedLead.status || 'new';
 
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span>💳</span> Lancer l'état de facturation
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      {selectedLead.rawLead?.billingActive 
-                        ? "Le devis détaillé et les coordonnées du RIB de Mon Permis SRL sont actuellement visibles pour le client."
-                        : "Activez la facturation pour afficher la demande de paiement par virement bancaire sur le tableau de bord du candidat."}
-                    </p>
-                  </div>
-                  <button
-                    disabled={updating}
-                    onClick={async () => {
-                      if (!selectedLead) return;
-                      setUpdating(true);
-                      try {
-                        const currentVal = selectedLead.rawLead?.billingActive === true;
-                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                        
-                        await updateDoc(doc(db, "leads", leadId), { 
-                          billingActive: !currentVal
-                        });
-                      } catch (err) {
-                        console.error(err);
-                      }
-                      setUpdating(false);
-                    }}
-                    className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
-                      selectedLead.rawLead?.billingActive
-                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400 shadow-amber-500/25'
-                        : 'bg-orange-600 hover:bg-orange-500 text-white border-orange-500 shadow-orange-600/25'
-                    }`}
-                  >
-                    {selectedLead.rawLead?.billingActive ? '🔴 Désactiver la facture' : '⚡ Déclencher la facture & RIB'}
-                  </button>
-                </div>
+                let activeStep = 1;
+                let nextActionLabel = "Sélectionner la formule du candidat";
+                let progressPercent = 10;
 
-                {selectedLead.rawLead?.billingActive && (
-                  <div className="space-y-4">
-                    {/* Acompte Validation Card */}
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                          <span>💰</span> Validation du paiement {getAdminSplitPaymentDetails(selectedLead.rawLead).isSplit && "— Acompte (200 €)"}
-                        </h4>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                          {selectedLead.rawLead?.paymentValidated 
-                            ? "Le premier virement (acompte) de 200,00 € a été validé."
-                            : "Une fois le premier virement de 200,00 € reçu, validez le règlement."}
+                if (!hasSelectedPath) {
+                  activeStep = 1;
+                  nextActionLabel = "Sélectionner la formule du candidat";
+                  progressPercent = 10;
+                } else if (!isBillingActive) {
+                  activeStep = 2;
+                  nextActionLabel = "Activer la facturation & le RIB";
+                  progressPercent = 30;
+                } else if (!isPaymentValidated) {
+                  activeStep = 3;
+                  nextActionLabel = isSplit ? "Valider le virement d'acompte (200 €)" : `Valider le virement complet (${splitDetails.total})`;
+                  progressPercent = 50;
+                } else if (isSplit && !isSoldeValidated) {
+                  activeStep = 4;
+                  nextActionLabel = `Valider le virement du solde (${splitDetails.secondPayment})`;
+                  progressPercent = 75;
+                } else {
+                  activeStep = 5;
+                  nextActionLabel = !hasAttestation ? "Uploader le document officiel (PDF)" : `Dossier payé et finalisé (Statut: ${currentStatus === 'completed' ? 'Terminé' : 'En cours'})`;
+                  progressPercent = !hasAttestation ? 90 : 100;
+                }
+
+                return (
+                  <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col gap-8">
+                    {/* Header with visual progress bar */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/5">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xl">🛣️</span>
+                          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-300">
+                            Workflow & Suivi Chronologique du Dossier
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Pilotez le dossier étape par étape. Les actions suivantes se débloquent automatiquement.
                         </p>
                       </div>
-                      <button
-                        disabled={updating}
-                        onClick={async () => {
-                          if (!selectedLead) return;
-                          setUpdating(true);
-                          try {
-                            const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                            const nextVal = !selectedLead.rawLead?.paymentValidated;
-                            
-                            // Determine status depending on selectedPath and validation state
-                            const leadSplit = getAdminSplitPaymentDetails(selectedLead.rawLead);
-                            const targetStatus = nextVal ? (leadSplit.isSplit ? 'processing' : 'completed') : 'new';
-
-                            // 1. Update payment state & dossier status
-                            await updateDoc(doc(db, "leads", leadId), { 
-                              paymentValidated: nextVal,
-                              status: targetStatus
-                            });
-
-                            // 2. Sync status to user document
-                            if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                              await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
-                                status: targetStatus
-                              });
-                            }
-
-                            // 3. Send automated advisor chat message
-                            const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                            const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                            
-                            let textMessage = "";
-                            if (nextVal) {
-                              if (leadSplit.isSplit) {
-                                textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
-                              } else {
-                                textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
-                              }
-                            } else {
-                              textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller.";
-                            }
-
-                            await addDoc(messagesRef, {
-                              sender: 'advisor',
-                              text: textMessage,
-                              timestamp: serverTimestamp()
-                            });
-
-                            await setDoc(chatDocRef, {
-                              lastMessageText: textMessage,
-                              lastMessageTime: serverTimestamp(),
-                              unreadByClient: true
-                            }, { merge: true });
-
-                          } catch (err) {
-                            console.error(err);
-                          }
-                          setUpdating(false);
-                        }}
-                        className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
-                          selectedLead.rawLead?.paymentValidated
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
-                        }`}
-                      >
-                        {selectedLead.rawLead?.paymentValidated ? "🔴 Annuler l'acompte" : "✓ Valider l'acompte (200 €)"}
-                      </button>
+                      <div className="w-full md:w-64 flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          <span>Progression</span>
+                          <span className="text-brand-orange">{progressPercent}%</span>
+                        </div>
+                        <div className="h-2.5 w-full bg-slate-950 rounded-full overflow-hidden p-[2px] border border-white/5">
+                          <div 
+                            className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-400 italic font-medium truncate">
+                          👉 Suivant : {nextActionLabel}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Solde Validation Card (if split payment) */}
-                    {getAdminSplitPaymentDetails(selectedLead.rawLead).isSplit && selectedLead.rawLead?.paymentValidated && (
-                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-950/40 p-6 rounded-2xl border border-white/5 border-t border-t-white/10 animate-[bubbleIn_0.3s_ease-out]">
-                        <div className="flex-1">
-                          <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                            <span>💳</span> Validation du solde ({getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment})
-                          </h4>
-                          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                            {selectedLead.rawLead?.soldeValidated 
-                              ? "Le paiement du solde restant a été validé."
-                              : `Validez le paiement du solde de ${getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment} une fois le virement reçu.`}
-                          </p>
+                    {/* Steps Timeline Container */}
+                    <div className="flex flex-col gap-0 relative pl-4 sm:pl-6">
+                      
+                      {/* Vertical connector line background */}
+                      <div className="absolute left-[31px] sm:left-[39px] top-6 bottom-6 w-0.5 border-l-2 border-dashed border-slate-800 pointer-events-none" />
+
+                      {/* --- STEP 1 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 1 ? 'opacity-40' : ''}`}>
+                        {/* Timeline Circle */}
+                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                          {hasSelectedPath ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                              ✓
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500 border border-orange-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-orange-500/20 animate-pulse">
+                              1
+                            </div>
+                          )}
                         </div>
-                        <button
-                          disabled={updating}
-                          onClick={async () => {
-                            if (!selectedLead) return;
-                            setUpdating(true);
-                            try {
-                              const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                              const nextSoldeVal = !selectedLead.rawLead?.soldeValidated;
-                              
-                              // When solde is validated, status becomes completed. If cancelled, goes back to processing.
-                              const targetStatus = nextSoldeVal ? 'completed' : 'processing';
 
-                              await updateDoc(doc(db, "leads", leadId), { 
-                                soldeValidated: nextSoldeVal,
-                                status: targetStatus
-                              });
+                        {/* Step Card Content */}
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 1 ? 'border-orange-500/30 bg-orange-500/[0.02] shadow-[0_0_20px_rgba(249,115,22,0.05)]' : 'border-white/5'}`}>
+                          <div className="flex justify-between items-start gap-4 flex-wrap">
+                            <div>
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-orange-500">Étape 1 : Formule du Candidat</span>
+                                {hasSelectedPath ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 animate-pulse">👉 Action requise</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400">Le parcours d'apprentissage sélectionné pour le candidat.</p>
+                            </div>
+                            {hasSelectedPath && !isEditingPath && (
+                              <button
+                                onClick={() => setIsEditingPath(true)}
+                                className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 rounded-lg text-[10px] font-bold transition-all"
+                              >
+                                ✏️ Modifier
+                              </button>
+                            )}
+                          </div>
 
-                              if (selectedLead.rawUser && selectedLead.rawUser.uid) {
-                                await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
-                                  status: targetStatus
-                                });
-                              }
-
-                              const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
-                              const chatDocRef = doc(db, 'chats', selectedLead.uid);
-                              
-                              let textMessage = "";
-                              if (nextSoldeVal) {
-                                textMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
-                              } else {
-                                textMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
-                              }
-
-                              await addDoc(messagesRef, {
-                                sender: 'advisor',
-                                text: textMessage,
-                                timestamp: serverTimestamp()
-                              });
-
-                              await setDoc(chatDocRef, {
-                                lastMessageText: textMessage,
-                                lastMessageTime: serverTimestamp(),
-                                unreadByClient: true
-                              }, { merge: true });
-
-                            } catch (err) {
-                              console.error(err);
-                            }
-                            setUpdating(false);
-                          }}
-                          className={`px-6 py-3.5 rounded-xl font-bold text-xs transition-all duration-300 shadow-xl border cursor-pointer ${
-                            selectedLead.rawLead?.soldeValidated
-                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
-                              : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-600/25'
-                          }`}
-                        >
-                          {selectedLead.rawLead?.soldeValidated ? "🔴 Annuler le solde" : `✓ Valider le solde (${getAdminSplitPaymentDetails(selectedLead.rawLead).secondPayment})`}
-                        </button>
+                          {(!hasSelectedPath || isEditingPath) ? (
+                            <div className="mt-4 p-4 bg-slate-900/40 border border-orange-500/20 rounded-xl flex flex-col gap-3">
+                              <p className="text-xs font-bold text-slate-300">
+                                {isEditingPath ? "Modifier la formule attribuée au candidat :" : "⚠️ Aucune formule sélectionnée. Sélectionnez un parcours ci-dessous :"}
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                                {[
+                                  { path: 'perception', label: '📖 Perception', desc: 'Phase 2', amount: advisorSettings.perceptionAmount || "350,00 €" },
+                                  { path: 'theorique', label: '📚 Théorique', desc: 'Phase 3', amount: advisorSettings.theoriqueAmount || "550,00 €" },
+                                  { path: 'pratique', label: '🚗 Pratique', desc: 'Phase 4', amount: advisorSettings.pratiqueAmount || "2100,00 €" },
+                                  { path: 'direct', label: '🏆 Direct', desc: 'Phase 5', amount: advisorSettings.directLicenseAmount || "1200,00 €" }
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.path}
+                                    disabled={updating}
+                                    onClick={() => handleSelectPath(opt.path)}
+                                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                                      selectedLead.rawLead?.selectedPath === opt.path
+                                        ? 'bg-orange-500/10 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.15)]'
+                                        : 'bg-slate-950 hover:bg-slate-900 border-white/5 text-slate-400 hover:text-white'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-black">{opt.label}</span>
+                                    <span className="text-[9px] text-slate-500 font-medium">{opt.desc}</span>
+                                    <span className="text-[10px] font-bold text-orange-500">{opt.amount}</span>
+                                  </button>
+                                ))}
+                              </div>
+                              {isEditingPath && (
+                                <button
+                                  onClick={() => setIsEditingPath(false)}
+                                  className="mt-1 self-end text-[10px] font-bold text-slate-500 hover:text-slate-300 underline"
+                                >
+                                  Annuler
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-3 flex items-center justify-between bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
+                              <div>
+                                <h4 className="text-xs font-black text-white">
+                                  {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
+                                   selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
+                                   selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
+                                   '🏆 Phase 5 - Permis Définitif / Direct'}
+                                </h4>
+                                <p className="text-[10px] text-slate-400 mt-0.5">Validé et enregistré.</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs font-black text-orange-500">{splitDetails.total}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
 
-              {/* === ACTIONS SUR LE STATUT === */}
-              <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-6 ml-1">Mettre à jour le statut</h3>
-                <div className="flex flex-wrap gap-4">
-                  <button 
-                    disabled={updating}
-                    onClick={() => handleUpdateStatus('new')}
-                    className={`px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 flex-1 min-w-[140px] ${
-                      selectedLead.status === 'new' 
-                        ? 'bg-emerald-500 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-2 ring-emerald-400/50' 
-                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
-                    }`}
-                  >
-                    🟢 Nouveau
-                  </button>
-                  <button 
-                    disabled={updating}
-                    onClick={() => handleUpdateStatus('processing')}
-                    className={`px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 flex-1 min-w-[140px] ${
-                      selectedLead.status === 'processing' 
-                        ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/50' 
-                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
-                    }`}
-                  >
-                    🟡 En Cours
-                  </button>
-                  <button 
-                    disabled={updating}
-                    onClick={() => handleUpdateStatus('completed')}
-                    className={`px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 flex-1 min-w-[140px] ${
-                      selectedLead.status === 'completed' 
-                        ? 'bg-indigo-500 text-white shadow-[0_0_25px_rgba(99,102,241,0.3)] ring-2 ring-indigo-400/50' 
-                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
-                    }`}
-                  >
-                    🟣 Terminé
-                  </button>
-                </div>
-              </div>
+                      {/* --- STEP 2 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 2 ? 'opacity-40 pointer-events-none' : ''}`}>
+                        {/* Timeline Circle */}
+                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                          {isBillingActive ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                              ✓
+                            </div>
+                          ) : activeStep === 2 ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500 border border-amber-400 text-slate-950 flex items-center justify-center text-xs font-black ring-4 ring-amber-500/20 animate-pulse">
+                              2
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
+                              2
+                            </div>
+                          )}
+                        </div>
 
-              {/* === LIEN DE TÉLÉCHARGEMENT === */}
-              <div className="bg-slate-900/80 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 ml-1">
-                  📎 Document officiel (Attestation / Permis)
-                </h3>
-                <p className="text-[11px] text-slate-400 mb-5 ml-1">
-                  Uploadez le PDF directement — il sera hébergé sur Cloudinary et disponible instantanément pour le client.
-                </p>
-
-                {/* Cloudinary Upload Zone */}
-                <label
-                  htmlFor="admin-pdf-upload"
-                  className={`relative flex flex-col items-center justify-center gap-3 w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 py-8 px-4
-                    ${attestationUploadStatus === 'uploading'
-                      ? 'border-amber-400/50 bg-amber-500/5 animate-pulse'
-                      : attestationUploadStatus === 'success'
-                      ? 'border-emerald-500/50 bg-emerald-500/5'
-                      : attestationUploadStatus === 'error'
-                      ? 'border-red-500/50 bg-red-500/5'
-                      : 'border-white/10 bg-white/[0.02] hover:border-brand-orange/50 hover:bg-brand-orange/[0.03]'
-                    }`}
-                >
-                  {attestationUploadStatus === 'uploading' ? (
-                    <>
-                      <div className="w-10 h-10 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-                      <span className="text-sm font-semibold text-amber-400">Upload en cours...</span>
-                      <span className="text-xs text-slate-500">{attestationUploadProgress}%</span>
-                    </>
-                  ) : attestationUploadStatus === 'success' ? (
-                    <>
-                      <span className="text-3xl">✅</span>
-                      <span className="text-sm font-bold text-emerald-400">PDF uploadé avec succès !</span>
-                      <span className="text-xs text-slate-400">Cliquez pour remplacer</span>
-                    </>
-                  ) : attestationUploadStatus === 'error' ? (
-                    <>
-                      <span className="text-3xl">❌</span>
-                      <span className="text-sm font-bold text-red-400">Échec de l'upload</span>
-                      <span className="text-xs text-slate-400">Cliquez pour réessayer</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-3xl">📄</span>
-                      <div className="text-center">
-                        <p className="text-sm font-semibold text-white">Glissez votre PDF ici</p>
-                        <p className="text-xs text-slate-500 mt-1">ou cliquez pour choisir un fichier</p>
+                        {/* Step Card Content */}
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 2 ? 'border-amber-500/30 bg-amber-500/[0.02] shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'border-white/5'}`}>
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-amber-500">Étape 2 : Lancer la Facturation (Visibilité RIB)</span>
+                                {isBillingActive ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Activé</span>
+                                ) : activeStep === 2 ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">👉 Action requise</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400 leading-relaxed">
+                                Rendre visible le devis détaillé et les coordonnées du RIB de {advisorSettings.beneficiary} sur le profil client.
+                              </p>
+                            </div>
+                            {hasSelectedPath && (
+                              <button
+                                disabled={updating}
+                                onClick={async () => {
+                                  if (!selectedLead) return;
+                                  setUpdating(true);
+                                  try {
+                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                    await updateDoc(doc(db, "leads", leadId), { 
+                                      billingActive: !isBillingActive
+                                    });
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                  setUpdating(false);
+                                }}
+                                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
+                                  isBillingActive
+                                    ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-amber-500/30'
+                                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
+                                }`}
+                              >
+                                {isBillingActive ? '🔴 Désactiver la facture' : '⚡ Activer la facture & RIB'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-slate-600 bg-white/5 px-3 py-1 rounded-full">
-                        PDF accepté · Max 20MB
-                      </span>
-                    </>
-                  )}
-                  <input
-                    id="admin-pdf-upload"
-                    type="file"
-                    accept="application/pdf"
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !selectedLead) return;
-                      if (file.size > 20 * 1024 * 1024) {
-                        alert('Le fichier dépasse 20MB.');
-                        return;
-                      }
-                      setAttestationUploadStatus('uploading');
-                      setAttestationUploadProgress(0);
-                      try {
-                        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', 'monpermis');
-                        formData.append('folder', `monpermis/admin/attestations`);
-                        formData.append('resource_type', 'raw');
 
-                        // Use XMLHttpRequest for progress tracking
-                        const url = await new Promise((resolve, reject) => {
-                          const xhr = new XMLHttpRequest();
-                          xhr.upload.addEventListener('progress', (ev) => {
-                            if (ev.lengthComputable) {
-                              setAttestationUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-                            }
-                          });
-                          xhr.addEventListener('load', () => {
-                            const data = JSON.parse(xhr.responseText);
-                            if (data.secure_url) resolve(data.secure_url);
-                            else reject(new Error('No secure_url'));
-                          });
-                          xhr.addEventListener('error', () => reject(new Error('Network error')));
-                          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`);
-                          xhr.send(formData);
-                        });
+                      {/* --- STEP 3 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 3 ? 'opacity-40 pointer-events-none' : ''}`}>
+                        {/* Timeline Circle */}
+                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                          {isPaymentValidated ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                              ✓
+                            </div>
+                          ) : activeStep === 3 ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-emerald-500/20 animate-pulse">
+                              3
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
+                              3
+                            </div>
+                          )}
+                        </div>
 
-                        // Save URL to Firestore
-                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                        await updateDoc(doc(db, 'leads', leadId), { attestationUrl: url });
-                        setAttestationUrlInput(url);
-                        setAttestationUploadStatus('success');
-                      } catch (err) {
-                        console.error('Upload error:', err);
-                        setAttestationUploadStatus('error');
-                      }
-                    }}
-                  />
-                </label>
+                        {/* Step Card Content */}
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 3 ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]' : 'border-white/5'}`}>
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                                  Étape 3 : Paiement initial {isSplit ? `— Acompte (${splitDetails.firstPayment})` : `— Total (${splitDetails.total})`}
+                                </span>
+                                {isPaymentValidated ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
+                                ) : activeStep === 3 ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">👉 Action requise</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400 leading-relaxed">
+                                {isPaymentValidated 
+                                  ? "Virement reçu et validé. Le dossier est marqué comme 'En Cours' de traitement."
+                                  : `Vérifiez votre compte bancaire. Dès que le virement de ${isSplit ? splitDetails.firstPayment : splitDetails.total} est reçu, validez pour démarrer le traitement.`}
+                              </p>
+                            </div>
+                            {isBillingActive && (
+                              <button
+                                disabled={updating}
+                                onClick={async () => {
+                                  if (!selectedLead) return;
+                                  setUpdating(true);
+                                  try {
+                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                    const nextVal = !isPaymentValidated;
+                                    
+                                    const targetStatus = nextVal ? (isSplit ? 'processing' : 'completed') : 'new';
 
-                {/* Current URL display */}
-                {attestationUrlInput && (
-                  <div className="mt-4 flex items-center gap-3 bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
-                    <span className="text-emerald-400 text-lg">📎</span>
-                    <a
-                      href={attestationUrlInput}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2 truncate"
-                    >
-                      {attestationUrlInput}
-                    </a>
-                    <button
-                      onClick={async () => {
-                        if (!confirm('Supprimer ce lien ?')) return;
-                        const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                        await updateDoc(doc(db, 'leads', leadId), { attestationUrl: '' });
-                        setAttestationUrlInput('');
-                        setAttestationUploadStatus('idle');
-                      }}
-                      className="text-red-400 hover:text-red-300 text-lg transition-colors"
-                      title="Supprimer"
-                    >
-                      🗑️
-                    </button>
+                                    await updateDoc(doc(db, "leads", leadId), { 
+                                      paymentValidated: nextVal,
+                                      status: targetStatus
+                                    });
+
+                                    if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                      await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                        status: targetStatus
+                                      });
+                                    }
+
+                                    const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                    const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                    
+                                    let textMessage = "";
+                                    if (nextVal) {
+                                      if (isSplit) {
+                                        textMessage = `✅ Votre acompte de 200,00 € pour la formule ${selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception' : selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' : 'Permis Direct'} a été validé ! Votre dossier est maintenant en cours de traitement. 🚀`;
+                                      } else {
+                                        textMessage = "✅ Votre paiement pour la Phase 4 - Examen Pratique a été validé avec succès ! Votre dossier est en cours. 🚗";
+                                      }
+                                    } else {
+                                      textMessage = "ℹ️ Votre paiement a été marqué comme non validé. Veuillez contacter votre conseiller.";
+                                    }
+
+                                    await addDoc(messagesRef, {
+                                      sender: 'advisor',
+                                      text: textMessage,
+                                      timestamp: serverTimestamp()
+                                    });
+
+                                    await setDoc(chatDocRef, {
+                                      lastMessageText: textMessage,
+                                      lastMessageTime: serverTimestamp(),
+                                      unreadByClient: true
+                                    }, { merge: true });
+
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                  setUpdating(false);
+                                }}
+                                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
+                                  isPaymentValidated
+                                    ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30'
+                                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400'
+                                }`}
+                              >
+                                {isPaymentValidated ? "🔴 Annuler le paiement" : `✓ Valider l'acompte (${isSplit ? splitDetails.firstPayment : splitDetails.total})`}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* --- STEP 4 (SOLDE - Optionnel) --- */}
+                      {isSplit && (
+                        <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 4 ? 'opacity-40 pointer-events-none' : ''}`}>
+                          {/* Timeline Circle */}
+                          <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                            {isSoldeValidated ? (
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                ✓
+                              </div>
+                            ) : activeStep === 4 ? (
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-500 border border-indigo-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-indigo-500/20 animate-pulse">
+                                4
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
+                                4
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Step Card Content */}
+                          <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 4 ? 'border-indigo-500/30 bg-indigo-500/[0.02] shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <div>
+                                <div className="flex items-center gap-2.5 mb-1">
+                                  <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
+                                    Étape 4 : Régler le Solde Restant ({splitDetails.secondPayment})
+                                  </span>
+                                  {isSoldeValidated ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
+                                  ) : activeStep === 4 ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">👉 Action requise</span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                  {isSoldeValidated
+                                    ? `Solde restant de ${splitDetails.secondPayment} validé. Formule payée à 100%.`
+                                    : `Valider dès réception du solde final de ${splitDetails.secondPayment} pour finaliser le dossier financièrement.`}
+                                </p>
+                              </div>
+                              {isPaymentValidated && (
+                                <button
+                                  disabled={updating}
+                                  onClick={async () => {
+                                    if (!selectedLead) return;
+                                    setUpdating(true);
+                                    try {
+                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                      const nextSoldeVal = !isSoldeValidated;
+                                      
+                                      const targetStatus = nextSoldeVal ? 'completed' : 'processing';
+
+                                      await updateDoc(doc(db, "leads", leadId), { 
+                                        soldeValidated: nextSoldeVal,
+                                        status: targetStatus
+                                      });
+
+                                      if (selectedLead.rawUser && selectedLead.rawUser.uid) {
+                                        await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
+                                          status: targetStatus
+                                        });
+                                      }
+
+                                      const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
+                                      const chatDocRef = doc(db, 'chats', selectedLead.uid);
+                                      
+                                      let textMessage = "";
+                                      if (nextSoldeVal) {
+                                        textMessage = `✅ Le solde de votre formule a été validé ! Votre ${selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "dispense d'examen" : "permis de conduire"} est maintenant officiellement validé et disponible. 🏆`;
+                                      } else {
+                                        textMessage = "ℹ️ Le solde de votre paiement a été marqué comme non validé.";
+                                      }
+
+                                      await addDoc(messagesRef, {
+                                        sender: 'advisor',
+                                        text: textMessage,
+                                        timestamp: serverTimestamp()
+                                      });
+
+                                      await setDoc(chatDocRef, {
+                                        lastMessageText: textMessage,
+                                        lastMessageTime: serverTimestamp(),
+                                        unreadByClient: true
+                                      }, { merge: true });
+
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                    setUpdating(false);
+                                  }}
+                                  className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
+                                    isSoldeValidated
+                                      ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30'
+                                      : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500'
+                                  }`}
+                                >
+                                  {isSoldeValidated ? '🔴 Annuler le solde' : `✓ Valider le solde (${splitDetails.secondPayment})`}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* --- STEP 5: DOCUMENTS & FINALISATION --- */}
+                      <div className={`relative flex gap-6 transition-all duration-300 ${activeStep < 5 ? 'opacity-40 pointer-events-none' : ''}`}>
+                        {/* Timeline Circle */}
+                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                          {hasAttestation && currentStatus === 'completed' ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                              🏆
+                            </div>
+                          ) : activeStep === 5 ? (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-500 border border-violet-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-violet-500/20 animate-pulse">
+                              5
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
+                              5
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Step Card Content */}
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 5 ? 'border-violet-500/30 bg-violet-500/[0.02] shadow-[0_0_20px_rgba(139,92,246,0.05)]' : 'border-white/5'}`}>
+                          <div className="flex flex-col gap-4">
+                            <div>
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-violet-400">
+                                  Étape 5 : Document Officiel & Statut Final
+                                </span>
+                                {hasAttestation && currentStatus === 'completed' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Dossier Terminé</span>
+                                ) : activeStep === 5 ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20 animate-pulse">👉 Action requise</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400 leading-relaxed">
+                                Importez le document officiel (PDF) hébergé pour le candidat et mettez à jour le statut global du dossier si nécessaire.
+                              </p>
+                            </div>
+
+                            {/* Cloudinary Zone inside card */}
+                            <div className="mt-2">
+                              <label
+                                htmlFor="admin-pdf-upload"
+                                className={`relative flex flex-col items-center justify-center gap-3 w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 py-6 px-4
+                                  ${attestationUploadStatus === 'uploading'
+                                    ? 'border-amber-400/50 bg-amber-500/5 animate-pulse'
+                                    : attestationUploadStatus === 'success'
+                                    ? 'border-emerald-500/50 bg-emerald-500/5'
+                                    : attestationUploadStatus === 'error'
+                                    ? 'border-red-500/50 bg-red-500/5'
+                                    : 'border-white/10 bg-white/[0.02] hover:border-brand-orange/50 hover:bg-brand-orange/[0.03]'
+                                  }`}
+                              >
+                                {attestationUploadStatus === 'uploading' ? (
+                                  <>
+                                    <div className="w-8 h-8 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                                    <span className="text-xs font-semibold text-amber-400">Upload en cours...</span>
+                                    <span className="text-[10px] text-slate-500">{attestationUploadProgress}%</span>
+                                  </>
+                                ) : attestationUploadStatus === 'success' ? (
+                                  <>
+                                    <span className="text-2xl">✅</span>
+                                    <span className="text-xs font-bold text-emerald-400">PDF officiel disponible</span>
+                                    <span className="text-[10px] text-slate-400">Cliquez ou glissez pour remplacer</span>
+                                  </>
+                                ) : attestationUploadStatus === 'error' ? (
+                                  <>
+                                    <span className="text-2xl">❌</span>
+                                    <span className="text-xs font-bold text-red-400">Échec de l'upload</span>
+                                    <span className="text-[10px] text-slate-400">Cliquez pour réessayer</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-2xl">📄</span>
+                                    <div className="text-center">
+                                      <p className="text-xs font-semibold text-white">Déposez l'attestation ou permis officiel (PDF)</p>
+                                      <p className="text-[10px] text-slate-500 mt-0.5">ou cliquez pour parcourir</p>
+                                    </div>
+                                  </>
+                                )}
+                                <input
+                                  id="admin-pdf-upload"
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file || !selectedLead) return;
+                                    if (file.size > 20 * 1024 * 1024) {
+                                      alert('Le fichier dépasse 20MB.');
+                                      return;
+                                    }
+                                    setAttestationUploadStatus('uploading');
+                                    setAttestationUploadProgress(0);
+                                    try {
+                                      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+                                      const formData = new FormData();
+                                      formData.append('file', file);
+                                      formData.append('upload_preset', 'monpermis');
+                                      formData.append('folder', `monpermis/admin/attestations`);
+                                      formData.append('resource_type', 'raw');
+
+                                      const url = await new Promise((resolve, reject) => {
+                                        const xhr = new XMLHttpRequest();
+                                        xhr.upload.addEventListener('progress', (ev) => {
+                                          if (ev.lengthComputable) {
+                                            setAttestationUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                                          }
+                                        });
+                                        xhr.addEventListener('load', () => {
+                                          const data = JSON.parse(xhr.responseText);
+                                          if (data.secure_url) resolve(data.secure_url);
+                                          else reject(new Error('No secure_url'));
+                                        });
+                                        xhr.addEventListener('error', () => reject(new Error('Network error')));
+                                        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`);
+                                        xhr.send(formData);
+                                      });
+
+                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                      await updateDoc(doc(db, 'leads', leadId), { attestationUrl: url });
+                                      setAttestationUrlInput(url);
+                                      setAttestationUploadStatus('success');
+                                    } catch (err) {
+                                      console.error('Upload error:', err);
+                                      setAttestationUploadStatus('error');
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+
+                            {/* Url display & manual fallback */}
+                            {attestationUrlInput && (
+                              <div className="flex items-center gap-3 bg-slate-950/60 border border-white/5 rounded-xl px-4 py-2.5">
+                                <span className="text-emerald-400 text-base">📎</span>
+                                <a
+                                  href={attestationUrlInput}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2 truncate"
+                                >
+                                  {attestationUrlInput}
+                                </a>
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm('Supprimer ce lien ?')) return;
+                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                    await updateDoc(doc(db, 'leads', leadId), { attestationUrl: '' });
+                                    setAttestationUrlInput('');
+                                    setAttestationUploadStatus('idle');
+                                  }}
+                                  className="text-red-400 hover:text-red-300 text-base transition-colors"
+                                  title="Supprimer"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            )}
+
+                            <details className="mt-1">
+                              <summary className="text-[10px] text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none">
+                                Ou saisir le lien manuellement
+                              </summary>
+                              <div className="flex gap-2 mt-2">
+                                <input
+                                  type="text"
+                                  placeholder="https://exemple.com/attestation.pdf"
+                                  value={attestationUrlInput}
+                                  onChange={(e) => setAttestationUrlInput(e.target.value)}
+                                  className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-brand-orange transition-all"
+                                />
+                                <button
+                                  disabled={updating}
+                                  onClick={async () => {
+                                    if (!selectedLead) return;
+                                    setUpdating(true);
+                                    try {
+                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+                                      await updateDoc(doc(db, 'leads', leadId), { attestationUrl: attestationUrlInput });
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                    setUpdating(false);
+                                  }}
+                                  className="px-3 py-2 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-xl font-bold text-[11px] transition-all cursor-pointer"
+                                >
+                                  Enregistrer
+                                </button>
+                              </div>
+                            </details>
+
+                            {/* Status Update Actions - inline */}
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
+                                Statut du dossier :
+                              </p>
+                              <div className="flex gap-2">
+                                {[
+                                  { status: 'new', label: '🟢 Nouveau' },
+                                  { status: 'processing', label: '🟡 En Cours' },
+                                  { status: 'completed', label: '🟣 Terminé' }
+                                ].map((st) => (
+                                  <button
+                                    key={st.status}
+                                    disabled={updating}
+                                    onClick={() => handleUpdateStatus(st.status)}
+                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center cursor-pointer ${
+                                      selectedLead.status === st.status
+                                        ? st.status === 'new'
+                                          ? 'bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/40'
+                                          : st.status === 'processing'
+                                          ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/40'
+                                          : 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] ring-2 ring-indigo-400/40'
+                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                                    }`}
+                                  >
+                                    {st.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
-                )}
-
-                {/* Manual URL fallback */}
-                <details className="mt-4">
-                  <summary className="text-[11px] text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none">
-                    Ou saisir un lien manuellement
-                  </summary>
-                  <div className="flex gap-2 mt-3">
-                    <input
-                      type="text"
-                      placeholder="https://exemple.com/attestation.pdf"
-                      value={attestationUrlInput}
-                      onChange={(e) => setAttestationUrlInput(e.target.value)}
-                      className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-orange transition-all"
-                    />
-                    <button
-                      disabled={updating}
-                      onClick={async () => {
-                        if (!selectedLead) return;
-                        setUpdating(true);
-                        try {
-                          const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                          await updateDoc(doc(db, 'leads', leadId), { attestationUrl: attestationUrlInput });
-                        } catch (err) {
-                          console.error(err);
-                        }
-                        setUpdating(false);
-                      }}
-                      className="px-4 py-2.5 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-xl font-bold text-xs transition-all cursor-pointer"
-                    >
-                      Enregistrer
-                    </button>
-                  </div>
-                </details>
-              </div>
+                );
+              })()}
 
               {/* === ZONE DANGER === */}
               <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8">
