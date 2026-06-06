@@ -68,6 +68,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     nationalRegister: '',
     failedAttempts: '0',
     transmission: 'Manuel',
+    licenseCategory: 'B',
   });
 
   // Simulated uploads state
@@ -248,6 +249,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               nationalRegister: leadData?.nationalRegister || '',
               failedAttempts: leadData?.failedAttempts || '0',
               transmission: leadData?.transmission || 'Manuel',
+              licenseCategory: leadData?.licenseCategory || 'B',
             });
             setIsSubmitted(leadData?.isSubmitted || false);
             setBillingActive(leadData?.billingActive || false);
@@ -273,6 +275,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               nationalRegister: '',
               failedAttempts: '0',
               transmission: 'Manuel',
+              licenseCategory: 'B',
             });
             setIsSubmitted(false);
             setBillingActive(false);
@@ -536,6 +539,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         nationalRegister: formData.nationalRegister,
         failedAttempts: formData.failedAttempts,
         transmission: formData.transmission,
+        licenseCategory: formData.licenseCategory || 'B',
         selectedPath: selectedPath || 'perception',
         amount: selectedPath === 'direct' ? (advisor.directLicenseAmount || "1200,00 €") :
                 selectedPath === 'theorique' ? (advisor.theoriqueAmount || "550,00 €") :
@@ -1799,7 +1803,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                           <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold block sm:inline">{selectedPath === 'perception' ? "Perception" : "Permis Direct"}</span></p>
                         </div>
                         <div className="space-y-1 sm:space-y-2">
-                          <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold block sm:inline">Catégorie B ({formData.transmission})</span></p>
+                          <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold block sm:inline">Catégorie {formData.licenseCategory || 'B'} ({formData.transmission})</span></p>
                           <p className="text-white/50 truncate">Pièces : <span className="text-emerald-400 font-semibold block sm:inline">{Object.values(uploads).filter(Boolean).length} / 4 OK</span></p>
                         </div>
                       </div>
@@ -2146,8 +2150,26 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                         {/* CHOIX DU PARCOURS */}
                         <div className="col-span-2">
 
-                          {/* Échecs + Transmission — EN HAUT sur une ligne */}
-                          <div className="grid grid-cols-2 gap-2 mb-2">
+                          {/* Catégorie + Échecs + Transmission — EN HAUT sur une ligne */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                            <div>
+                              <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                Catégorie de permis
+                              </label>
+                              <select
+                                name="licenseCategory"
+                                value={formData.licenseCategory || 'B'}
+                                onChange={handleInputChange}
+                                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white/80"
+                              >
+                                <option value="B">Permis B (Voiture)</option>
+                                <option value="A">Permis A (Moto)</option>
+                                <option value="AM">Permis AM (Cyclo)</option>
+                                <option value="C">Permis C (Poids Lourd)</option>
+                                <option value="D">Permis D (Autobus)</option>
+                              </select>
+                            </div>
+
                             <div>
                               <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                 Échecs à l'examen

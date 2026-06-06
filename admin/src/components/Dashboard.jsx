@@ -1033,7 +1033,7 @@ const Dashboard = ({ onLogout }) => {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">Détails de la Demande</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { label: 'Catégorie permis', value: `Permis B (${selectedLead.rawLead?.transmission || selectedLead.rawUser?.transmission || 'Manuel'})` },
+                    { label: 'Catégorie permis', value: `Permis ${selectedLead.rawLead?.licenseCategory || selectedLead.rawUser?.licenseCategory || 'B'} (${selectedLead.rawLead?.transmission || selectedLead.rawUser?.transmission || 'Manuel'})` },
                     { label: 'Tentatives ratées', value: selectedLead.rawLead?.failedAttempts || '0' },
                     { label: 'Service demandé', value: selectedLead.service || 'Inscription simple' },
                     { label: 'Date d\'inscription', value: selectedLead.date },
