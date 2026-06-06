@@ -1171,30 +1171,74 @@ const Dashboard = ({ onLogout }) => {
                 const hasAttestation = !!selectedLead.rawLead?.attestationUrl;
                 const currentStatus = selectedLead.status || 'new';
 
-                let activeStep = 1;
+                const pathName = selectedLead.rawLead?.selectedPath || '';
+                let step4Title = "Étape 4 : Paiement initial";
+                let step4Desc = "Vérifiez votre compte bancaire. Dès que le virement est reçu, validez pour démarrer le traitement.";
+                let step5Title = "Étape 5 : Régler le Solde Restant";
+                let step5Desc = "Valider dès réception du solde final pour finaliser le dossier financièrement.";
+                let step2InfoNote = null;
+
+                if (pathName === 'perception') {
+                  step4Title = `Étape 4 : Valider l'acompte (Phase 2 - Perception) — ${splitDetails.firstPayment}`;
+                  step4Desc = isPaymentValidated 
+                    ? "L'acompte pour la Phase 2 (Perception du Risque) a été reçu et validé." 
+                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 2 (Perception).`;
+                  step5Title = `Étape 5 : Valider le solde (Phase 2 - Perception) — ${splitDetails.secondPayment}`;
+                  step5Desc = isSoldeValidated
+                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 2 payée en totalité.`
+                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 2.`;
+                } else if (pathName === 'theorique') {
+                  step2InfoNote = "💡 Phase 2 (Perception du Risque) est dispensée d'office pour cette formule.";
+                  step4Title = `Étape 4 : Valider l'acompte (Phase 3 - Examen Théorique) — ${splitDetails.firstPayment}`;
+                  step4Desc = isPaymentValidated 
+                    ? "L'acompte pour la Phase 3 (Examen Théorique) a été reçu et validé." 
+                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 3 (Examen Théorique).`;
+                  step5Title = `Étape 5 : Valider le solde (Phase 3 - Examen Théorique) — ${splitDetails.secondPayment}`;
+                  step5Desc = isSoldeValidated
+                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 3 payée en totalité.`
+                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 3.`;
+                } else if (pathName === 'pratique') {
+                  step2InfoNote = "💡 Phase 2 (Perception) et Phase 3 (Théorique) sont dispensées d'office.";
+                  step4Title = `Étape 4 : Valider le paiement complet (Phase 4 - Examen Pratique) — ${splitDetails.total}`;
+                  step4Desc = isPaymentValidated
+                    ? "Paiement total reçu. Phase 4 (Examen Pratique) validée."
+                    : `Vérifiez la réception du virement complet de ${splitDetails.total} pour valider la Phase 4.`;
+                } else if (pathName === 'direct') {
+                  step2InfoNote = "💡 Phases 2, 3 et 4 (Perception, Théorie et Pratique) sont dispensées d'office.";
+                  step4Title = `Étape 4 : Valider l'acompte (Phase 5 - Permis Définitif) — ${splitDetails.firstPayment}`;
+                  step4Desc = isPaymentValidated 
+                    ? "L'acompte pour la Phase 5 (Permis Définitif) a été reçu et validé." 
+                    : `Vérifiez la réception du virement d'acompte de ${splitDetails.firstPayment} pour activer la Phase 5.`;
+                  step5Title = `Étape 5 : Valider le solde (Phase 5 - Permis Définitif) — ${splitDetails.secondPayment}`;
+                  step5Desc = isSoldeValidated
+                    ? `Solde restant de ${splitDetails.secondPayment} validé. Phase 5 payée en totalité.`
+                    : `Validez dès réception du virement final de ${splitDetails.secondPayment} pour clore la Phase 5.`;
+                }
+
+                let activeStep = 2;
                 let nextActionLabel = "Sélectionner la formule du candidat";
-                let progressPercent = 10;
+                let progressPercent = 15;
 
                 if (!hasSelectedPath) {
-                  activeStep = 1;
-                  nextActionLabel = "Sélectionner la formule du candidat";
-                  progressPercent = 10;
-                } else if (!isBillingActive) {
                   activeStep = 2;
-                  nextActionLabel = "Activer la facturation & le RIB";
-                  progressPercent = 30;
-                } else if (!isPaymentValidated) {
+                  nextActionLabel = "Sélectionner la formule du candidat";
+                  progressPercent = 15;
+                } else if (!isBillingActive) {
                   activeStep = 3;
-                  nextActionLabel = isSplit ? "Valider le virement d'acompte (200 €)" : `Valider le virement complet (${splitDetails.total})`;
-                  progressPercent = 50;
-                } else if (isSplit && !isSoldeValidated) {
+                  nextActionLabel = "Activer la facturation & le RIB";
+                  progressPercent = 35;
+                } else if (!isPaymentValidated) {
                   activeStep = 4;
-                  nextActionLabel = `Valider le virement du solde (${splitDetails.secondPayment})`;
-                  progressPercent = 75;
-                } else {
+                  nextActionLabel = isSplit ? "Valider le virement d'acompte (200 €)" : `Valider le virement complet (${splitDetails.total})`;
+                  progressPercent = 55;
+                } else if (isSplit && !isSoldeValidated) {
                   activeStep = 5;
+                  nextActionLabel = `Valider le virement du solde (${splitDetails.secondPayment})`;
+                  progressPercent = 80;
+                } else {
+                  activeStep = 6;
                   nextActionLabel = !hasAttestation ? "Uploader le document officiel (PDF)" : `Dossier payé et finalisé (Statut: ${currentStatus === 'completed' ? 'Terminé' : 'En cours'})`;
-                  progressPercent = !hasAttestation ? 90 : 100;
+                  progressPercent = !hasAttestation ? 95 : 100;
                 }
 
                 return (
@@ -1235,8 +1279,31 @@ const Dashboard = ({ onLogout }) => {
                       {/* Vertical connector line background */}
                       <div className="absolute left-[31px] sm:left-[39px] top-6 bottom-6 w-0.5 border-l-2 border-dashed border-slate-800 pointer-events-none" />
 
-                      {/* --- STEP 1 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 1 ? 'opacity-40' : ''}`}>
+                      {/* --- STEP 1 : Affiliation (Always completed) --- */}
+                      <div className="relative flex gap-6 pb-10 transition-all duration-300">
+                        {/* Timeline Circle */}
+                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                            ✓
+                          </div>
+                        </div>
+
+                        {/* Step Card Content */}
+                        <div className="flex-1 bg-slate-950/40 border border-emerald-500/10 rounded-2xl p-5">
+                          <div className="flex justify-between items-start gap-4 flex-wrap">
+                            <div>
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Étape 1 : Affiliation Candidat</span>
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Agrée</span>
+                              </div>
+                              <p className="text-xs text-slate-400">Compte agréé & affilié à notre réseau officiel. Le candidat est actif sur la plateforme.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* --- STEP 2 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 2 ? 'opacity-40' : ''}`}>
                         {/* Timeline Circle */}
                         <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                           {hasSelectedPath ? (
@@ -1245,17 +1312,17 @@ const Dashboard = ({ onLogout }) => {
                             </div>
                           ) : (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500 border border-orange-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-orange-500/20 animate-pulse">
-                              1
+                              2
                             </div>
                           )}
                         </div>
 
                         {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 1 ? 'border-orange-500/30 bg-orange-500/[0.02] shadow-[0_0_20px_rgba(249,115,22,0.05)]' : 'border-white/5'}`}>
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 2 ? 'border-orange-500/30 bg-orange-500/[0.02] shadow-[0_0_20px_rgba(249,115,22,0.05)]' : 'border-white/5'}`}>
                           <div className="flex justify-between items-start gap-4 flex-wrap">
                             <div>
                               <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-orange-500">Étape 1 : Formule du Candidat</span>
+                                <span className="text-xs font-black uppercase tracking-wider text-orange-500">Étape 2 : Formule du Candidat</span>
                                 {hasSelectedPath ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
                                 ) : (
@@ -1312,52 +1379,59 @@ const Dashboard = ({ onLogout }) => {
                               )}
                             </div>
                           ) : (
-                            <div className="mt-3 flex items-center justify-between bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
-                              <div>
-                                <h4 className="text-xs font-black text-white">
-                                  {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
-                                   selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
-                                   selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
-                                   '🏆 Phase 5 - Permis Définitif / Direct'}
-                                </h4>
-                                <p className="text-[10px] text-slate-400 mt-0.5">Validé et enregistré.</p>
+                            <div className="mt-3 flex flex-col bg-slate-950/60 border border-white/5 rounded-xl px-4 py-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="text-xs font-black text-white">
+                                    {selectedLead.rawLead.selectedPath === 'perception' ? '📖 Phase 2 - Perception du Risque' :
+                                     selectedLead.rawLead.selectedPath === 'theorique' ? '📚 Phase 3 - Examen Théorique' :
+                                     selectedLead.rawLead.selectedPath === 'pratique' ? '🚗 Phase 4 - Examen Pratique' :
+                                     '🏆 Phase 5 - Permis Définitif / Direct'}
+                                  </h4>
+                                  <p className="text-[10px] text-slate-400 mt-0.5">Validé et enregistré.</p>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs font-black text-orange-500">{splitDetails.total}</span>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <span className="text-xs font-black text-orange-500">{splitDetails.total}</span>
-                              </div>
+                              {step2InfoNote && (
+                                <div className="mt-2.5 pt-2.5 border-t border-white/5 text-[10px] font-bold text-emerald-400 flex items-center gap-1.5">
+                                  <span>{step2InfoNote}</span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* --- STEP 2 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 2 ? 'opacity-40 pointer-events-none' : ''}`}>
+                      {/* --- STEP 3 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 3 ? 'opacity-40 pointer-events-none' : ''}`}>
                         {/* Timeline Circle */}
                         <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                           {isBillingActive ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                               ✓
                             </div>
-                          ) : activeStep === 2 ? (
+                          ) : activeStep === 3 ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500 border border-amber-400 text-slate-950 flex items-center justify-center text-xs font-black ring-4 ring-amber-500/20 animate-pulse">
-                              2
+                              3
                             </div>
                           ) : (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              2
+                              3
                             </div>
                           )}
                         </div>
 
                         {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 2 ? 'border-amber-500/30 bg-amber-500/[0.02] shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'border-white/5'}`}>
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 3 ? 'border-amber-500/30 bg-amber-500/[0.02] shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'border-white/5'}`}>
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                               <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-amber-500">Étape 2 : Lancer la Facturation (Visibilité RIB)</span>
+                                <span className="text-xs font-black uppercase tracking-wider text-amber-500">Étape 3 : Lancer la Facturation (Visibilité RIB)</span>
                                 {isBillingActive ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Activé</span>
-                                ) : activeStep === 2 ? (
+                                ) : activeStep === 3 ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">👉 Action requise</span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
@@ -1385,7 +1459,7 @@ const Dashboard = ({ onLogout }) => {
                                 }}
                                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-md border cursor-pointer whitespace-nowrap ${
                                   isBillingActive
-                                    ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-amber-500/30'
+                                    ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-emerald-500/30'
                                     : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
                                 }`}
                               >
@@ -1396,45 +1470,43 @@ const Dashboard = ({ onLogout }) => {
                         </div>
                       </div>
 
-                      {/* --- STEP 3 --- */}
-                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 3 ? 'opacity-40 pointer-events-none' : ''}`}>
+                      {/* --- STEP 4 --- */}
+                      <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 4 ? 'opacity-40 pointer-events-none' : ''}`}>
                         {/* Timeline Circle */}
                         <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                           {isPaymentValidated ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                               ✓
                             </div>
-                          ) : activeStep === 3 ? (
+                          ) : activeStep === 4 ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-emerald-500/20 animate-pulse">
-                              3
+                              4
                             </div>
                           ) : (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              3
+                              4
                             </div>
                           )}
                         </div>
 
                         {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 3 ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]' : 'border-white/5'}`}>
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 4 ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]' : 'border-white/5'}`}>
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                               <div className="flex items-center gap-2.5 mb-1">
                                 <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                                  Étape 3 : Paiement initial {isSplit ? `— Acompte (${splitDetails.firstPayment})` : `— Total (${splitDetails.total})`}
+                                  {step4Title}
                                 </span>
                                 {isPaymentValidated ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
-                                ) : activeStep === 3 ? (
+                                ) : activeStep === 4 ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">👉 Action requise</span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
                                 )}
                               </div>
                               <p className="text-xs text-slate-400 leading-relaxed">
-                                {isPaymentValidated 
-                                  ? "Virement reçu et validé. Le dossier est marqué comme 'En Cours' de traitement."
-                                  : `Vérifiez votre compte bancaire. Dès que le virement de ${isSplit ? splitDetails.firstPayment : splitDetails.total} est reçu, validez pour démarrer le traitement.`}
+                                {step4Desc}
                               </p>
                             </div>
                             {isBillingActive && (
@@ -1497,53 +1569,51 @@ const Dashboard = ({ onLogout }) => {
                                     : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400'
                                 }`}
                               >
-                                {isPaymentValidated ? "🔴 Annuler le paiement" : `✓ Valider l'acompte (${isSplit ? splitDetails.firstPayment : splitDetails.total})`}
+                                {isPaymentValidated ? "🔴 Annuler le paiement" : `✓ Valider le virement (${isSplit ? splitDetails.firstPayment : splitDetails.total})`}
                               </button>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* --- STEP 4 (SOLDE - Optionnel) --- */}
+                      {/* --- STEP 5 (SOLDE - Optionnel) --- */}
                       {isSplit && (
-                        <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 4 ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <div className={`relative flex gap-6 pb-10 transition-all duration-300 ${activeStep < 5 ? 'opacity-40 pointer-events-none' : ''}`}>
                           {/* Timeline Circle */}
                           <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                             {isSoldeValidated ? (
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                                 ✓
                               </div>
-                            ) : activeStep === 4 ? (
+                            ) : activeStep === 5 ? (
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-500 border border-indigo-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-indigo-500/20 animate-pulse">
-                                4
+                                5
                               </div>
                             ) : (
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                                4
+                                5
                               </div>
                             )}
                           </div>
 
                           {/* Step Card Content */}
-                          <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 4 ? 'border-indigo-500/30 bg-indigo-500/[0.02] shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
+                          <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 5 ? 'border-indigo-500/30 bg-indigo-500/[0.02] shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                               <div>
                                 <div className="flex items-center gap-2.5 mb-1">
                                   <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
-                                    Étape 4 : Régler le Solde Restant ({splitDetails.secondPayment})
+                                    {step5Title}
                                   </span>
                                   {isSoldeValidated ? (
                                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Validé</span>
-                                  ) : activeStep === 4 ? (
+                                  ) : activeStep === 5 ? (
                                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">👉 Action requise</span>
                                   ) : (
                                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
                                   )}
                                 </div>
                                 <p className="text-xs text-slate-400 leading-relaxed">
-                                  {isSoldeValidated
-                                    ? `Solde restant de ${splitDetails.secondPayment} validé. Formule payée à 100%.`
-                                    : `Valider dès réception du solde final de ${splitDetails.secondPayment} pour finaliser le dossier financièrement.`}
+                                  {step5Desc}
                                 </p>
                               </div>
                               {isPaymentValidated && (
@@ -1610,36 +1680,36 @@ const Dashboard = ({ onLogout }) => {
                         </div>
                       )}
 
-                      {/* --- STEP 5: DOCUMENTS & FINALISATION --- */}
-                      <div className={`relative flex gap-6 transition-all duration-300 ${activeStep < 5 ? 'opacity-40 pointer-events-none' : ''}`}>
+                      {/* --- STEP 6: DOCUMENTS & FINALISATION --- */}
+                      <div className={`relative flex gap-6 transition-all duration-300 ${activeStep < 6 ? 'opacity-40 pointer-events-none' : ''}`}>
                         {/* Timeline Circle */}
                         <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
                           {hasAttestation && currentStatus === 'completed' ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                               🏆
                             </div>
-                          ) : activeStep === 5 ? (
+                          ) : activeStep === 6 ? (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-500 border border-violet-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-violet-500/20 animate-pulse">
-                              5
+                              6
                             </div>
                           ) : (
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              5
+                              6
                             </div>
                           )}
                         </div>
 
                         {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 5 ? 'border-violet-500/30 bg-violet-500/[0.02] shadow-[0_0_20px_rgba(139,92,246,0.05)]' : 'border-white/5'}`}>
+                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 6 ? 'border-violet-500/30 bg-violet-500/[0.02] shadow-[0_0_20px_rgba(139,92,246,0.05)]' : 'border-white/5'}`}>
                           <div className="flex flex-col gap-4">
                             <div>
                               <div className="flex items-center gap-2.5 mb-1">
                                 <span className="text-xs font-black uppercase tracking-wider text-violet-400">
-                                  Étape 5 : Document Officiel & Statut Final
+                                  Étape 6 : Document Officiel & Statut Final
                                 </span>
                                 {hasAttestation && currentStatus === 'completed' ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Dossier Terminé</span>
-                                ) : activeStep === 5 ? (
+                                ) : activeStep === 6 ? (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20 animate-pulse">👉 Action requise</span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
