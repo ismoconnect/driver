@@ -197,9 +197,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   }, [user, advisor.name]);
 
   // Auto-scroll to bottom of chat
-  useEffect(() => {
-    if (activeTab === 'chat' && chatEndRef.current) {
+  const scrollToBottom = () => {
+    if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      scrollToBottom();
     }
   }, [messages, activeTab]);
 
@@ -2844,7 +2850,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
                               m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
                                 <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
-                                  <img src={m.text} alt="Image jointe" className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
+                                  <img src={m.text} alt="Image jointe" onLoad={scrollToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
                                 </a>
                               ) : m.text.match(/\.pdf($|\?)/i) ? (
                                 <a href={m.text} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all mt-1">

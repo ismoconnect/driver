@@ -96,6 +96,19 @@ const Dashboard = ({ onLogout }) => {
   const [adminChatInput, setAdminChatInput] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [chatUploading, setChatUploading] = useState(false);
+  const adminChatEndRef = React.useRef(null);
+
+  const scrollAdminChatToBottom = () => {
+    if (adminChatEndRef.current) {
+      adminChatEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'messages' && selectedChatId) {
+      scrollAdminChatToBottom();
+    }
+  }, [chatMessages, selectedChatId, activeTab]);
 
   // Persist selectedChatId to localStorage
   useEffect(() => {
@@ -1925,7 +1938,7 @@ const Dashboard = ({ onLogout }) => {
                                   {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
                                     m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
                                       <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
-                                        <img src={m.text} alt="Image jointe" className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
+                                        <img src={m.text} alt="Image jointe" onLoad={scrollAdminChatToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
                                       </a>
                                     ) : m.text.match(/\.pdf($|\?)/i) ? (
                                       <a href={m.text} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 ${
@@ -1958,6 +1971,7 @@ const Dashboard = ({ onLogout }) => {
                           );
                         })
                       )}
+                      <div ref={adminChatEndRef} />
                     </div>
 
                     {/* Chat Input form */}
