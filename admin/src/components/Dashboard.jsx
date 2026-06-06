@@ -1597,7 +1597,7 @@ const Dashboard = ({ onLogout }) => {
                                               
                                               let responseMessage = "";
                                               if (nextVal) {
-                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : "certificat d'examen pratique";
+                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : selectedLead.rawLead?.selectedPath === 'pratique' ? "certificat d'examen pratique" : "permis de conduire";
                                                 const adj = selectedLead.rawLead?.selectedPath === 'perception' ? "prête" : "prêt";
                                                 responseMessage = `⚡ Votre ${docName} est ${adj} ! Vous pouvez dès à présent régler le solde restant de ${splitDetails.secondPayment} par virement bancaire.`;
                                               } else {
@@ -1657,7 +1657,7 @@ const Dashboard = ({ onLogout }) => {
                                               
                                               let responseMessage = "";
                                               if (nextSoldeVal) {
-                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : "certificat d'examen pratique";
+                                                const docName = selectedLead.rawLead?.selectedPath === 'perception' ? "attestation de perception" : selectedLead.rawLead?.selectedPath === 'theorique' ? "certificat d'examen théorique" : selectedLead.rawLead?.selectedPath === 'pratique' ? "certificat d'examen pratique" : "permis de conduire";
                                                 const agreement = selectedLead.rawLead?.selectedPath === 'perception' ? "validée" : "validé";
                                                 responseMessage = `✅ Le solde de votre formule a été validé ! Votre ${docName} est maintenant officiellement ${agreement} et disponible. 🏆`;
                                               } else {
