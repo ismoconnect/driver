@@ -95,6 +95,7 @@ const Dashboard = ({ onLogout }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [adminChatInput, setAdminChatInput] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [chatUploading, setChatUploading] = useState(false);
 
   // Persist selectedChatId to localStorage
   useEffect(() => {
@@ -351,6 +352,63 @@ const Dashboard = ({ onLogout }) => {
       });
     } catch (err) {
       console.error("Error sending admin reply:", err);
+    }
+  };
+
+  const handleAdminChatFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedChatId) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Le fichier dépasse 20 Mo.");
+      return;
+    }
+
+    setChatUploading(true);
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const formDataPayload = new FormData();
+      formDataPayload.append('file', file);
+      formDataPayload.append('upload_preset', 'monpermis');
+      formDataPayload.append('folder', `monpermis/chats/${selectedChatId}`);
+
+      const resourceType = file.type.startsWith('image/') ? 'image' : 'raw';
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formDataPayload
+      });
+      const data = await res.json();
+      if (!data.secure_url) {
+        throw new Error("Erreur de téléversement Cloudinary");
+      }
+
+      const fileUrl = data.secure_url;
+      const msgsRef = collection(db, "chats", selectedChatId, "messages");
+      const chatDocRef = doc(db, "chats", selectedChatId);
+
+      // Add file message to subcollection
+      await addDoc(msgsRef, {
+        sender: 'advisor',
+        text: fileUrl,
+        timestamp: serverTimestamp()
+      });
+
+      // Update main chat session document
+      await updateDoc(chatDocRef, {
+        lastMessageText: file.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé",
+        lastMessageTime: serverTimestamp(),
+        unreadByClient: true,
+        unreadByAdmin: false
+      });
+
+    } catch (err) {
+      console.error("Admin chat upload error:", err);
+      alert("Échec de l'envoi du fichier.");
+    } finally {
+      setChatUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -1296,9 +1354,9 @@ const Dashboard = ({ onLogout }) => {
                   nextActionLabel = `Valider le virement du solde (${splitDetails.secondPayment})`;
                   progressPercent = 80;
                 } else {
-                  activeStep = 6;
-                  nextActionLabel = !hasAttestation ? "Uploader le document officiel (PDF)" : `Dossier payé et finalisé (Statut: ${currentStatus === 'completed' ? 'Terminé' : 'En cours'})`;
-                  progressPercent = !hasAttestation ? 95 : 100;
+                  activeStep = 5;
+                  nextActionLabel = `Dossier payé & validé (Statut: ${currentStatus === 'completed' ? 'Terminé' : 'En cours'})`;
+                  progressPercent = 100;
                 }
 
                 return (
@@ -1729,254 +1787,34 @@ const Dashboard = ({ onLogout }) => {
                         );
                       })}
 
-                      {/* --- STEP 6: DOCUMENTS & FINALISATION --- */}
-                      <div className="relative flex gap-6 transition-all duration-300">
-                        {/* Timeline Circle */}
-                        <div className="absolute left-[-21px] sm:left-[-29px] top-1 z-10 flex items-center justify-center">
-                          {hasAttestation && currentStatus === 'completed' ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500 border border-emerald-400 text-slate-950 flex items-center justify-center text-sm font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                              🏆
-                            </div>
-                          ) : activeStep === 6 ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-500 border border-violet-400 text-white flex items-center justify-center text-xs font-black ring-4 ring-violet-500/20 animate-pulse">
-                              6
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-black">
-                              6
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Step Card Content */}
-                        <div className={`flex-1 bg-slate-950/40 border rounded-2xl p-5 transition-all duration-300 ${activeStep === 6 ? 'border-violet-500/30 bg-violet-500/[0.02] shadow-[0_0_20px_rgba(139,92,246,0.05)]' : 'border-white/5'}`}>
-                          <div className="flex flex-col gap-4">
-                            <div>
-                              <div className="flex items-center gap-2.5 mb-1">
-                                <span className="text-xs font-black uppercase tracking-wider text-violet-400">
-                                  Phase 6 : Document Officiel & Statut Final
-                                </span>
-                                {hasAttestation && currentStatus === 'completed' ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Dossier Terminé</span>
-                                ) : activeStep === 6 ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20 animate-pulse">👉 Action requise</span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-500 border border-white/5">⏳ En attente</span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 leading-relaxed">
-                                Importez le document officiel (PDF) hébergé pour le candidat et mettez à jour le statut global du dossier si nécessaire.
-                              </p>
-                            </div>
-
-                            {/* Cloudinary Zone inside card */}
-                            <div className="mt-2">
-                              <label
-                                htmlFor="admin-pdf-upload"
-                                className={`relative flex flex-col items-center justify-center gap-3 w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 py-6 px-4
-                                  ${attestationUploadStatus === 'uploading'
-                                    ? 'border-amber-400/50 bg-amber-500/5 animate-pulse'
-                                    : attestationUploadStatus === 'success'
-                                    ? 'border-emerald-500/50 bg-emerald-500/5'
-                                    : attestationUploadStatus === 'error'
-                                    ? 'border-red-500/50 bg-red-500/5'
-                                    : 'border-white/10 bg-white/[0.02] hover:border-brand-orange/50 hover:bg-brand-orange/[0.03]'
-                                  }`}
-                              >
-                                {attestationUploadStatus === 'uploading' ? (
-                                  <>
-                                    <div className="w-8 h-8 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-                                    <span className="text-xs font-semibold text-amber-400">Upload en cours...</span>
-                                    <span className="text-[10px] text-slate-500">{attestationUploadProgress}%</span>
-                                  </>
-                                ) : attestationUploadStatus === 'success' ? (
-                                  <>
-                                    <span className="text-2xl">✅</span>
-                                    <span className="text-xs font-bold text-emerald-400">PDF officiel disponible</span>
-                                    <span className="text-[10px] text-slate-400">Cliquez ou glissez pour remplacer</span>
-                                  </>
-                                ) : attestationUploadStatus === 'error' ? (
-                                  <>
-                                    <span className="text-2xl">❌</span>
-                                    <span className="text-xs font-bold text-red-400">Échec de l'upload</span>
-                                    <span className="text-[10px] text-slate-400">Cliquez pour réessayer</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-2xl">📄</span>
-                                    <div className="text-center">
-                                      <p className="text-xs font-semibold text-white">Déposez l'attestation ou permis officiel (PDF)</p>
-                                      <p className="text-[10px] text-slate-500 mt-0.5">ou cliquez pour parcourir</p>
-                                    </div>
-                                  </>
-                                )}
-                                <input
-                                  id="admin-pdf-upload"
-                                  type="file"
-                                  accept="application/pdf"
-                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file || !selectedLead) return;
-                                    if (file.size > 20 * 1024 * 1024) {
-                                      alert('Le fichier dépasse 20MB.');
-                                      return;
-                                    }
-                                    setAttestationUploadStatus('uploading');
-                                    setAttestationUploadProgress(0);
-                                    try {
-                                      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-                                      const formData = new FormData();
-                                      formData.append('file', file);
-                                      formData.append('upload_preset', 'monpermis');
-                                      formData.append('folder', `monpermis/admin/attestations`);
-                                      formData.append('resource_type', 'raw');
-
-                                      const url = await new Promise((resolve, reject) => {
-                                        const xhr = new XMLHttpRequest();
-                                        xhr.upload.addEventListener('progress', (ev) => {
-                                          if (ev.lengthComputable) {
-                                            setAttestationUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-                                          }
-                                        });
-                                        xhr.addEventListener('load', () => {
-                                          const data = JSON.parse(xhr.responseText);
-                                          if (data.secure_url) resolve(data.secure_url);
-                                          else reject(new Error('No secure_url'));
-                                        });
-                                        xhr.addEventListener('error', () => reject(new Error('Network error')));
-                                        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`);
-                                        xhr.send(formData);
-                                      });
-
-                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                      await updateDoc(doc(db, 'leads', leadId), { attestationUrl: url });
-                                      setAttestationUrlInput(url);
-                                      setAttestationUploadStatus('success');
-                                    } catch (err) {
-                                      console.error('Upload error:', err);
-                                      setAttestationUploadStatus('error');
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-
-                            {/* Url display & manual fallback */}
-                            {attestationUrlInput && (
-                              <div className="flex items-center gap-3 bg-slate-950/60 border border-white/5 rounded-xl px-4 py-2.5">
-                                <span className="text-emerald-400 text-base">📎</span>
-                                <a
-                                  href={attestationUrlInput}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2 truncate"
-                                >
-                                  {attestationUrlInput}
-                                </a>
-                                <button
-                                  onClick={async () => {
-                                    if (!confirm('Supprimer ce lien ?')) return;
-                                    const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                    await updateDoc(doc(db, 'leads', leadId), { attestationUrl: '' });
-                                    setAttestationUrlInput('');
-                                    setAttestationUploadStatus('idle');
-                                  }}
-                                  className="text-red-400 hover:text-red-300 text-base transition-colors"
-                                  title="Supprimer"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            )}
-
-                            <details className="mt-1">
-                              <summary className="text-[10px] text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none">
-                                Ou saisir le lien manuellement
-                              </summary>
-                              <div className="flex gap-2 mt-2">
-                                <input
-                                  type="text"
-                                  placeholder="https://exemple.com/attestation.pdf"
-                                  value={attestationUrlInput}
-                                  onChange={(e) => setAttestationUrlInput(e.target.value)}
-                                  className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-brand-orange transition-all"
-                                />
-                                <button
-                                  disabled={updating}
-                                  onClick={async () => {
-                                    if (!selectedLead) return;
-                                    setUpdating(true);
-                                    try {
-                                      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
-                                      await updateDoc(doc(db, 'leads', leadId), { attestationUrl: attestationUrlInput });
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                    setUpdating(false);
-                                  }}
-                                  className="px-3 py-2 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-xl font-bold text-[11px] transition-all cursor-pointer"
-                                >
-                                  Enregistrer
-                                </button>
-                              </div>
-                            </details>
-
-                            {/* Action Finale : Terminer la Phase (Phase 6) */}
-                            {activeStep === 6 && (
-                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mt-4">
-                                <div>
-                                  <h5 className="text-xs font-bold text-slate-300">Action Finale : Clôturer & Valider la Phase</h5>
-                                  <p className="text-[10px] text-slate-500">
-                                    {selectedLead.status === 'completed'
-                                      ? 'La phase est marquée comme terminée.'
-                                      : 'Cliquez pour finaliser cette phase et clore définitivement le dossier.'
-                                    }
-                                  </p>
-                                </div>
-                                <button
-                                  disabled={updating}
-                                  onClick={() => handleUpdateStatus(selectedLead.status === 'completed' ? 'processing' : 'completed')}
-                                  className={`w-64 justify-center flex items-center px-4 py-2 rounded-lg font-black text-xs transition-all duration-300 border cursor-pointer ${
-                                    selectedLead.status === 'completed'
-                                      ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
-                                      : 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                                  }`}
-                                >
-                                  {selectedLead.status === 'completed' ? '🔴 Annuler la validation (En Cours)' : '✓ Terminer'}
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Status Indicators - read-only evolution */}
-                            <div className="mt-4 pt-4 border-t border-white/5">
-                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                                Évolution du dossier :
-                              </p>
-                              <div className="flex gap-2">
-                                {[
-                                  { status: 'new', label: '🟢 Nouveau' },
-                                  { status: 'processing', label: '🟡 En Cours' },
-                                  { status: 'completed', label: '🟣 Terminé' }
-                                ].map((st) => (
-                                  <div
-                                    key={st.status}
-                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center select-none ${
-                                      selectedLead.status === st.status
-                                        ? st.status === 'new'
-                                          ? 'bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/40'
-                                          : st.status === 'processing'
-                                          ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/40'
-                                          : 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] ring-2 ring-indigo-400/40'
-                                        : 'bg-white/5 text-slate-500 border border-white/5 opacity-55'
-                                    }`}
-                                  >
-                                    {st.label}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+                      {/* Status Indicators - evolution */}
+                      <div className="mt-6 pt-6 border-t border-white/5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">
+                          Évolution du dossier :
+                        </p>
+                        <div className="flex gap-2">
+                          {[
+                            { status: 'new', label: '🟢 Nouveau' },
+                            { status: 'processing', label: '🟡 En Cours' },
+                            { status: 'completed', label: '🟣 Terminé' }
+                          ].map((st) => (
+                            <button
+                              key={st.status}
+                              disabled={updating}
+                              onClick={() => handleUpdateStatus(st.status)}
+                              className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center select-none cursor-pointer border ${
+                                selectedLead.status === st.status
+                                  ? st.status === 'new'
+                                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/40'
+                                    : st.status === 'processing'
+                                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/40'
+                                    : 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.25)] ring-2 ring-indigo-400/40'
+                                  : 'bg-white/5 text-slate-500 border-white/5 opacity-55 hover:opacity-100 hover:bg-white/10'
+                              }`}
+                            >
+                              {st.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -2083,7 +1921,35 @@ const Dashboard = ({ onLogout }) => {
                                   ? 'bg-emerald-500 text-slate-950 rounded-br-none font-medium'
                                   : 'bg-white/10 border border-white/5 text-white/90 rounded-bl-none'
                               }`}>
-                                <p>{m.text}</p>
+                                <div>
+                                  {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
+                                    m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
+                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
+                                        <img src={m.text} alt="Image jointe" className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
+                                      </a>
+                                    ) : m.text.match(/\.pdf($|\?)/i) ? (
+                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 ${
+                                        isAdvisor
+                                          ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
+                                          : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
+                                      }`}>
+                                        <span>📄</span>
+                                        <span className="underline truncate">Document PDF</span>
+                                      </a>
+                                    ) : (
+                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 ${
+                                        isAdvisor
+                                          ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
+                                          : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
+                                      }`}>
+                                        <span>📎</span>
+                                        <span className="underline truncate">Fichier joint</span>
+                                      </a>
+                                    )
+                                  ) : (
+                                    <p>{m.text}</p>
+                                  )}
+                                </div>
                                 <span className={`block text-[9px] text-right mt-1.5 ${isAdvisor ? 'text-slate-950 opacity-60 font-semibold' : 'text-white/40'}`}>
                                   {m.timestamp ? new Date(m.timestamp.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "À l'instant"}
                                 </span>
@@ -2095,17 +1961,34 @@ const Dashboard = ({ onLogout }) => {
                     </div>
 
                     {/* Chat Input form */}
-                    <form onSubmit={handleSendAdminReply} className="p-4 border-t border-white/5 bg-slate-900/20 flex gap-2">
+                    <form onSubmit={handleSendAdminReply} className="p-4 border-t border-white/5 bg-slate-900/20 flex gap-2 items-center">
+                      <label htmlFor="admin-chat-file-upload" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors text-lg text-white" title="Joindre un fichier">
+                        {chatUploading ? (
+                          <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          "📎"
+                        )}
+                      </label>
+                      <input
+                        id="admin-chat-file-upload"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={handleAdminChatFileUpload}
+                        disabled={chatUploading}
+                      />
                       <input
                         type="text"
                         value={adminChatInput}
                         onChange={(e) => setAdminChatInput(e.target.value)}
                         placeholder="Tapez votre réponse en tant que conseiller..."
                         className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                        disabled={chatUploading}
                       />
                       <button
                         type="submit"
-                        className="px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition-transform duration-300 hover:scale-105 cursor-pointer"
+                        disabled={chatUploading}
+                        className="h-12 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition-transform duration-300 hover:scale-105 cursor-pointer disabled:opacity-50"
                       >
                         Envoyer
                       </button>

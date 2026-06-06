@@ -144,6 +144,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Chat state
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatUploading, setChatUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
   // Listen to chat messages in Firestore
@@ -603,6 +604,72 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       alert("Erreur lors de l'enregistrement de votre demande. Veuillez réessayer.");
     } finally {
       setIsLoadingData(false);
+    }
+  };
+
+  // Chat file upload sending
+  const handleClientChatFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Le fichier dépasse 20 Mo.");
+      return;
+    }
+
+    setChatUploading(true);
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const formDataPayload = new FormData();
+      formDataPayload.append('file', file);
+      formDataPayload.append('upload_preset', 'monpermis');
+      formDataPayload.append('folder', `monpermis/chats/${user.uid}`);
+
+      const resourceType = file.type.startsWith('image/') ? 'image' : 'raw';
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formDataPayload
+      });
+      const data = await res.json();
+      if (!data.secure_url) {
+        throw new Error("Erreur de téléversement Cloudinary");
+      }
+
+      const fileUrl = data.secure_url;
+      const messagesRef = collection(db, 'chats', user.uid, 'messages');
+      const chatDocRef = doc(db, 'chats', user.uid);
+
+      // Add file message to subcollection
+      await addDoc(messagesRef, {
+        sender: 'student',
+        text: fileUrl,
+        timestamp: serverTimestamp()
+      });
+
+      // Get user name for the chat list
+      const userNameStr = formData.firstName || formData.lastName 
+        ? `${formData.firstName} ${formData.lastName}`.trim() 
+        : user.email;
+
+      // Update main chat session document
+      await setDoc(chatDocRef, {
+        userId: user.uid,
+        userName: userNameStr,
+        userEmail: user.email,
+        lastMessageText: file.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé",
+        lastMessageTime: serverTimestamp(),
+        unreadByAdmin: true,
+        unreadByClient: false
+      }, { merge: true });
+
+    } catch (err) {
+      console.error("Chat upload error:", err);
+      alert("Échec de l'envoi du fichier.");
+    } finally {
+      setChatUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -2773,7 +2840,27 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             ? 'bg-brand-orange text-white rounded-br-sm shadow-md shadow-brand-orange/10' 
                             : 'bg-white/10 border border-white/5 text-white/90 rounded-bl-sm'
                         }`}>
-                          <p>{m.text}</p>
+                          <div>
+                            {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
+                              m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
+                                <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
+                                  <img src={m.text} alt="Image jointe" className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
+                                </a>
+                              ) : m.text.match(/\.pdf($|\?)/i) ? (
+                                <a href={m.text} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all mt-1">
+                                  <span>📄</span>
+                                  <span className="underline truncate">Document PDF</span>
+                                </a>
+                              ) : (
+                                <a href={m.text} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all mt-1">
+                                  <span>📎</span>
+                                  <span className="underline truncate">Fichier joint</span>
+                                </a>
+                              )
+                            ) : (
+                              <p>{m.text}</p>
+                            )}
+                          </div>
                           <span className="block text-[8px] sm:text-[9px] text-white/40 text-right mt-1.5">{m.time}</span>
                         </div>
                       </div>
@@ -2792,17 +2879,34 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 </div>
 
                 {/* Input field Form */}
-                <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10">
+                <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10 items-center">
+                  <label htmlFor="client-chat-file-upload" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors text-lg" title="Joindre un fichier">
+                    {chatUploading ? (
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "📎"
+                    )}
+                  </label>
+                  <input
+                    id="client-chat-file-upload"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={handleClientChatFileUpload}
+                    disabled={chatUploading}
+                  />
                   <input 
                     type="text" 
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
                     className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors"
+                    disabled={chatUploading}
                   />
                   <button 
                     type="submit"
-                    className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
+                    disabled={chatUploading}
+                    className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer disabled:opacity-50"
                   >
                     <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
