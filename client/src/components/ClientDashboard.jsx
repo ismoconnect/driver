@@ -2162,11 +2162,32 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                                 onChange={handleInputChange}
                                 className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white/80"
                               >
-                                <option value="B">Permis B (Voiture)</option>
-                                <option value="A">Permis A (Moto)</option>
-                                <option value="AM">Permis AM (Cyclo)</option>
-                                <option value="C">Permis C (Poids Lourd)</option>
-                                <option value="D">Permis D (Autobus)</option>
+                                <optgroup label="Voitures & Véhicules légers" className="bg-slate-900 text-white font-bold">
+                                  <option value="B">Permis B (Voiture)</option>
+                                  <option value="B96">Permis B96 (Voiture + Remorque)</option>
+                                  <option value="BE">Permis BE (Voiture + Remorque lourde)</option>
+                                </optgroup>
+                                <optgroup label="Deux-roues & Motos" className="bg-slate-900 text-white font-bold">
+                                  <option value="AM">Permis AM (Cyclomoteur 50cc)</option>
+                                  <option value="A1">Permis A1 (Moto légère 125cc)</option>
+                                  <option value="A2">Permis A2 (Moto moyenne ≤ 35kW)</option>
+                                  <option value="A">Permis A (Moto lourde &gt; 35kW)</option>
+                                </optgroup>
+                                <optgroup label="Camions (Transport de marchandises)" className="bg-slate-900 text-white font-bold">
+                                  <option value="C1">Permis C1 (Camion 3.5t - 7.5t)</option>
+                                  <option value="C1E">Permis C1E (Camion 3.5t - 7.5t + Remorque)</option>
+                                  <option value="C">Permis C (Camion &gt; 3.5t)</option>
+                                  <option value="CE">Permis CE (Camion + Remorque lourde)</option>
+                                </optgroup>
+                                <optgroup label="Autobus & Autocars" className="bg-slate-900 text-white font-bold">
+                                  <option value="D1">Permis D1 (Minibus max 16 passagers)</option>
+                                  <option value="D1E">Permis D1E (Minibus + Remorque)</option>
+                                  <option value="D">Permis D (Bus / Autocar)</option>
+                                  <option value="DE">Permis DE (Bus + Remorque lourde)</option>
+                                </optgroup>
+                                <optgroup label="Autres" className="bg-slate-900 text-white font-bold">
+                                  <option value="G">Permis G (Tracteur agricole)</option>
+                                </optgroup>
                               </select>
                             </div>
 
