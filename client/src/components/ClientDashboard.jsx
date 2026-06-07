@@ -84,6 +84,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   useEffect(() => {
     if (!user) return;
     const storageKey = `transmissionCompleted_${user.uid}`;
+    
+    if (!isSubmitted) {
+      localStorage.removeItem(storageKey);
+      setIsTransmitting(false);
+      return;
+    }
+
     const isCompleted = localStorage.getItem(storageKey) === 'true';
     if (isSubmitted && !paymentValidated && activeTab === 'wizard' && !isCompleted) {
       setIsTransmitting(true);
@@ -197,9 +204,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       } else {
         const lastMsg = list[list.length - 1];
         if (lastMsg.sender === 'advisor') {
-          updateDoc(doc(db, 'chats', user.uid), {
+          setDoc(doc(db, 'chats', user.uid), {
             unreadByClient: false
-          }).catch(err => console.error("Error updating unreadByClient:", err));
+          }, { merge: true }).catch(err => console.error("Error updating unreadByClient:", err));
         }
         setMessages(list);
       }
