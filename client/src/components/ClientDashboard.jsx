@@ -856,13 +856,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">Dossier Transmis avec Succès !</h2>
                 <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-lg leading-relaxed">
                   {selectedPath === 'theorique' ? (
-                    `Votre demande de certificat de l'examen théorique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre certificat de l'examen théorique sera prêt et enregistré par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "350,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
                   ) : selectedPath === 'perception' ? (
-                    `Votre demande de dispense de l'examen de perception du risque a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre attestation de dispense de perception du risque sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "150,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
                   ) : selectedPath === 'pratique' ? (
-                    `Votre demande de dispense de l'examen pratique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense d'examen pratique sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1900,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
                   ) : (
-                    `Votre demande d'obtention de permis direct a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense pour permis direct sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1000,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
                   )}
                 </p>
 
@@ -990,8 +990,16 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     <h3 className="text-white font-display font-extrabold text-base sm:text-lg mb-1">
                       Acompte validé avec succès !
                     </h3>
-                    <p className="text-white/60 text-xs sm:text-sm max-w-md mx-auto">
+                    <p className="text-white/60 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
                       Votre acompte de <strong className="text-emerald-400">{getSplitPaymentDetails().firstPayment}</strong> a bien été reçu et enregistré. Votre dossier est en cours de traitement.
+                      {getSplitPaymentDetails().secondPayment && (
+                        <>
+                          <br />
+                          <span className="text-white/40 text-[11px] block mt-1.5">
+                            Solde restant à régler à la mise à disposition de votre document : <strong className="text-brand-orange">{getSplitPaymentDetails().secondPayment}</strong>
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
                 )}
