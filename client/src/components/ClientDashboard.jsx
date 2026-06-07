@@ -27,7 +27,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Dashboard state
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [mandatAccepted, setMandatAccepted] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTab || 'wizard'); // Default to wizard on entry
+  const [activeTab, setActiveTab] = useState(() => {
+    return initialTab || localStorage.getItem('clientActiveTab') || 'wizard';
+  }); // Default to wizard on entry or restore from localStorage
   const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
   const [wizardError, setWizardError] = useState('');
 
@@ -41,12 +43,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
   // Sync activeTab state when URL path parameter (initialTab) changes
   useEffect(() => {
+    const storedTab = localStorage.getItem('clientActiveTab');
     if (initialTab && ['overview', 'wizard', 'chat'].includes(initialTab)) {
       if (activeTab !== initialTab) {
         setActiveTab(initialTab);
       }
     } else if (!initialTab) {
-      if (activeTab !== 'wizard') {
+      if (storedTab && ['overview', 'wizard', 'chat'].includes(storedTab)) {
+        setActiveTab(storedTab);
+      } else if (activeTab !== 'wizard') {
         setActiveTab('wizard');
       }
     }
@@ -55,6 +60,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Update URL subpath when activeTab state changes internally
   useEffect(() => {
     if (user && activeTab) {
+      localStorage.setItem('clientActiveTab', activeTab);
       navigate(`/mon-espace/${activeTab}`);
     }
   }, [activeTab, user, navigate]);

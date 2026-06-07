@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function ClientChat({
   user,
@@ -13,7 +14,27 @@ export default function ClientChat({
   handleClientChatFileUpload,
   chatEndRef
 }) {
+  const [previewFile, setPreviewFile] = React.useState(null); // { url: string, type: 'image' | 'pdf' | 'raw' }
   
+  const getDownloadUrl = (url) => {
+    if (!url) return '';
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  };
+
+  const isPdf = (url) => {
+    if (!url) return false;
+    return url.toLowerCase().includes('.pdf') || url.toLowerCase().match(/\.pdf($|\?)/i);
+  };
+
+  const isImage = (url) => {
+    if (!url) return false;
+    if (isPdf(url)) return false;
+    return url.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || url.includes('/image/upload/');
+  };
+
   const scrollToBottom = () => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'auto' });
@@ -109,20 +130,74 @@ export default function ClientChat({
                 }`}>
                   <div>
                     {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
-                      m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
-                        <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
-                          <img src={m.text} alt="Image jointe" onLoad={scrollToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
-                        </a>
-                      ) : m.text.match(/\.pdf($|\?)/i) ? (
-                        <a href={m.text} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all mt-1">
-                          <span>📄</span>
-                          <span className="underline truncate text-white">Document PDF</span>
-                        </a>
+                      isPdf(m.text) ? (
+                       <div className="flex flex-col gap-2 mt-1">
+                          <button 
+                            type="button"
+                            onClick={() => setPreviewFile({ url: m.text, type: 'pdf' })}
+                            className="block max-w-[200px] w-full cursor-zoom-in text-left focus:outline-none mt-1"
+                          >
+                            <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl p-2 transition-all">
+                              <div className="relative aspect-[3/4] h-36 rounded-lg overflow-hidden bg-slate-950 border border-white/10 mb-1.5 flex items-center justify-center">
+                                <img 
+                                  src={m.text.replace(/\.pdf($|\?)/i, (match, p1) => `.jpg${p1 || ''}`)} 
+                                  alt="Aperçu du PDF" 
+                                  className="w-full h-full object-cover"
+                                  onLoad={scrollToBottom}
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/10 transition-colors">
+                                  <span className="text-2xl text-white drop-shadow">📄</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300">
+                                <span className="underline truncate text-white">Document PDF</span>
+                              </div>
+                            </div>
+                          </button>
+                          <a 
+                            href={getDownloadUrl(m.text)} 
+                            download 
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/70 border border-white/10 rounded-lg text-white font-semibold text-[10px] transition-all w-fit cursor-pointer"
+                          >
+                            <span>📥</span> Télécharger le PDF
+                          </a>
+                        </div>
+                      ) : isImage(m.text) ? (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <button 
+                            type="button"
+                            onClick={() => setPreviewFile({ url: m.text, type: 'image' })}
+                            className="block max-w-full cursor-zoom-in focus:outline-none"
+                          >
+                            <img src={m.text} alt="Image jointe" onLoad={scrollToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block" />
+                          </button>
+                          <a 
+                            href={getDownloadUrl(m.text)} 
+                            download 
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/70 border border-white/10 rounded-lg text-white font-semibold text-[10px] transition-all w-fit cursor-pointer"
+                          >
+                            <span>📥</span> Télécharger l'image
+                          </a>
+                        </div>
                       ) : (
-                        <a href={m.text} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all mt-1">
-                          <span>📎</span>
-                          <span className="underline truncate text-white">Fichier joint</span>
-                        </a>
+                        <div className="flex flex-col gap-2 mt-1">
+                          <button 
+                            type="button"
+                            onClick={() => setPreviewFile({ url: m.text, type: 'raw' })}
+                            className="flex items-center gap-2 px-3 py-2 bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl text-indigo-400 hover:text-indigo-300 font-bold transition-all text-left w-full cursor-pointer"
+                          >
+                            <span>📎</span>
+                            <span className="underline truncate text-white">Fichier joint</span>
+                          </button>
+                          <a 
+                            href={getDownloadUrl(m.text)} 
+                            download 
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/70 border border-white/10 rounded-lg text-white font-semibold text-[10px] transition-all w-fit cursor-pointer"
+                          >
+                            <span>📥</span> Télécharger le fichier
+                          </a>
+                        </div>
                       )
                     ) : (
                       <p className="text-white">{m.text}</p>
@@ -181,6 +256,72 @@ export default function ClientChat({
           </button>
         </form>
       </div>
+
+      {previewFile && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-950/40">
+              <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                {previewFile.type === 'pdf' ? '📄 Aperçu du Document PDF' : previewFile.type === 'image' ? '📷 Aperçu de l\'Image' : '📎 Aperçu du Fichier'}
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setPreviewFile(null)} 
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/25 flex items-center justify-center text-white text-xs cursor-pointer transition-colors"
+                title="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-slate-950/10">
+              {previewFile.type === 'pdf' ? (
+                <iframe 
+                  src={previewFile.url} 
+                  title="PDF Preview" 
+                  className="w-full h-[60vh] rounded-xl border border-white/5 bg-slate-950" 
+                />
+              ) : previewFile.type === 'image' ? (
+                <img 
+                  src={previewFile.url} 
+                  alt="Aperçu" 
+                  className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg border border-white/5" 
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <span className="text-5xl block mb-4">📎</span>
+                  <p className="text-white text-sm font-semibold">Ce type de fichier ne supporte pas l'aperçu en ligne.</p>
+                  <p className="text-white/40 text-xs mt-1">Vous pouvez le télécharger directement à l'aide du bouton ci-dessous.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/10 bg-slate-950/40 flex items-center justify-end gap-3">
+              <button 
+                type="button"
+                onClick={() => setPreviewFile(null)} 
+                className="px-4 py-2 text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all cursor-pointer"
+              >
+                Fermer
+              </button>
+              <a 
+                href={getDownloadUrl(previewFile.url)} 
+                download
+                onClick={() => {
+                  setTimeout(() => setPreviewFile(null), 100);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-orange hover:bg-brand-orange-dark border border-brand-orange/20 rounded-xl text-white font-bold text-xs transition-all cursor-pointer shadow-md shadow-brand-orange/20 hover:scale-[1.02]"
+              >
+                <span>📥</span> Télécharger
+              </a>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
