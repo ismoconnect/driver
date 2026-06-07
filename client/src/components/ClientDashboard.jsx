@@ -853,21 +853,62 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           {activeTab === 'wizard' && (
             isSubmitted ? (
               <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto py-8">
-                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">Dossier Transmis avec Succès !</h2>
-                <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-lg leading-relaxed">
-                  {selectedPath === 'theorique' ? (
-                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre certificat de l'examen théorique sera prêt et enregistré par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "350,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
-                  ) : selectedPath === 'perception' ? (
-                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre attestation de dispense de perception du risque sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "150,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
-                  ) : selectedPath === 'pratique' ? (
-                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense d'examen pratique sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1900,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">
+                  {soldeValidated 
+                    ? "Félicitations ! Votre Dossier est Terminé"
+                    : paymentValidated 
+                    ? (soldeInitiated ? "Votre Document est Prêt !" : "Dossier en Cours d'Homologation !")
+                    : "Dossier Transmis avec Succès !"
+                  }
+                </h2>
+                <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed">
+                  {soldeValidated ? (
+                    selectedPath === 'theorique' ? (
+                      "Votre certificat de dispense théorique a été homologué avec succès. Vous pouvez désormais récupérer le document officiel."
+                    ) : selectedPath === 'perception' ? (
+                      "Votre attestation de perception du risque a été homologuée avec succès. Vous pouvez désormais récupérer le document officiel."
+                    ) : selectedPath === 'pratique' ? (
+                      "Votre attestation de dispense d'examen pratique a été homologuée avec succès. Vous pouvez désormais récupérer le document officiel."
+                    ) : (
+                      "Votre dispense pour permis direct a été homologuée avec succès. Vous pouvez désormais récupérer le document officiel."
+                    )
+                  ) : paymentValidated ? (
+                    soldeInitiated ? (
+                      selectedPath === 'theorique' ? (
+                        `Votre certificat de l'examen théorique est désormais prêt et enregistré par nos services ! Le solde restant de ${getSplitPaymentDetails().secondPayment || "350,00 €"} est à régler pour le retrait immédiat de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : selectedPath === 'perception' ? (
+                        `Votre attestation de dispense de perception du risque est désormais prête et enregistrée par nos services ! Le solde restant de ${getSplitPaymentDetails().secondPayment || "150,00 €"} est à régler pour le retrait immédiat de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : selectedPath === 'pratique' ? (
+                        `Votre dispense d'examen pratique est désormais prête et enregistrée par nos services ! Le solde restant de ${getSplitPaymentDetails().secondPayment || "1900,00 €"} est à régler pour le retrait immédiat de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : (
+                        `Votre dispense pour permis direct est désormais prête et enregistrée par nos services ! Le solde restant de ${getSplitPaymentDetails().secondPayment || "1000,00 €"} est à régler pour le retrait immédiat de votre document auprès de votre conseiller dédié ou en commune.`
+                      )
+                    ) : (
+                      selectedPath === 'theorique' ? (
+                        `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre certificat de l'examen théorique sera prêt et enregistré par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "350,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : selectedPath === 'perception' ? (
+                        `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre attestation de dispense de perception du risque sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "150,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : selectedPath === 'pratique' ? (
+                        `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense d'examen pratique sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1900,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                      ) : (
+                        `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense pour permis direct sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1000,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                      )
+                    )
                   ) : (
-                    `Votre acompte a bien été reçu et le traitement de votre dossier est officiellement entré en vigueur pour homologation légale. Dès que votre dispense pour permis direct sera prête et enregistrée par nos services, le solde restant de ${getSplitPaymentDetails().secondPayment || "1000,00 €"} sera à régler pour le retrait de votre document auprès de votre conseiller dédié ou en commune.`
+                    selectedPath === 'theorique' ? (
+                      `Votre demande de certificat de l'examen théorique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier. Veuillez effectuer le virement de l'acompte requis pour lancer l'homologation légale.`
+                    ) : selectedPath === 'perception' ? (
+                      `Votre demande de dispense de l'examen de perception du risque a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier. Veuillez effectuer le virement de l'acompte requis pour lancer l'homologation légale.`
+                    ) : selectedPath === 'pratique' ? (
+                      `Votre demande de dispense de l'examen pratique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier. Veuillez effectuer le virement de l'acompte requis pour lancer l'homologation légale.`
+                    ) : (
+                      `Votre demande d'obtention de permis direct a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier. Veuillez effectuer le virement de l'acompte requis pour lancer l'homologation légale.`
+                    )
                   )}
                 </p>
 
                 {/* RIB / BANK DETAILS BOX */}
-                {!paymentValidated ? (
+                {(!paymentValidated || (soldeInitiated && !soldeValidated)) ? (
                   isTransmitting ? (
                     <div className="w-full mt-6 bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
                       {/* Top animated linear progress bar */}
@@ -909,7 +950,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             <span>🏦</span> Coordonnées de règlement (RIB)
                           </h4>
                           <p className="text-white/50 text-[10px] sm:text-xs">
-                            Veuillez effectuer le virement de l'acompte requis pour débuter l'homologation légale de votre dossier auprès du SPF Belgique.
+                            {paymentValidated 
+                              ? "Votre Document est Prêt ! Veuillez effectuer le virement du solde restant pour finaliser et retirer votre document officiel."
+                              : "Veuillez effectuer le virement de l'acompte requis pour débuter l'homologation légale de votre dossier auprès du SPF Belgique."
+                            }
                           </p>
                         </div>
 
@@ -982,6 +1026,18 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     </div>
                   )
+                ) : soldeValidated ? (
+                  <div className="w-full mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 text-center animate-[fadeIn_0.5s_ease-out]">
+                    <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-xl mx-auto mb-3 animate-bounce">
+                      🏆
+                    </div>
+                    <h3 className="text-white font-display font-extrabold text-base sm:text-lg mb-1">
+                      Dossier Soldé & Validé !
+                    </h3>
+                    <p className="text-white/60 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+                      Votre paiement de solde a bien été validé par nos services. Votre certificat officiel est maintenant entièrement débloqué. Vous pouvez le télécharger directement sur votre espace ou le retirer auprès de votre conseiller dédié.
+                    </p>
+                  </div>
                 ) : (
                   <div className="w-full mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 text-center animate-[fadeIn_0.5s_ease-out]">
                     <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-xl mx-auto mb-3">
@@ -1004,10 +1060,22 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full mt-6 justify-center">
+                 <div className="flex flex-col sm:flex-row gap-3 w-full mt-6 justify-center">
                   <button onClick={() => setActiveTab('overview')} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark text-white transition-all cursor-pointer">
                     Suivre mon dossier ➔
                   </button>
+                  {selectedPath !== 'direct' && (
+                    <button 
+                      onClick={() => setShowUpgradeConfirm(true)}
+                      className="px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer"
+                    >
+                      ⚡ Changer de formule ({
+                        selectedPath === 'perception' ? 'Pratique, Direct' :
+                        selectedPath === 'theorique' ? 'Perception, Pratique, Direct' :
+                        'Direct'
+                      })
+                    </button>
+                  )}
                   <button onClick={() => setActiveTab('chat')} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer">
                     Contacter mon conseiller
                   </button>
