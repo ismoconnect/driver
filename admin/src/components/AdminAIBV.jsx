@@ -140,17 +140,31 @@ const AdminAIBV = () => {
     setSending(true);
     setSendResult(null);
 
+    const formattedBody = emailForm.body
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br />');
+
     // Dynamic HTML Wrapper
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee; padding: 30px; border-radius: 8px;">
-        <div style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
-          <h2 style="color: #3b82f6; margin: 0;">${smtpConfig.fromName || 'Service AIBV'}</h2>
-        </div>
-        <div style="font-size: 14px;">
-          ${emailForm.body.replace(/\n/g, '<br />')}
-        </div>
-        <div style="margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px; text-align: center; font-size: 11px; color: #888888;">
-          Ce message a été envoyé par le service professionnel indépendant AIBV.
+      <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
+          <!-- Header -->
+          <div style="background-color: #0f172a; padding: 28px 24px; text-align: center; border-bottom: 3px solid #3b82f6;">
+            <span style="color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
+              ${smtpConfig.fromName || 'AIBV SERVICE'}
+            </span>
+          </div>
+          
+          <!-- Content Body -->
+          <div style="padding: 40px 32px; min-height: 200px; font-size: 15px; color: #334155;">
+            ${formattedBody}
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">SERVICE PROFESSIONNEL INDÉPENDANT AIBV</p>
+            <p style="margin: 0; line-height: 1.5;">Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires.</p>
+          </div>
         </div>
       </div>
     `;
@@ -216,16 +230,30 @@ const AdminAIBV = () => {
       alert("Veuillez d'abord saisir un objet et un message.");
       return;
     }
+    const formattedBody = emailForm.body
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br />');
+
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee; padding: 30px; border-radius: 8px; background-color: #ffffff;">
-        <div style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
-          <h2 style="color: #3b82f6; margin: 0;">${smtpConfig.fromName || 'Service AIBV'}</h2>
-        </div>
-        <div style="font-size: 14px;">
-          ${emailForm.body.replace(/\n/g, '<br />')}
-        </div>
-        <div style="margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px; text-align: center; font-size: 11px; color: #888888;">
-          Ce message a été envoyé par le service professionnel indépendant AIBV.
+      <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
+          <!-- Header -->
+          <div style="background-color: #0f172a; padding: 28px 24px; text-align: center; border-bottom: 3px solid #3b82f6;">
+            <span style="color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
+              ${smtpConfig.fromName || 'AIBV SERVICE'}
+            </span>
+          </div>
+          
+          <!-- Content Body -->
+          <div style="padding: 40px 32px; min-height: 200px; font-size: 15px; color: #334155;">
+            ${formattedBody}
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">SERVICE PROFESSIONNEL INDÉPENDANT AIBV</p>
+            <p style="margin: 0; line-height: 1.5;">Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires.</p>
+          </div>
         </div>
       </div>
     `;
