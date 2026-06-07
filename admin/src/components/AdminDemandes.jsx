@@ -112,7 +112,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                 >
                   Client {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                 <th className="px-6 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
+                 <th className="px-6 py-5 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
                 <th className="px-6 py-5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -127,7 +127,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                     <div className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{lead.name}</div>
                     <div className="text-xs font-medium text-slate-500 mt-1">{lead.date}</div>
                   </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
+                  <td className="px-6 py-5 whitespace-nowrap text-center">
                     <div className="text-sm font-medium text-slate-300">{lead.email}</div>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-right text-sm">
