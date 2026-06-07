@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Services from './components/Services';
@@ -108,11 +108,13 @@ function AuthPage({ mode, user, authChecked }) {
 // ─── Dashboard page (protected) ───────────────────────────────────────────────
 function DashboardPage({ user, authChecked }) {
   const navigate = useNavigate();
+  const { tab } = useParams();
 
   return (
     <ProtectedRoute user={user} authChecked={authChecked}>
       <ClientDashboard
         initialMode="login"
+        initialTab={tab}
         onBack={() => navigate('/accueil')}
         onAuthSuccess={() => navigate('/mon-espace')}
       />
