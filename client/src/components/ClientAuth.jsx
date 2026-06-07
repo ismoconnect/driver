@@ -9,6 +9,10 @@ import Navbar from './Navbar';
 
 export default function ClientAuth({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode }) {
   const [authMode, setAuthMode] = useState(initialMode); // 'login' or 'signup'
+
+  React.useEffect(() => {
+    setAuthMode(initialMode);
+  }, [initialMode]);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authConfirmPassword, setAuthConfirmPassword] = useState('');
@@ -131,7 +135,18 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center font-sans relative overflow-hidden pt-32 px-6 pb-12">
-      <Navbar user={null} onOpenDashboard={(mode) => setAuthMode(mode)} onGoHome={onBack} forceScrolled={true} />
+      <Navbar 
+        user={null} 
+        onOpenDashboard={(mode) => {
+          setAuthMode(mode);
+          if (mode === 'signup') {
+            setSignupStep(1);
+          }
+          if (onSwitchMode) onSwitchMode(mode);
+        }} 
+        onGoHome={onBack} 
+        forceScrolled={true} 
+      />
       
       {/* Background Auroras */}
       <div className="absolute inset-0 pointer-events-none z-0">

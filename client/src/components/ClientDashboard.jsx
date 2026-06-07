@@ -572,7 +572,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         onBack={onBack}
         initialMode={authMode}
         onAuthSuccess={onAuthSuccess}
-        onSwitchMode={(mode) => setAuthMode(mode)}
+        onSwitchMode={(mode) => {
+          setAuthMode(mode);
+          if (onSwitchMode) onSwitchMode(mode);
+        }}
       />
     );
   }
