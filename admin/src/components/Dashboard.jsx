@@ -23,6 +23,27 @@ const Dashboard = ({ onLogout, initialTab }) => {
   const [attestationUploadStatus, setAttestationUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success' | 'error'
   const [attestationUploadProgress, setAttestationUploadProgress] = useState(0);
   const [isEditingPath, setIsEditingPath] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Confirmer',
+    cancelText: 'Annuler',
+    variant: 'danger'
+  });
+
+  const triggerConfirm = (title, message, onConfirm, variant = 'danger') => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      confirmText: variant === 'danger' ? 'Supprimer' : 'Réinitialiser',
+      cancelText: 'Annuler',
+      variant
+    });
+  };
 
   // Set activeTab state, syncing with initialTab or fallback
   const [activeTab, setActiveTab] = useState(() => {
@@ -645,67 +666,73 @@ const Dashboard = ({ onLogout, initialTab }) => {
 
   const handleDelete = async (e, leadToDelete) => {
     e.stopPropagation();
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer définitivement ce dossier et toutes ses données ?")) {
-      setUpdating(true);
-      try {
-        if (leadToDelete.rawLead && leadToDelete.rawLead.id) {
-          await deleteDoc(doc(db, "leads", leadToDelete.rawLead.id));
+    triggerConfirm(
+      "Supprimer définitivement",
+      "Êtes-vous sûr de vouloir supprimer définitivement ce dossier et toutes ses données ?",
+      async () => {
+        setUpdating(true);
+        try {
+          if (leadToDelete.rawLead && leadToDelete.rawLead.id) {
+            await deleteDoc(doc(db, "leads", leadToDelete.rawLead.id));
+          }
+          if (leadToDelete.rawUser && leadToDelete.rawUser.uid) {
+            await deleteDoc(doc(db, "users", leadToDelete.rawUser.uid));
+          }
+          if (selectedLeadUid === leadToDelete.uid) {
+            setSelectedLeadUid(null);
+            setActiveTab('demandes');
+          }
+        } catch (err) {
+          console.error(err);
         }
-        if (leadToDelete.rawUser && leadToDelete.rawUser.uid) {
-          await deleteDoc(doc(db, "users", leadToDelete.rawUser.uid));
-        }
-        // If the deleted lead is currently open, close it
-        if (selectedLeadUid === leadToDelete.uid) {
-          setSelectedLeadUid(null);
-          setActiveTab('demandes');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      setUpdating(false);
-    }
+        setUpdating(false);
+      },
+      'danger'
+    );
   };
 
   const handleReset = async (e, leadToReset) => {
     e.stopPropagation();
-    if (window.confirm("Voulez-vous vraiment réinitialiser ce dossier au statut 'Nouveau' ?")) {
-      setUpdating(true);
-      try {
-        const uid = leadToReset?.uid;
-        if (uid) {
-          // Delete all chat messages
-          const messagesRef = collection(db, "chats", uid, "messages");
-          const msgsSnap = await getDocs(messagesRef);
-          const deletePromises = msgsSnap.docs.map(doc => deleteDoc(doc.ref));
-          await Promise.all(deletePromises);
+    triggerConfirm(
+      "Réinitialiser le dossier",
+      "Voulez-vous vraiment réinitialiser ce dossier au statut 'Nouveau' ? Cela effacera l'historique des messages et remettra à zéro l'avancement.",
+      async () => {
+        setUpdating(true);
+        try {
+          const uid = leadToReset?.uid;
+          if (uid) {
+            const messagesRef = collection(db, "chats", uid, "messages");
+            const msgsSnap = await getDocs(messagesRef);
+            const deletePromises = msgsSnap.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+            await deleteDoc(doc(db, "chats", uid));
+          }
 
-          // Delete the parent chat document
-          await deleteDoc(doc(db, "chats", uid));
+          if (leadToReset.rawLead && leadToReset.rawLead.id) {
+            await updateDoc(doc(db, "leads", leadToReset.rawLead.id), { 
+              status: "new",
+              isSubmitted: false,
+              billingActive: false,
+              paymentValidated: false,
+              soldeInitiated: false,
+              soldeValidated: false,
+              selectedPath: "",
+              attestationUrl: ""
+            });
+          }
+          if (leadToReset.rawUser && leadToReset.rawUser.uid) {
+            await updateDoc(doc(db, "users", leadToReset.rawUser.uid), { 
+              status: "new",
+              isSubmitted: false
+            });
+          }
+        } catch (err) {
+          console.error(err);
         }
-
-        if (leadToReset.rawLead && leadToReset.rawLead.id) {
-          await updateDoc(doc(db, "leads", leadToReset.rawLead.id), { 
-            status: "new",
-            isSubmitted: false,
-            billingActive: false,
-            paymentValidated: false,
-            soldeInitiated: false,
-            soldeValidated: false,
-            selectedPath: "",
-            attestationUrl: ""
-          });
-        }
-        if (leadToReset.rawUser && leadToReset.rawUser.uid) {
-          await updateDoc(doc(db, "users", leadToReset.rawUser.uid), { 
-            status: "new",
-            isSubmitted: false
-          });
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      setUpdating(false);
-    }
+        setUpdating(false);
+      },
+      'warning'
+    );
   };
 
   return (
@@ -1026,6 +1053,47 @@ const Dashboard = ({ onLogout, initialTab }) => {
                 className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm rounded-xl transition-all cursor-pointer shadow-lg shadow-rose-500/20"
               >
                 Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-[scaleIn_0.3s_ease-out] flex flex-col items-center text-center">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl mb-4 border ${
+              confirmModal.variant === 'danger' 
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+            }`}>
+              {confirmModal.variant === 'danger' ? '🗑️' : '🔄'}
+            </div>
+            <h3 className="text-lg font-display font-extrabold text-white mb-2">
+              {confirmModal.title}
+            </h3>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              {confirmModal.message}
+            </p>
+            <div className="flex items-center gap-3 w-full">
+              <button
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
+              >
+                {confirmModal.cancelText}
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                }}
+                className={`flex-1 py-3 text-white font-bold text-sm rounded-xl transition-all cursor-pointer shadow-lg ${
+                  confirmModal.variant === 'danger'
+                    ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
+                    : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-slate-950'
+                }`}
+              >
+                {confirmModal.confirmText}
               </button>
             </div>
           </div>
