@@ -6,6 +6,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import Navbar from './Navbar';
+import { sendWelcomeEmail } from '../utils/notifications';
 
 export default function ClientAuth({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, advisor }) {
   const [authMode, setAuthMode] = useState(initialMode); // 'login' or 'signup'
@@ -102,6 +103,11 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
             region: 'Non renseignée',
             hasDossier: 'Non renseigné'
           }
+        });
+
+        // Envoyer l'email de bienvenue
+        sendWelcomeEmail(newUser.email, signupFirstName.trim(), advisor).catch(err => {
+          console.error("Failed to send welcome email:", err);
         });
       }
       if (onAuthSuccess) onAuthSuccess();

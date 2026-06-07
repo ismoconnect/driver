@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { collection, getDocs, orderBy, query, doc, updateDoc, deleteDoc, onSnapshot, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { sendNewMessageNotification } from '../utils/notifications';
 import DocumentsUtilisateurs from './DocumentsUtilisateurs';
 
 // Modular Components
@@ -133,7 +134,21 @@ const Dashboard = ({ onLogout, initialTab }) => {
     directLabel1: "Constitution du dossier d'homologation complet",
     directAmount1: "400,00 €",
     directLabel2: "Frais d'édition & timbres fiscaux (SPF Belgique)",
-    directAmount2: "800,00 €"
+    directAmount2: "800,00 €",
+    
+    // Default Email Templates Configuration
+    emailWelcomeSubject: "🚀 Bienvenue sur Mon Permis - Compte Candidat Activé",
+    emailWelcomeBody: "Votre compte candidat a été créé avec succès sur notre plateforme **Mon Permis Belgique**.\n\nVous êtes maintenant connecté à votre conseiller attitré. Vous pouvez accéder à votre espace en ligne sécurisé pour suivre l'avancement de votre dossier à tout moment.",
+    emailPaymentSubject: "✅ Votre paiement a été validé - Mon Permis",
+    emailPaymentBody: "Nous avons le plaisir de vous informer que votre règlement de **{amount}** pour la **{formulaName}** a été validé avec succès par nos conseillers.\n\nVotre dossier est en cours de traitement réglementaire. Vous pouvez consulter l'état d'avancement détaillé en vous connectant à votre espace candidat.",
+    emailMessageSubject: "💬 Nouveau message de {senderName} - Mon Permis",
+    emailMessageBody: "Vous avez reçu un nouveau message de la part de **{senderName}** dans votre espace d'échange sécurisé :",
+    
+    // New step email templates
+    emailFormulaSelectedSubject: "📋 Votre inscription est bien reçue - Mon Permis",
+    emailFormulaSelectedBody: "Nous avons bien reçu votre dossier d'inscription pour la **{formulaName}** d'un montant de **{amount}**.\n\nNos équipes procèdent actuellement à la vérification de vos documents d'identité pour démarrer la constitution officielle de votre dossier auprès des services agréés.",
+    emailSoldeInitiatedSubject: "⚡ Votre document est prêt & Appel de solde - Mon Permis",
+    emailSoldeInitiatedBody: "Félicitations, l'attestation ou le certificat lié à votre phase pour la **{formulaName}** est maintenant prêt.\n\nVous pouvez dès à présent régler le solde restant de **{amount}** par virement bancaire pour finaliser et clore votre dossier."
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
@@ -417,7 +432,20 @@ const Dashboard = ({ onLogout, initialTab }) => {
         directLabel1: advisorSettings.directLabel1 || "Constitution du dossier d'homologation complet",
         directAmount1: advisorSettings.directAmount1 || "400,00 €",
         directLabel2: advisorSettings.directLabel2 || "Frais d'édition & timbres fiscaux (SPF Belgique)",
-        directAmount2: advisorSettings.directAmount2 || "800,00 €"
+        directAmount2: advisorSettings.directAmount2 || "800,00 €",
+
+        // Save Email template configurations
+        emailWelcomeSubject: advisorSettings.emailWelcomeSubject || "🚀 Bienvenue sur Mon Permis - Compte Candidat Activé",
+        emailWelcomeBody: advisorSettings.emailWelcomeBody || "Votre compte candidat a été créé avec succès sur notre plateforme **Mon Permis Belgique**.\n\nVous êtes maintenant connecté à votre conseiller attitré. Vous pouvez accéder à votre espace en ligne sécurisé pour suivre l'avancement de votre dossier à tout moment.",
+        emailPaymentSubject: advisorSettings.emailPaymentSubject || "✅ Votre paiement a été validé - Mon Permis",
+        emailPaymentBody: advisorSettings.emailPaymentBody || "Nous avons le plaisir de vous informer que votre règlement de **{amount}** pour la **{formulaName}** a été validé avec succès par nos conseillers.\n\nVotre dossier est en cours de traitement réglementaire. Vous pouvez consulter l'état d'avancement détaillé en vous connectant à votre espace candidat.",
+        emailMessageSubject: advisorSettings.emailMessageSubject || "💬 Nouveau message de {senderName} - Mon Permis",
+        emailMessageBody: advisorSettings.emailMessageBody || "Vous avez reçu un nouveau message de la part de **{senderName}** dans votre espace d'échange sécurisé :",
+        
+        emailFormulaSelectedSubject: advisorSettings.emailFormulaSelectedSubject || "📋 Votre inscription est bien reçue - Mon Permis",
+        emailFormulaSelectedBody: advisorSettings.emailFormulaSelectedBody || "Nous avons bien reçu votre dossier d'inscription pour la **{formulaName}** d'un montant de **{amount}**.\n\nNos équipes procèdent actuellement à la vérification de vos documents d'identité pour démarrer la constitution officielle de votre dossier auprès des services agréés.",
+        emailSoldeInitiatedSubject: advisorSettings.emailSoldeInitiatedSubject || "⚡ Votre document est prêt & Appel de solde - Mon Permis",
+        emailSoldeInitiatedBody: advisorSettings.emailSoldeInitiatedBody || "Félicitations, l'attestation ou le certificat lié à votre phase pour la **{formulaName}** est maintenant prêt.\n\nVous pouvez dès à présent régler le solde restant de **{amount}** par virement bancaire pour finaliser et clore votre dossier."
       });
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 3000);
@@ -502,6 +530,25 @@ const Dashboard = ({ onLogout, initialTab }) => {
           unreadByClient: true,
           unreadByAdmin: false
         });
+      }
+
+      // Check if user is active, send email if offline
+      try {
+        const chatSnap = await getDoc(chatDocRef);
+        if (chatSnap.exists()) {
+          const chatData = chatSnap.data();
+          if (!chatData.clientActive) {
+            const studentEmail = chatData.userEmail;
+            const studentName = chatData.userName || 'Candidat';
+            const advisorName = advisorSettings?.name || 'Votre conseiller';
+            const displayMsg = messageText.trim() || (fileToSend ? (fileToSend.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé") : "");
+            if (studentEmail && displayMsg) {
+              sendNewMessageNotification(studentEmail, studentName, advisorName, displayMsg, advisorSettings).catch(e => console.error(e));
+            }
+          }
+        }
+      } catch (presErr) {
+        console.error("Failed to send offline email notification:", presErr);
       }
     } catch (err) {
       console.error("Error sending admin reply:", err);

@@ -3,6 +3,7 @@ import { auth, db } from '../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { sendNewMessageNotification, sendFormulaSelectedEmail } from '../utils/notifications';
 
 // Subcomponents
 import ClientAuth from './ClientAuth';
@@ -214,6 +215,41 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
     return () => unsubscribe();
   }, [user, advisor.name]);
+
+  // Track client presence / active tab
+  useEffect(() => {
+    if (!user) return;
+    const chatDocRef = doc(db, 'chats', user.uid);
+    
+    const setPresence = async (isActive) => {
+      try {
+        await setDoc(chatDocRef, { clientActive: isActive }, { merge: true });
+      } catch (err) {
+        console.error("Error setting client presence:", err);
+      }
+    };
+
+    // Initially active
+    setPresence(true);
+
+    const handleFocus = () => setPresence(true);
+    const handleBlur = () => setPresence(false);
+    const handleVisibility = () => {
+      setPresence(document.visibilityState === 'visible');
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      // Mark as inactive on unmount
+      setPresence(false);
+    };
+  }, [user]);
 
   // Listen to Auth state changes
   useEffect(() => {
@@ -440,6 +476,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           unreadByAdmin: false,
           unreadByClient: true
         }, { merge: true });
+
+        const formulaLabel = targetPath === 'perception' ? 'Perception du Risque' :
+                             targetPath === 'theorique' ? 'Théorique' :
+                             targetPath === 'pratique' ? 'Pratique' : 'Permis Direct';
+        sendFormulaSelectedEmail(user.email, formData.firstName || 'Candidat', formulaLabel, "200,00 € (Acompte)", advisor).catch(e => console.error(e));
       } catch (chatErr) {
         console.error("Failed to write migration chat message:", chatErr);
       }
@@ -533,6 +574,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         unreadByClient: true
       }, { merge: true });
 
+      const formulaLabel = selectedPath === 'perception' ? 'Perception du Risque' :
+                           selectedPath === 'theorique' ? 'Théorique' :
+                           selectedPath === 'pratique' ? 'Pratique' : 'Permis Direct';
+      const detailAmounts = getSplitPaymentDetails();
+      const amountStr = detailAmounts.isSplit ? detailAmounts.firstPayment : detailAmounts.total;
+      sendFormulaSelectedEmail(user.email, formData.firstName || 'Candidat', formulaLabel, amountStr, advisor).catch(e => console.error(e));
+
     } catch (error) {
       console.error("Firestore writing error:", error);
       alert("Erreur lors de l'enregistrement de votre demande. Veuillez réessayer.");
@@ -592,6 +640,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         unreadByClient: false
       }, { merge: true });
 
+      if (!advisor.isOnline) {
+        const advisorEmail = advisor.email || 'contact@permisdeconduirebe.com';
+        const displayMsg = file.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé";
+        sendNewMessageNotification(advisorEmail, advisor.name || 'Conseiller', userNameStr, displayMsg, advisor).catch(e => console.error(e));
+      }
+
     } catch (err) {
       console.error("Chat upload error:", err);
       alert("Échec de l'envoi du fichier.");
@@ -630,6 +684,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         unreadByClient: false
       }, { merge: true });
 
+      if (!advisor.isOnline) {
+        const advisorEmail = advisor.email || 'contact@permisdeconduirebe.com';
+        sendNewMessageNotification(advisorEmail, advisor.name || 'Conseiller', userName, messageText, advisor).catch(e => console.error(e));
+      }
+
     } catch (err) {
       console.error("Error sending message:", err);
     }
@@ -654,6 +713,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           setAuthMode(mode);
           if (onSwitchMode) onSwitchMode(mode);
         }}
+        advisor={advisor}
       />
     );
   }

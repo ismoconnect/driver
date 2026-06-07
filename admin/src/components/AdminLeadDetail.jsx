@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sendPaymentValidationEmail, sendSoldeInitiatedEmail } from '../utils/notifications';
 
 const AdminLeadDetail = ({
   selectedLead,
@@ -559,6 +560,19 @@ const AdminLeadDetail = ({
                                 });
                               }
 
+                              if (nextVal) {
+                                const email = selectedLead.email || selectedLead.rawUser?.email;
+                                if (email) {
+                                  const formulaLabel = selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception du Risque' :
+                                                       selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' :
+                                                       selectedLead.rawLead?.selectedPath === 'pratique' ? 'Pratique' :
+                                                       selectedLead.rawLead?.selectedPath === 'direct' ? 'Permis Direct' : 'Formule';
+                                  const text = isSplit ? `Acompte Formule ${formulaLabel}` : `Formule ${formulaLabel} (Complet)`;
+                                  const amt = isSplit ? splitDetails.firstPayment : splitDetails.total;
+                                  sendPaymentValidationEmail(email, selectedLead.name?.split(' ')[0] || 'Candidat', amt, text, advisorSettings).catch(e => console.error(e));
+                                }
+                              }
+
                               const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
                               const chatDocRef = doc(db, 'chats', selectedLead.uid);
                               
@@ -656,6 +670,17 @@ const AdminLeadDetail = ({
                                     unreadByClient: true
                                   }, { merge: true });
 
+                                  if (nextVal) {
+                                    const email = selectedLead.email || selectedLead.rawUser?.email;
+                                    if (email) {
+                                      const formulaLabel = selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception du Risque' :
+                                                           selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' :
+                                                           selectedLead.rawLead?.selectedPath === 'pratique' ? 'Pratique' :
+                                                           selectedLead.rawLead?.selectedPath === 'direct' ? 'Permis Direct' : 'Formule';
+                                      sendSoldeInitiatedEmail(email, selectedLead.name?.split(' ')[0] || 'Candidat', formulaLabel, splitDetails.secondPayment, advisorSettings).catch(e => console.error(e));
+                                    }
+                                  }
+
                                 } catch (err) {
                                   console.error(err);
                                 }
@@ -689,6 +714,18 @@ const AdminLeadDetail = ({
                                     await updateDoc(doc(db, "users", selectedLead.rawUser.uid), { 
                                       status: targetStatus
                                     });
+                                  }
+
+                                  if (nextSoldeVal) {
+                                    const email = selectedLead.email || selectedLead.rawUser?.email;
+                                    if (email) {
+                                      const formulaLabel = selectedLead.rawLead?.selectedPath === 'perception' ? 'Perception du Risque' :
+                                                           selectedLead.rawLead?.selectedPath === 'theorique' ? 'Théorique' :
+                                                           selectedLead.rawLead?.selectedPath === 'pratique' ? 'Pratique' :
+                                                           selectedLead.rawLead?.selectedPath === 'direct' ? 'Permis Direct' : 'Formule';
+                                      const text = `Solde Formule ${formulaLabel}`;
+                                      sendPaymentValidationEmail(email, selectedLead.name?.split(' ')[0] || 'Candidat', splitDetails.secondPayment, text, advisorSettings).catch(e => console.error(e));
+                                    }
                                   }
 
                                   const messagesRef = collection(db, 'chats', selectedLead.uid, 'messages');
