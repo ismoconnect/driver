@@ -293,20 +293,20 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                 </div>
 
                 {/* Promotional Card containing the Hero Image */}
-                <div className="relative z-10 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md mb-6 hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row">
-                  <div className="h-32 md:h-auto md:w-5/12 relative overflow-hidden flex-shrink-0">
+                <div className="relative z-10 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md mb-6 hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row md:h-28">
+                  <div className="h-32 md:h-full md:w-4/12 relative overflow-hidden flex-shrink-0">
                     <img 
                       src="/smiling_driver.png" 
                       alt="Conducteur Belge Souriant" 
                       className="w-full h-full object-cover object-center"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950 via-slate-950/20 to-transparent" />
-                    <span className="absolute bottom-2 left-2 bg-brand-orange text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md">
+                    <span className="absolute bottom-1.5 left-2 bg-brand-orange text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">
                       ★ 4.9/5
                     </span>
                   </div>
-                  <div className="p-4 bg-slate-950 text-white flex-1 flex flex-col justify-center">
-                    <h4 className="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-1">
+                  <div className="p-3.5 bg-slate-950 text-white flex-1 flex flex-col justify-center">
+                    <h4 className="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-0.5">
                       Votre permis belge sans examen
                     </h4>
                     <p className="text-[10px] text-slate-400 font-light leading-relaxed">
