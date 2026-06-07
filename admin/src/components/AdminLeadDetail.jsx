@@ -779,22 +779,20 @@ const AdminLeadDetail = ({
                 { status: 'processing', label: '🟡 En Cours' },
                 { status: 'completed', label: '🟣 Terminé' }
               ].map((st) => (
-                <button
+                <div
                   key={st.status}
-                  disabled={updating}
-                  onClick={() => handleUpdateStatus(st.status)}
-                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center select-none cursor-pointer border ${
+                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all flex-1 text-center select-none border ${
                     selectedLead.status === st.status
                       ? st.status === 'new'
                         ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/40'
                         : st.status === 'processing'
                         ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/40'
                         : 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.25)] ring-2 ring-indigo-400/40'
-                      : 'bg-white/5 text-slate-500 border-white/5 opacity-55 hover:opacity-100 hover:bg-white/10'
+                      : 'bg-white/5 text-slate-500 border-white/5 opacity-35'
                   }`}
                 >
                   {st.label}
-                </button>
+                </div>
               ))}
             </div>
           </div>

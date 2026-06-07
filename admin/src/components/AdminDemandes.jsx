@@ -112,14 +112,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                 >
                   Client {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Service</th>
-                <th 
-                  onClick={() => handleSort('status')}
-                  className="px-6 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
-                >
-                  Statut {sortField === 'status' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
-                </th>
+                 <th className="px-6 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
                 <th className="px-6 py-5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -136,20 +129,6 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-300">{lead.email}</div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <span className="px-3 py-1.5 inline-flex text-xs font-bold rounded-lg bg-slate-800 text-slate-300 border border-white/10 shadow-sm">
-                      {lead.service}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-400">
-                    <span className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm ${
-                      lead.status === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                      lead.status === 'processing' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                      'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                    }`}>
-                      {lead.status === 'new' ? 'Nouveau' : lead.status === 'processing' ? 'En Cours' : 'Terminé'}
-                    </span>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-right text-sm">
                     <button 
@@ -176,9 +155,9 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                   </td>
                 </tr>
               ))}
-              {sortedLeads.length === 0 && !loading && (
+               {sortedLeads.length === 0 && !loading && (
                 <tr>
-                  <td colSpan="5" className="px-6 py-16 text-center text-slate-500 font-medium">
+                  <td colSpan="3" className="px-6 py-16 text-center text-slate-500 font-medium">
                     Aucune demande trouvée.
                   </td>
                 </tr>
