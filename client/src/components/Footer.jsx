@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Footer = ({ user, onOpenDashboard }) => {
+  const navigate = useNavigate();
   return (
     <footer id="contact" className="relative bg-brand-dark overflow-hidden">
 
@@ -113,8 +115,8 @@ const Footer = ({ user, onOpenDashboard }) => {
             © {new Date().getFullYear()} Permis de Conduire Belgique. Tous droits réservés.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-slate-500 hover:text-brand-orange text-xs transition-colors">Mentions légales</a>
-            <a href="#" className="text-slate-500 hover:text-brand-orange text-xs transition-colors">Confidentialité</a>
+            <a href="/mentions-legales" onClick={(e) => { e.preventDefault(); navigate('/mentions-legales'); }} className="text-slate-500 hover:text-brand-orange text-xs transition-colors">Mentions légales</a>
+            <a href="/confidentialite" onClick={(e) => { e.preventDefault(); navigate('/confidentialite'); }} className="text-slate-500 hover:text-brand-orange text-xs transition-colors">Confidentialité</a>
           </div>
         </div>
       </div>

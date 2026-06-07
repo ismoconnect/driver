@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Services from './components/Services';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import ClientDashboard from './components/ClientDashboard';
+import LegalMentions from './components/LegalMentions';
+import Confidentialite from './components/Confidentialite';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -46,6 +48,21 @@ function ProtectedRoute({ user, authChecked, children }) {
 // ─── Landing page ─────────────────────────────────────────────────────────────
 function LandingPage({ user, authChecked }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } else if (location.pathname === '/accueil') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.pathname, location.hash]);
 
   if (!authChecked) return <LoadingScreen />;
 
@@ -81,7 +98,7 @@ function AuthPage({ mode, user, authChecked }) {
     <ClientDashboard
       key={mode}  // Force remount when switching between /connexion and /inscription
       initialMode={mode}
-      onBack={() => navigate('/')}
+      onBack={() => navigate('/accueil')}
       onAuthSuccess={() => navigate('/mon-espace')}
       onSwitchMode={(newMode) => navigate(newMode === 'signup' ? '/inscription' : '/connexion')}
     />
@@ -96,7 +113,7 @@ function DashboardPage({ user, authChecked }) {
     <ProtectedRoute user={user} authChecked={authChecked}>
       <ClientDashboard
         initialMode="login"
-        onBack={() => navigate('/')}
+        onBack={() => navigate('/accueil')}
         onAuthSuccess={() => navigate('/mon-espace')}
       />
     </ProtectedRoute>
@@ -110,7 +127,10 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Landing page */}
-      <Route path="/" element={<LandingPage user={user} authChecked={authChecked} />} />
+      <Route path="/" element={<Navigate to="/accueil" replace />} />
+      <Route path="/accueil" element={<LandingPage user={user} authChecked={authChecked} />} />
+      <Route path="/mentions-legales" element={<LegalMentions />} />
+      <Route path="/confidentialite" element={<Confidentialite />} />
 
       {/* Auth routes */}
       <Route path="/connexion" element={<AuthPage mode="login" user={user} authChecked={authChecked} />} />
@@ -118,6 +138,7 @@ function AppRoutes() {
 
       {/* Protected dashboard route */}
       <Route path="/mon-espace" element={<DashboardPage user={user} authChecked={authChecked} />} />
+      <Route path="/mon-espace/:tab" element={<DashboardPage user={user} authChecked={authChecked} />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -96,11 +96,60 @@ const Dashboard = ({ onLogout }) => {
   const [adminChatInput, setAdminChatInput] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [chatUploading, setChatUploading] = useState(false);
+  const [selectedChatFile, setSelectedChatFile] = useState(null);
+  const [chatFilePreview, setChatFilePreview] = useState(null);
+  const [messageToDelete, setMessageToDelete] = useState(null);
   const adminChatEndRef = React.useRef(null);
 
   const scrollAdminChatToBottom = () => {
     if (adminChatEndRef.current) {
       adminChatEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  };
+  const executeDeleteMessage = async (messageId) => {
+    try {
+      await deleteDoc(doc(db, "chats", selectedChatId, "messages", messageId));
+    } catch (err) {
+      console.error("Error deleting message:", err);
+    }
+  };
+
+  const handleDownloadFile = async (url, filename = 'document') => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const lowerUrl = url.toLowerCase();
+      const isPdf = lowerUrl.includes('.pdf') || blob.type === 'application/pdf';
+      
+      let cleanExt = 'bin';
+      let baseName = 'mon-permis-document';
+      
+      if (isPdf) {
+        cleanExt = 'pdf';
+        baseName = 'mon-permis-document';
+      } else if (blob.type.startsWith('image/')) {
+        const ext = blob.type.split('/')[1] || 'bin';
+        cleanExt = ext === 'jpeg' ? 'jpg' : ext;
+        baseName = 'mon-permis-image';
+      } else {
+        const ext = blob.type.split('/')[1] || 'bin';
+        cleanExt = ext;
+      }
+      
+      const finalFilename = `${baseName}.${cleanExt}`;
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = finalFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download error:", err);
+      window.open(url, '_blank');
     }
   };
 
@@ -340,35 +389,87 @@ const Dashboard = ({ onLogout }) => {
 
   const handleSendAdminReply = async (e) => {
     e.preventDefault();
-    if (!adminChatInput.trim() || !selectedChatId) return;
+    if (!adminChatInput.trim() && !selectedChatFile || !selectedChatId) return;
 
     const messageText = adminChatInput;
+    const fileToSend = selectedChatFile;
+
+    // Clear inputs immediately for fast response
     setAdminChatInput('');
+    setSelectedChatFile(null);
+    if (chatFilePreview?.url) {
+      URL.revokeObjectURL(chatFilePreview.url);
+    }
+    setChatFilePreview(null);
+
+    setChatUploading(true);
 
     try {
       const msgsRef = collection(db, "chats", selectedChatId, "messages");
       const chatDocRef = doc(db, "chats", selectedChatId);
 
-      // 1. Add reply message
-      await addDoc(msgsRef, {
-        sender: 'advisor',
-        text: messageText,
-        timestamp: serverTimestamp()
-      });
+      // 1. Send file if selected
+      if (fileToSend) {
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        const formDataPayload = new FormData();
+        formDataPayload.append('file', fileToSend);
+        formDataPayload.append('upload_preset', 'monpermis');
+        formDataPayload.append('folder', `monpermis/chats/${selectedChatId}`);
 
-      // 2. Update chat metadata
-      await updateDoc(chatDocRef, {
-        lastMessageText: messageText,
-        lastMessageTime: serverTimestamp(),
-        unreadByClient: true,
-        unreadByAdmin: false
-      });
+        const resourceType = (fileToSend.type.startsWith('image/') || fileToSend.type === 'application/pdf') ? 'image' : 'raw';
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+
+        const res = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formDataPayload
+        });
+        const data = await res.json();
+        if (!data.secure_url) {
+          throw new Error("Erreur de téléversement Cloudinary");
+        }
+
+        const fileUrl = data.secure_url;
+
+        // Add file message
+        await addDoc(msgsRef, {
+          sender: 'advisor',
+          text: fileUrl,
+          timestamp: serverTimestamp()
+        });
+
+        // Update chat metadata
+        await updateDoc(chatDocRef, {
+          lastMessageText: fileToSend.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé",
+          lastMessageTime: serverTimestamp(),
+          unreadByClient: true,
+          unreadByAdmin: false
+        });
+      }
+
+      // 2. Send text message if any
+      if (messageText.trim()) {
+        await addDoc(msgsRef, {
+          sender: 'advisor',
+          text: messageText,
+          timestamp: serverTimestamp()
+        });
+
+        await updateDoc(chatDocRef, {
+          lastMessageText: messageText,
+          lastMessageTime: serverTimestamp(),
+          unreadByClient: true,
+          unreadByAdmin: false
+        });
+      }
     } catch (err) {
       console.error("Error sending admin reply:", err);
+      alert("Échec de l'envoi du message.");
+    } finally {
+      setChatUploading(false);
     }
   };
 
-  const handleAdminChatFileUpload = async (e) => {
+  const handleAdminChatFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !selectedChatId) return;
 
@@ -377,52 +478,13 @@ const Dashboard = ({ onLogout }) => {
       return;
     }
 
-    setChatUploading(true);
-    try {
-      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-      const formDataPayload = new FormData();
-      formDataPayload.append('file', file);
-      formDataPayload.append('upload_preset', 'monpermis');
-      formDataPayload.append('folder', `monpermis/chats/${selectedChatId}`);
-
-      const resourceType = file.type.startsWith('image/') ? 'image' : 'raw';
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-
-      const res = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formDataPayload
-      });
-      const data = await res.json();
-      if (!data.secure_url) {
-        throw new Error("Erreur de téléversement Cloudinary");
-      }
-
-      const fileUrl = data.secure_url;
-      const msgsRef = collection(db, "chats", selectedChatId, "messages");
-      const chatDocRef = doc(db, "chats", selectedChatId);
-
-      // Add file message to subcollection
-      await addDoc(msgsRef, {
-        sender: 'advisor',
-        text: fileUrl,
-        timestamp: serverTimestamp()
-      });
-
-      // Update main chat session document
-      await updateDoc(chatDocRef, {
-        lastMessageText: file.type.startsWith('image/') ? "📷 Photo envoyée" : "📄 Document envoyé",
-        lastMessageTime: serverTimestamp(),
-        unreadByClient: true,
-        unreadByAdmin: false
-      });
-
-    } catch (err) {
-      console.error("Admin chat upload error:", err);
-      alert("Échec de l'envoi du fichier.");
-    } finally {
-      setChatUploading(false);
-      e.target.value = "";
-    }
+    setSelectedChatFile(file);
+    setChatFilePreview({
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file)
+    });
+    e.target.value = "";
   };
 
   // ─── Synchronisation temps réel : deux listeners parallèles ───────────────
@@ -1144,40 +1206,7 @@ const Dashboard = ({ onLogout }) => {
                       </span>
                     </h3>
 
-                    {/* Lightbox interne */}
-                    {previewUrl && (
-                      <div
-                        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-                        onClick={() => setPreviewUrl(null)}
-                      >
-                        <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-                          <button
-                            onClick={() => setPreviewUrl(null)}
-                            className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-bold"
-                          >✕ Fermer</button>
-                          <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10">
-                            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
-                              <span className="text-white font-bold text-sm">{previewLabel}</span>
-                              <a href={previewUrl} target="_blank" rel="noopener noreferrer" download
-                                className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
-                                ⬇️ Télécharger
-                              </a>
-                            </div>
-                            {previewUrl.toLowerCase().includes('.pdf') ? (
-                              <div className="p-10 text-center">
-                                <div className="text-5xl mb-3">📄</div>
-                                <a href={previewUrl} target="_blank" rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-bold text-sm">
-                                  Ouvrir le PDF ↗
-                                </a>
-                              </div>
-                            ) : (
-                              <img src={previewUrl} alt={previewLabel} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
 
                     {/* Grille 2x2 */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1928,7 +1957,17 @@ const Dashboard = ({ onLogout }) => {
                         chatMessages.map((m) => {
                           const isAdvisor = m.sender === 'advisor';
                           return (
-                            <div key={m.id} className={`flex ${isAdvisor ? 'justify-end' : 'justify-start'}`}>
+                            <div key={m.id} className={`flex ${isAdvisor ? 'justify-end' : 'justify-start'} group relative items-center gap-2`}>
+                              {/* Delete message button for admin */}
+                              <button
+                                onClick={() => setMessageToDelete(m.id)}
+                                className={`opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-400 p-1.5 transition-opacity cursor-pointer text-xs rounded-lg hover:bg-rose-500/10 ${
+                                  isAdvisor ? 'order-first' : 'order-last'
+                                }`}
+                                title="Supprimer le message"
+                              >
+                                🗑️
+                              </button>
                               <div className={`max-w-[75%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
                                 isAdvisor
                                   ? 'bg-emerald-500 text-slate-950 rounded-br-none font-medium'
@@ -1936,21 +1975,34 @@ const Dashboard = ({ onLogout }) => {
                               }`}>
                                 <div>
                                   {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
-                                    m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
-                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className="block max-w-full">
+                                    m.text.match(/\.pdf($|\?)/i) ? (
+                                      <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className="block max-w-[200px] w-full cursor-zoom-in mt-1">
+                                        <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl p-2 transition-all">
+                                          <div className="relative aspect-[3/4] h-36 rounded-lg overflow-hidden bg-slate-950 border border-white/10 mb-1.5 flex items-center justify-center">
+                                            <img 
+                                              src={m.text.replace(/\.pdf($|\?)/i, (match, p1) => `.jpg${p1 || ''}`)} 
+                                              alt="Aperçu du PDF" 
+                                              className="w-full h-full object-cover"
+                                              onLoad={scrollAdminChatToBottom}
+                                              onError={(e) => { e.target.style.display = 'none'; }}
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/10 transition-colors">
+                                              <span className="text-2xl text-white drop-shadow">📄</span>
+                                            </div>
+                                          </div>
+                                          <div className={`flex items-center gap-1.5 text-xs font-bold ${
+                                            isAdvisor ? 'text-slate-950 hover:text-slate-900' : 'text-indigo-400 hover:text-indigo-300'
+                                          }`}>
+                                            <span className="underline truncate">Document PDF</span>
+                                          </div>
+                                        </div>
+                                      </a>
+                                    ) : m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
+                                      <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className="block max-w-full cursor-zoom-in">
                                         <img src={m.text} alt="Image jointe" onLoad={scrollAdminChatToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
                                       </a>
-                                    ) : m.text.match(/\.pdf($|\?)/i) ? (
-                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 ${
-                                        isAdvisor
-                                          ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
-                                          : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
-                                      }`}>
-                                        <span>📄</span>
-                                        <span className="underline truncate">Document PDF</span>
-                                      </a>
                                     ) : (
-                                      <a href={m.text} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 ${
+                                      <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 cursor-zoom-in ${
                                         isAdvisor
                                           ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
                                           : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
@@ -1973,6 +2025,34 @@ const Dashboard = ({ onLogout }) => {
                       )}
                       <div ref={adminChatEndRef} />
                     </div>
+
+                    {/* Chat File Preview Area */}
+                    {chatFilePreview && (
+                      <div className="mx-4 p-3.5 bg-slate-950/80 border border-white/10 rounded-2xl flex items-center justify-between gap-3 animate-fade-in relative z-20 mb-2">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          {chatFilePreview.type.startsWith('image/') ? (
+                            <img src={chatFilePreview.url} alt="Aperçu" className="w-12 h-12 rounded-xl object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-xl text-white">📄</div>
+                          )}
+                          <div className="min-w-0 flex flex-col">
+                            <span className="text-xs font-bold text-white truncate">{chatFilePreview.name}</span>
+                            <span className="text-[10px] text-slate-500">Prêt à envoyer</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedChatFile(null);
+                            if (chatFilePreview?.url) URL.revokeObjectURL(chatFilePreview.url);
+                            setChatFilePreview(null);
+                          }}
+                          className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer text-sm font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
 
                     {/* Chat Input form */}
                     <form onSubmit={handleSendAdminReply} className="p-4 border-t border-white/5 bg-slate-900/20 flex gap-2 items-center">
@@ -2633,6 +2713,77 @@ const Dashboard = ({ onLogout }) => {
 
         </main>
       </div>
+
+      {/* Lightbox globale */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-bold cursor-pointer"
+            >✕ Fermer</button>
+            <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+               <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                 <span className="text-white font-bold text-sm">{previewLabel}</span>
+                 <button
+                   onClick={() => handleDownloadFile(previewUrl, 'piece-jointe')}
+                   className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                 >
+                   ⬇️ Télécharger
+                 </button>
+               </div>
+               {previewUrl.toLowerCase().includes('.pdf') ? (
+                 <div className="w-full h-[75vh] bg-slate-950">
+                   <iframe
+                     src={previewUrl}
+                     className="w-full h-full border-0"
+                     title="Aperçu du document"
+                   />
+                 </div>
+               ) : (
+                 <img src={previewUrl} alt={previewLabel} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
+               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {messageToDelete && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_24px_50px_rgba(0,0,0,0.5)] animate-[scaleIn_0.3s_ease-out] flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-xl mb-4 text-rose-400">
+              🗑️
+            </div>
+            <h3 className="text-lg font-display font-extrabold text-white mb-2">
+              Supprimer le message
+            </h3>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+              Voulez-vous vraiment supprimer ce message ? Cette action est irréversible.
+            </p>
+            <div className="flex items-center gap-3 w-full">
+              <button
+                onClick={() => setMessageToDelete(null)}
+                className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  const id = messageToDelete;
+                  setMessageToDelete(null);
+                  await executeDeleteMessage(id);
+                }}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm rounded-xl transition-all cursor-pointer shadow-lg shadow-rose-500/20"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Light Theme Styles */}
       <style>{`

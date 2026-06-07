@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
+const Navbar = ({ user, onOpenDashboard, forceScrolled }) => {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(forceScrolled || false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -15,9 +17,25 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
   }, [forceScrolled]);
 
   const links = [
-    { label: 'Accueil', href: '#' },
-    { label: 'Services', href: '#services' },
+    { label: 'Accueil', href: '/accueil' },
+    { label: 'Services', href: '/accueil#services' },
   ];
+
+  const handleLinkClick = (e, href) => {
+    e.preventDefault();
+    const [targetPath, targetHash] = href.split('#');
+    
+    if (window.location.pathname === targetPath) {
+      if (targetHash) {
+        const el = document.getElementById(targetHash);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      navigate(href);
+    }
+  };
 
   return (
     <>
@@ -40,7 +58,7 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
           <div className="flex justify-between h-20 items-center">
 
             {/* Logo */}
-            <a href="#" onClick={(e) => { if (onGoHome) { e.preventDefault(); onGoHome(); } }} className="flex-shrink-0 flex items-center gap-2">
+            <a href="/accueil" onClick={(e) => { e.preventDefault(); navigate('/accueil'); }} className="flex-shrink-0 flex items-center gap-2">
               <img src="/logo.png" alt="Mon Permis Logo" className="h-10 rounded-lg" />
             </a>
 
@@ -50,12 +68,7 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={(e) => {
-                    if (onGoHome) {
-                      e.preventDefault();
-                      window.location.href = link.href === '#' ? '/' : '/' + link.href;
-                    }
-                  }}
+                  onClick={(e) => handleLinkClick(e, link.href)}
                   className={`text-sm font-medium transition-colors duration-300 hover:text-brand-orange text-white/80`}
                 >
                   {link.label}
@@ -117,10 +130,7 @@ const Navbar = ({ user, onOpenDashboard, onGoHome, forceScrolled }) => {
                 href={link.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (onGoHome) {
-                    e.preventDefault();
-                    window.location.href = link.href === '#' ? '/' : '/' + link.href;
-                  }
+                  handleLinkClick(e, link.href);
                 }}
                 className={`text-lg font-bold tracking-wide text-white/80 hover:text-brand-orange transition-all duration-300 transform ${
                   menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'

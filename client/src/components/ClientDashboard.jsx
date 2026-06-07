@@ -39,6 +39,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [mandatAccepted, setMandatAccepted] = useState(false);
   const [activeTab, setActiveTab] = useState('wizard'); // Default to wizard on entry
   const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
+  const [wizardError, setWizardError] = useState('');
 
   // Client Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('clientTheme') || 'dark');
@@ -448,10 +449,33 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     }
   };
 
+  const formatBelgianPhone = (val) => {
+    if (!val) return '';
+    let cleaned = val.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('04')) {
+      cleaned = '+324' + cleaned.slice(2);
+    }
+    if (cleaned.startsWith('+324')) {
+      let rest = cleaned.slice(4);
+      rest = rest.replace(/\D/g, '').slice(0, 8);
+      let formatted = '+32 4';
+      if (rest.length > 0) formatted += rest.slice(0, 2);
+      if (rest.length > 2) formatted += ' ' + rest.slice(2, 4);
+      if (rest.length > 4) formatted += ' ' + rest.slice(4, 6);
+      if (rest.length > 6) formatted += ' ' + rest.slice(6, 8);
+      return formatted;
+    }
+    return cleaned;
+  };
+
   // Handle Wizard input
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'phone') {
+      setFormData(prev => ({ ...prev, [name]: formatBelgianPhone(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // Détection mobile
@@ -749,232 +773,405 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           }} />
         </div>
 
-        {/* --- Login Card --- */}
-        <div className="max-w-md w-full my-auto relative z-10 bg-white/40 text-slate-900 border-2 border-slate-900 p-8 sm:p-10 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-xl overflow-hidden group">
+        {/* --- Login/Signup Card --- */}
+        <div className={`w-full my-auto relative z-10 bg-white/40 text-slate-900 border-2 border-slate-900 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-xl overflow-hidden group transition-all duration-300 ${
+          authMode === 'login' ? 'max-w-md p-8 sm:p-10' : 'max-w-4xl p-0'
+        }`}>
           
           {/* Ambient glow */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" 
             style={{ background: 'radial-gradient(circle at 50% 20%, rgba(255,152,0,0.04) 0%, transparent 60%)' }} 
           />
 
-          {/* Back link — styled as a small card */}
-          <button
-            onClick={onBack}
-            className="relative z-10 inline-flex items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-8 hover:text-brand-orange hover:shadow-md"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Retour à l'accueil
-          </button>
+          {authMode === 'login' ? (
+            <>
+              {/* Back link — styled as a small card */}
+              <button
+                onClick={onBack}
+                className="relative z-10 inline-flex items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-8 hover:text-brand-orange hover:shadow-md cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Retour à l'accueil
+              </button>
 
-          {/* Logo inline */}
-          <div className="relative z-10 flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md flex-shrink-0">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
-              </svg>
-            </div>
-            <div>
-              <span className="text-base font-display font-bold tracking-wider text-slate-900">
-                MON <span className="text-brand-orange">PERMIS</span>
-              </span>
-              <span className="ml-2 inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider align-middle">
-                🔒 SSL
-              </span>
-            </div>
-          </div>
-
-          <div className="relative z-10 mb-8">
-            <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900">
-              {authMode === 'login' ? 'Se connecter' : 'Créer un compte'}
-            </h2>
-            <p className="text-slate-600 text-xs sm:text-sm mt-1.5">
-              {authMode === 'login' 
-                ? 'Accédez à votre dossier de permis de conduire.' 
-                : 'Initiez votre démarche officielle belge sans examen.'}
-            </p>
-          </div>
-
-          {/* Error display */}
-          {authError && (
-            <div className="relative z-10 bg-red-50 border border-red-200 text-red-600 text-xs p-4 rounded-2xl mb-6 flex items-start gap-2.5 shadow-sm">
-              <span className="text-sm flex-shrink-0">⚠️</span>
-              <span>{authError}</span>
-            </div>
-          )}
-
-          <div className="relative z-10 mb-6">
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              disabled={authLoading}
-              className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold shadow-sm border border-slate-200 transition-all duration-300 hover:scale-[1.02] hover:shadow-md flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              Continuer avec Google
-            </button>
-            
-            <div className="relative flex items-center mt-6">
-              <div className="flex-grow border-t border-slate-300"></div>
-              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">ou</span>
-              <div className="flex-grow border-t border-slate-300"></div>
-            </div>
-          </div>
-
-          <form onSubmit={handleAuthSubmit} className="relative z-10 space-y-4">
-
-            {/* Champs supplémentaires affichés uniquement en mode inscription */}
-            {authMode === 'signup' && (
-              <>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Prénom</label>
-                    <input
-                      required
-                      type="text"
-                      value={signupFirstName}
-                      onChange={(e) => setSignupFirstName(e.target.value)}
-                      placeholder="Jean"
-                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Nom</label>
-                    <input
-                      required
-                      type="text"
-                      value={signupLastName}
-                      onChange={(e) => setSignupLastName(e.target.value)}
-                      placeholder="Dupont"
-                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
-                    />
-                  </div>
+              {/* Logo inline */}
+              <div className="relative z-10 flex items-center gap-2.5 mb-8">
+                <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
+                  </svg>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Téléphone</label>
-                  <input
-                    type="tel"
-                    value={signupPhone}
-                    onChange={(e) => setSignupPhone(e.target.value)}
-                    placeholder="+32 470 00 00 00"
+                  <span className="text-base font-display font-bold tracking-wider text-slate-900">
+                    MON <span className="text-brand-orange">PERMIS</span>
+                  </span>
+                  <span className="ml-2 inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider align-middle">
+                    🔒 SSL
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative z-10 mb-8">
+                <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900">
+                  Se connecter
+                </h2>
+                <p className="text-slate-600 text-xs sm:text-sm mt-1.5">
+                  Accédez à votre dossier de permis de conduire.
+                </p>
+              </div>
+
+              {/* Error display */}
+              {authError && (
+                <div className="relative z-10 bg-red-50 border border-red-200 text-red-600 text-xs p-4 rounded-2xl mb-6 flex items-start gap-2.5 shadow-sm">
+                  <span className="text-sm flex-shrink-0">⚠️</span>
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              <div className="relative z-10 mb-6">
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  disabled={authLoading}
+                  className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold shadow-sm border border-slate-200 transition-all duration-300 hover:scale-[1.02] hover:shadow-md flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  Continuer avec Google
+                </button>
+                
+                <div className="relative flex items-center mt-6">
+                  <div className="flex-grow border-t border-slate-300"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">ou</span>
+                  <div className="flex-grow border-t border-slate-300"></div>
+                </div>
+              </div>
+
+              <form onSubmit={handleAuthSubmit} className="relative z-10 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Adresse Email</label>
+                  <input 
+                    required
+                    type="email" 
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="nom@exemple.be" 
                     className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                   />
                 </div>
-              </>
-            )}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Adresse Email</label>
-              <input 
-                required
-                type="email" 
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                placeholder="nom@exemple.be" 
-                className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
-              />
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Mot de Passe</label>
-              <div className="relative">
-                <input 
-                  required
-                  type={showPassword ? 'text' : 'password'} 
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  placeholder="••••••••" 
-                  className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
-                />
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Mot de Passe</label>
+                  <div className="relative">
+                    <input 
+                      required
+                      type={showPassword ? 'text' : 'password'} 
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="••••••••" 
+                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
-                  tabIndex={-1}
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-3.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-bold shadow-[0_8px_20px_rgba(255,152,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
+                  {authLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    'Se connecter ➔'
                   )}
                 </button>
-              </div>
-            </div>
+              </form>
 
-            {authMode === 'signup' && (
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Confirmer le Mot de Passe</label>
-                <div className="relative">
-                  <input 
-                    required
-                    type={showConfirmPassword ? 'text' : 'password'} 
-                    value={authConfirmPassword}
-                    onChange={(e) => setAuthConfirmPassword(e.target.value)}
-                    placeholder="••••••••" 
-                    className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
-                  />
+              <div className="relative z-10 mt-6 pt-6 border-t border-slate-200 text-center">
+                <button
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthError('');
+                    setAuthConfirmPassword('');
+                    if (onSwitchMode) onSwitchMode('signup');
+                  }}
+                  className="text-xs text-slate-500 hover:text-brand-orange font-bold transition-colors focus:outline-none cursor-pointer"
+                >
+                  Pas encore de compte ? S'inscrire
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-12 min-h-[550px]">
+              {/* Layout Two-Column when authMode === 'signup' */}
+              
+              {/* Left Column - SSL Logo, Info & Trust */}
+              <div className="md:col-span-5 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
+                <div>
+                  {/* SSL Logo Header relocation inside the Left column */}
+                  <div className="relative z-10 flex items-center gap-2.5 mb-8">
+                    <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                        <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="text-base font-display font-bold tracking-wider text-slate-900">
+                        MON <span className="text-brand-orange">PERMIS</span>
+                      </span>
+                      <span className="ml-2 inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider align-middle">
+                        🔒 SSL
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-display font-extrabold text-slate-900 leading-tight mb-4">
+                    Diagnostic d'Éligibilité Officiel
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed mb-4">
+                    Obtenez votre permis de conduire officiel belge sans examen. Remplissez le formulaire d'inscription sécurisé pour enregistrer votre dossier auprès de nos services agréés.
+                  </p>
+                  
+                  <ul className="space-y-2.5 text-xs text-slate-700 font-medium">
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500">✓</span> Enregistrement officiel SPF Belgique
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500">✓</span> Zéro examen pratique ni théorique
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-emerald-500">✓</span> Accompagnement par un conseiller dédié
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Security trust badge at the bottom of the left column */}
+                <div className="mt-8 pt-4 border-t border-slate-900/10 hidden md:block">
+                  <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-3 text-center">
+                    <p className="text-[10px] text-brand-orange font-bold uppercase tracking-wider">🔒 Démarche 100% Sécurisée</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Vos documents et données sont protégés par le protocole de chiffrement SSL.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Registration Form */}
+              <div className="md:col-span-7 p-8 sm:p-10 flex flex-col justify-center relative z-10">
+                {/* Back link */}
+                <button
+                  onClick={onBack}
+                  className="inline-flex self-start items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-6 hover:text-brand-orange hover:shadow-md cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Retour à l'accueil
+                </button>
+
+                <div className="mb-6">
+                  <h2 className="text-2xl font-display font-extrabold text-slate-900">
+                    Créer un compte
+                  </h2>
+                  <p className="text-slate-600 text-xs mt-1">
+                    Initiez votre démarche officielle belge sans examen.
+                  </p>
+                </div>
+
+                {/* Error display */}
+                {authError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-xs p-4 rounded-2xl mb-6 flex items-start gap-2.5 shadow-sm">
+                    <span className="text-sm flex-shrink-0">⚠️</span>
+                    <span>{authError}</span>
+                  </div>
+                )}
+
+                <div className="mb-6">
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
-                    tabIndex={-1}
+                    onClick={handleGoogleAuth}
+                    disabled={authLoading}
+                    className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold shadow-sm border border-slate-200 transition-all duration-300 hover:scale-[1.02] hover:shadow-md flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
                   >
-                    {showConfirmPassword ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Continuer avec Google
+                  </button>
+                  
+                  <div className="relative flex items-center mt-6">
+                    <div className="flex-grow border-t border-slate-300"></div>
+                    <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">ou</span>
+                    <div className="flex-grow border-t border-slate-300"></div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Prénom</label>
+                      <input
+                        required
+                        type="text"
+                        value={signupFirstName}
+                        onChange={(e) => setSignupFirstName(e.target.value)}
+                        placeholder="Jean"
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Nom</label>
+                      <input
+                        required
+                        type="text"
+                        value={signupLastName}
+                        onChange={(e) => setSignupLastName(e.target.value)}
+                        placeholder="Dupont"
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={signupPhone}
+                      onChange={(e) => setSignupPhone(formatBelgianPhone(e.target.value))}
+                      placeholder="+32 470 00 00 00"
+                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Adresse Email</label>
+                    <input 
+                      required
+                      type="email" 
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="nom@exemple.be" 
+                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Mot de Passe</label>
+                    <div className="relative">
+                      <input 
+                        required
+                        type={showPassword ? 'text' : 'password'} 
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="••••••••" 
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Confirmer le Mot de Passe</label>
+                    <div className="relative">
+                      <input 
+                        required
+                        type={showConfirmPassword ? 'text' : 'password'} 
+                        value={authConfirmPassword}
+                        onChange={(e) => setAuthConfirmPassword(e.target.value)}
+                        placeholder="••••••••" 
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-3.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-bold shadow-[0_8px_20px_rgba(255,152,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {authLoading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                      'Créer mon compte ➔'
                     )}
+                  </button>
+                </form>
+
+                <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+                  <button
+                    onClick={() => {
+                      setAuthMode('login');
+                      setAuthError('');
+                      setAuthConfirmPassword('');
+                      if (onSwitchMode) onSwitchMode('login');
+                    }}
+                    className="text-xs text-slate-500 hover:text-brand-orange font-bold transition-colors focus:outline-none cursor-pointer"
+                  >
+                    Déjà inscrit ? Se connecter
                   </button>
                 </div>
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={authLoading}
-              className="w-full py-3.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-bold shadow-[0_8px_20px_rgba(255,152,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {authLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                authMode === 'login' ? 'Se connecter ➔' : 'Créer mon compte ➔'
-              )}
-            </button>
-          </form>
-
-          <div className="relative z-10 mt-6 pt-6 border-t border-slate-200 text-center">
-            <button
-              onClick={() => {
-                const newMode = authMode === 'login' ? 'signup' : 'login';
-                setAuthMode(newMode);
-                setAuthError('');
-                setAuthConfirmPassword('');
-                if (onSwitchMode) onSwitchMode(newMode);
-              }}
-              className="text-xs text-slate-500 hover:text-brand-orange font-bold transition-colors focus:outline-none"
-            >
-              {authMode === 'login' 
-                ? "Pas encore de compte ? S'inscrire" 
-                : "Déjà inscrit ? Se connecter"}
-            </button>
-          </div>
-
+            </div>
+          )}
         </div>
       </div>
     );
@@ -2154,6 +2351,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     </div>
 
+                      {wizardError && (
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3.5 rounded-2xl mt-4 flex items-start gap-2.5 shadow-sm animate-fadeIn">
+                          <span className="text-sm flex-shrink-0">⚠️</span>
+                          <span>{wizardError}</span>
+                        </div>
+                      )}
+
                     {/* STEP 1: IDENTITY */}
                     {wizardStep === 1 && (
                       <div className="grid grid-cols-2 gap-3 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
@@ -2710,6 +2914,18 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       <button
                         type="button"
                         onClick={async () => {
+                          if (wizardStep === 1) {
+                            if (!formData.firstName?.trim() || 
+                                !formData.lastName?.trim() || 
+                                !formData.birthDate?.trim() || 
+                                !formData.phone?.trim() || 
+                                !formData.address?.trim() || 
+                                !formData.nationalRegister?.trim()) {
+                              setWizardError("Veuillez remplir tous les champs obligatoires pour continuer.");
+                              return;
+                            }
+                          }
+                          setWizardError("");
                           // Auto-sauvegarde dans Firestore à chaque étape
                           if (user) {
                             try {

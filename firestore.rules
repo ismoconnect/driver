@@ -35,7 +35,10 @@ service cloud.firestore {
       allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
     }
     match /chats/{userId}/messages/{messageId} {
-      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow read: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow create: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow update: if false;
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == userId && resource.data.sender == 'student');
     }
 
     // ── Collection "admins" ──────────────────────────────────────────────────
