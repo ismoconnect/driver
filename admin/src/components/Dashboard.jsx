@@ -13,6 +13,7 @@ import AdminUsers from './AdminUsers';
 import AdminMessages from './AdminMessages';
 import AdminSettings from './AdminSettings';
 import AdminLeadDetail from './AdminLeadDetail';
+import AdminAIBV from './AdminAIBV';
 
 const Dashboard = ({ onLogout, initialTab }) => {
   const navigate = useNavigate();
@@ -886,6 +887,18 @@ const Dashboard = ({ onLogout, initialTab }) => {
               <span className="mr-3 text-lg">⚙️</span>
               Paramètres
             </button>
+
+            <button
+              onClick={() => setActiveTab('aibv')}
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                activeTab === 'aibv'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="mr-3 text-lg">📧</span>
+              Service AIBV
+            </button>
           </nav>
         </div>
 
@@ -919,6 +932,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             {activeTab === 'messages' && "💬 Ma messagerie"}
             {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
             {activeTab === 'settings' && "⚙️ Paramètres"}
+            {activeTab === 'aibv' && "📧 Service AIBV"}
           </h2>
           <div className="flex items-center gap-4">
             {/* Theme Toggle Button */}
@@ -1040,6 +1054,10 @@ const Dashboard = ({ onLogout, initialTab }) => {
               userFilter={userFilter}
               setUserFilter={setUserFilter}
             />
+          )}
+
+          {activeTab === 'aibv' && (
+            <AdminAIBV />
           )}
 
         </main>
