@@ -82,21 +82,27 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [transmissionStep, setTransmissionStep] = useState(0);
 
   useEffect(() => {
-    if (isSubmitted && !paymentValidated && activeTab === 'wizard') {
+    if (!user) return;
+    const storageKey = `transmissionCompleted_${user.uid}`;
+    const isCompleted = localStorage.getItem(storageKey) === 'true';
+    if (isSubmitted && !paymentValidated && activeTab === 'wizard' && !isCompleted) {
       setIsTransmitting(true);
       setTransmissionStep(0);
       const timer = setTimeout(() => {
         setIsTransmitting(false);
-      }, 10000);
+        localStorage.setItem(storageKey, 'true');
+      }, 20000);
       return () => clearTimeout(timer);
+    } else {
+      setIsTransmitting(false);
     }
-  }, [isSubmitted, paymentValidated, activeTab]);
+  }, [isSubmitted, paymentValidated, activeTab, user]);
 
   useEffect(() => {
     if (isTransmitting) {
       const interval = setInterval(() => {
         setTransmissionStep(prev => Math.min(prev + 1, 3));
-      }, 2500);
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [isTransmitting]);
@@ -381,6 +387,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
   const handleUpgradeToPath = async (targetPath) => {
     try {
+      localStorage.removeItem(`transmissionCompleted_${user.uid}`);
       const leadRef = doc(db, 'leads', user.uid);
       const alreadyPaid = paymentValidated;
       let targetAmount = advisor.directLicenseAmount || "1200,00 €";
@@ -500,6 +507,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       };
 
       await setDoc(doc(db, 'leads', user.uid), leadData);
+      localStorage.removeItem(`transmissionCompleted_${user.uid}`);
       setIsSubmitted(true);
       
       const messagesRef = collection(db, 'chats', user.uid, 'messages');
@@ -648,13 +656,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   // Render Secured Dashboard if logged in
   return (
     <div className={`h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
-      {isLoadingData && (
-        <div className="absolute inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center">
-          <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-xs font-semibold text-white/70">Synchronisation en cours avec la base de données...</p>
-        </div>
-      )}
-
       {/* --- DASHBOARD HEADER --- */}
       <header className="bg-slate-900 border-b-2 border-emerald-500 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -847,7 +848,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto py-8">
                 <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">Dossier Transmis avec Succès !</h2>
                 <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-lg leading-relaxed">
-                  Votre demande a bien été envoyée à nos services pour vérification légale. Votre conseiller dédié, {advisor.name}, analyse vos pièces.
+                  {selectedPath === 'theorique' ? (
+                    `Votre demande de certificat de l'examen théorique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                  ) : selectedPath === 'perception' ? (
+                    `Votre demande de dispense de l'examen de perception du risque a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                  ) : selectedPath === 'pratique' ? (
+                    `Votre demande de dispense de l'examen pratique a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                  ) : (
+                    `Votre demande d'obtention de permis direct a bien été envoyée à nos services pour homologation légale. Votre conseiller dédié procède à la constitution de votre dossier.`
+                  )}
                 </p>
 
                 {/* RIB / BANK DETAILS BOX */}
@@ -855,7 +864,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   isTransmitting ? (
                     <div className="w-full mt-6 bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
                       {/* Top animated linear progress bar */}
-                      <div className="absolute top-0 left-0 h-1.5 bg-gradient-to-r from-brand-orange via-amber-500 to-emerald-500 transition-all duration-[10000ms] ease-out" style={{ width: `${(transmissionStep + 1) * 25}%` }} />
+                      <div className="absolute top-0 left-0 h-1.5 bg-gradient-to-r from-brand-orange via-amber-500 to-emerald-500 transition-all duration-[20000ms] ease-out" style={{ width: `${(transmissionStep + 1) * 25}%` }} />
                       
                       <div className="relative flex items-center justify-center mb-6">
                         {/* Outer pulsing ring */}

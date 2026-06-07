@@ -571,6 +571,7 @@ export default function ClientWizard({
 
         {wizardStep < 4 ? (
           <button
+            key="btn-continue"
             type="button"
             onClick={() => {
               if (wizardStep === 1 && validateStep1()) setWizardStep(2);
@@ -583,6 +584,7 @@ export default function ClientWizard({
           </button>
         ) : (
           <button
+            key="btn-submit"
             type="submit"
             disabled={!mandatAccepted}
             className={`px-6 py-2 rounded-xl text-xs font-bold shadow-md transition-all ${
