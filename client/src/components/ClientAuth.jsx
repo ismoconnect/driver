@@ -34,15 +34,22 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
 
   const formatBelgianPhone = (val) => {
     if (!val) return '';
+    
+    // Allow deleting the prefix naturally
+    if (val === '+' || val === '+3' || val === '+32' || val === '+32 ') {
+      return val;
+    }
+
     let cleaned = val.replace(/[^\d+]/g, '');
     if (cleaned.startsWith('04')) {
       cleaned = '+324' + cleaned.slice(2);
     }
+    
     if (cleaned.startsWith('+324')) {
       let rest = cleaned.slice(4);
       rest = rest.replace(/\D/g, '').slice(0, 8);
       let formatted = '+32 4';
-      if (rest.length > 0) formatted += rest.slice(0, 2);
+      if (rest.length > 0) formatted += ' ' + rest.slice(0, 2);
       if (rest.length > 2) formatted += ' ' + rest.slice(2, 4);
       if (rest.length > 4) formatted += ' ' + rest.slice(4, 6);
       if (rest.length > 6) formatted += ' ' + rest.slice(6, 8);
@@ -160,7 +167,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
 
       {/* Login/Signup Container Card */}
       <div className={`w-full my-auto relative z-10 bg-white/40 text-slate-900 border-2 border-slate-900 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-xl overflow-hidden group transition-all duration-300 ${
-        authMode === 'login' ? 'max-w-md p-8 sm:p-10' : 'max-w-4xl p-0'
+        authMode === 'login' ? 'max-w-md p-8 sm:p-10' : 'max-w-5xl p-0'
       }`}>
         
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" 
@@ -179,21 +186,11 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
               Retour à l'accueil
             </button>
 
-            <div className="relative z-10 flex items-center gap-2.5 mb-8">
-              <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md flex-shrink-0">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
-                </svg>
-              </div>
-              <div>
-                <span className="text-base font-display font-bold tracking-wider text-slate-900">
-                  MON <span className="text-brand-orange">PERMIS</span>
-                </span>
-                <span className="ml-2 inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider align-middle">
-                  🔒 SSL
-                </span>
-              </div>
+            <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-8 shadow-sm">
+              <img src="/logo.png" alt="Mon Permis Logo" className="h-9 rounded-lg" />
+              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider align-middle">
+                🔒 SSL
+              </span>
             </div>
 
             <div className="relative z-10 mb-8">
@@ -286,58 +283,71 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 min-h-[550px]">
             {/* Left Column - SSL Logo, Info & Trust */}
-            <div className="md:col-span-5 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
+            <div className="md:col-span-6 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden bg-slate-950/5">
               <div>
-                <div className="relative z-10 flex items-center gap-2.5 mb-8">
-                  <div className="w-9 h-9 rounded-xl bg-brand-orange flex items-center justify-center shadow-md flex-shrink-0">
-                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-5h2.038A2 2 0 0114.9 8.9L16 7.414A2 2 0 0116 5H3z" />
-                    </svg>
+                <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-6 shadow-sm">
+                  <img src="/logo.png" alt="Mon Permis Logo" className="h-9 rounded-lg" />
+                  <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider align-middle">
+                    🔒 Protocole SSL
+                  </span>
+                </div>
+
+                {/* Promotional Card containing the Hero Image */}
+                <div className="relative z-10 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md mb-6 hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row">
+                  <div className="h-32 md:h-auto md:w-5/12 relative overflow-hidden flex-shrink-0">
+                    <img 
+                      src="/smiling_driver.png" 
+                      alt="Conducteur Belge Souriant" 
+                      className="w-full h-full object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950 via-slate-950/20 to-transparent" />
+                    <span className="absolute bottom-2 left-2 bg-brand-orange text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md">
+                      ★ 4.9/5
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-base font-display font-bold tracking-wider text-slate-900">
-                      MON <span className="text-brand-orange">PERMIS</span>
-                    </span>
-                    <span className="ml-2 inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider align-middle">
-                      🔒 SSL
-                    </span>
+                  <div className="p-4 bg-slate-950 text-white flex-1 flex flex-col justify-center">
+                    <h4 className="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-1">
+                      Votre permis belge sans examen
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-light leading-relaxed">
+                      Plus de 1 240 candidats belges accompagnés avec succès par nos experts agréés.
+                    </p>
                   </div>
                 </div>
 
-                <h3 className="text-xl font-display font-extrabold text-slate-900 leading-tight mb-4">
-                  Diagnostic d'Éligibilité Officiel
+                <h3 className="text-lg font-display font-extrabold text-slate-900 leading-tight mb-3">
+                  Démarrez votre Diagnostic d'Éligibilité
                 </h3>
                 <p className="text-slate-600 text-xs leading-relaxed mb-4">
-                  Obtenez votre permis de conduire officiel belge sans examen. Remplissez le diagnostic sécurisé pour enregistrer votre dossier auprès de nos services agréés.
+                  Complétez ce flux de questionnement rapide pour vérifier instantanément si votre profil est éligible à l'accompagnement légal. L'inscription est gratuite et sécurisée.
                 </p>
                 
                 <ul className="space-y-2.5 text-xs text-slate-700 font-medium">
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-500">✓</span> Enregistrement officiel SPF Belgique
+                    <span className="text-emerald-500 font-bold">✓</span> Diagnostic gratuit et sans engagement
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-500">✓</span> Zéro examen pratique ni théorique
+                    <span className="text-emerald-500 font-bold">✓</span> 3 étapes simples (30 secondes max)
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-500">✓</span> Accompagnement par un conseiller dédié
+                    <span className="text-emerald-500 font-bold">✓</span> Garantie de confidentialité des données
                   </li>
                 </ul>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-slate-900/10 hidden md:block">
+              <div className="mt-6 pt-4 border-t border-slate-900/10 hidden md:block">
                 <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-3 text-center">
-                  <p className="text-[10px] text-brand-orange font-bold uppercase tracking-wider">🔒 Démarche 100% Sécurisée</p>
-                  <p className="text-[9px] text-slate-500 mt-0.5">Vos documents et données sont protégés par le protocole de chiffrement SSL.</p>
+                  <p className="text-[10px] text-brand-orange font-bold uppercase tracking-wider">🔒 Démarche 100% Certifiée</p>
+                  <p className="text-[9px] text-slate-500 mt-0.5">La vérification de vos droits s'effectue dans le strict respect de la réglementation belge.</p>
                 </div>
               </div>
             </div>
 
             {/* Right Column - Registration Form & Diagnostic steps */}
-            <div className="md:col-span-7 p-8 sm:p-10 flex flex-col justify-center relative z-10">
+            <div className="md:col-span-6 p-8 sm:p-10 flex flex-col justify-start relative z-10">
               <button
                 onClick={onBack}
-                className="inline-flex self-start items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-6 hover:text-brand-orange hover:shadow-md cursor-pointer"
+                className="inline-flex self-end items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-6 hover:text-brand-orange hover:shadow-md cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -493,6 +503,16 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                       type="tel"
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(formatBelgianPhone(e.target.value))}
+                      onFocus={() => {
+                        if (!signupPhone) {
+                          setSignupPhone('+32 ');
+                        }
+                      }}
+                      onBlur={() => {
+                        if (signupPhone.trim() === '+32' || signupPhone.trim() === '+') {
+                          setSignupPhone('');
+                        }
+                      }}
                       placeholder="+32 470 00 00 00"
                       className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                     />
