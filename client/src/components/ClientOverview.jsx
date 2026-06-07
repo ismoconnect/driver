@@ -599,59 +599,6 @@ export default function ClientOverview({
           <span className="text-[9px] bg-white/10 px-2.5 py-1 rounded text-white/50 font-bold border border-white/5">CE 2006/126</span>
           <span className="text-[9px] bg-white/10 px-2.5 py-1 rounded text-white/50 font-bold border border-white/5">SPF MOBILITÉ</span>
         </div>
-      </div>
-
-      {/* MODAL DE CONFIRMATION DE CHANGEMENT DE FORMULE */}
-      {showUpgradeConfirm && (
-        <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-slate-900 border-2 border-brand-orange rounded-3xl p-6 max-w-md w-full relative">
-            <h3 className="text-lg font-display font-extrabold text-white mb-2">⚡ Évoluer vers une formule supérieure</h3>
-            <p className="text-white/60 text-xs leading-relaxed mb-4">
-              Sélectionnez la formule vers laquelle vous souhaitez migrer votre dossier. Votre acompte déjà payé sera automatiquement déduit.
-            </p>
-            <div className="flex flex-col gap-2.5">
-              {selectedPath === 'perception' && (
-                <>
-                  <button 
-                    onClick={() => handleUpgradeToPath('theorique')}
-                    className="w-full py-3 rounded-xl border border-white/15 hover:border-brand-orange hover:bg-white/5 text-xs text-left px-4 font-bold text-white transition-all"
-                  >
-                    📖 Formule Théorique ({advisor.theoriqueAmount || "550,00 €"})
-                  </button>
-                  <button 
-                    onClick={() => handleUpgradeToPath('pratique')}
-                    className="w-full py-3 rounded-xl border border-white/15 hover:border-brand-orange hover:bg-white/5 text-xs text-left px-4 font-bold text-white transition-all"
-                  >
-                    🚗 Formule Pratique ({advisor.pratiqueAmount || "2100,00 €"})
-                  </button>
-                </>
-              )}
-              {(selectedPath === 'perception' || selectedPath === 'theorique') && (
-                <button 
-                  onClick={() => handleUpgradeToPath('pratique')}
-                  className="w-full py-3 rounded-xl border border-white/15 hover:border-brand-orange hover:bg-white/5 text-xs text-left px-4 font-bold text-white transition-all"
-                >
-                  🚗 Formule Pratique ({advisor.pratiqueAmount || "2100,00 €"})
-                </button>
-              )}
-              {selectedPath !== 'direct' && (
-                <button 
-                  onClick={() => handleUpgradeToPath('direct')}
-                  className="w-full py-3 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-slate-950 text-xs text-center font-bold transition-all shadow-md shadow-brand-orange/15"
-                >
-                  🏆 Formule Permis Direct ({advisor.directLicenseAmount || "1200,00 €"})
-                </button>
-              )}
-            </div>
-            <button 
-              onClick={() => setShowUpgradeConfirm(false)}
-              className="mt-4 w-full py-2.5 rounded-xl border border-white/10 text-white/50 text-xs hover:text-white font-semibold transition-all"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>    </div>
   );
 }
