@@ -7,7 +7,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import Navbar from './Navbar';
 
-export default function ClientAuth({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode }) {
+export default function ClientAuth({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, advisor }) {
   const [authMode, setAuthMode] = useState(initialMode); // 'login' or 'signup'
 
   React.useEffect(() => {
@@ -25,12 +25,6 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
-
-  // Diagnostic Quiz states
-  const [signupStep, setSignupStep] = useState(1);
-  const [failures, setFailures] = useState('');
-  const [region, setRegion] = useState('');
-  const [hasDossier, setHasDossier] = useState('');
 
   const formatBelgianPhone = (val) => {
     if (!val) return '';
@@ -92,7 +86,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
           status: 'new',
         });
 
-        // Créer le dossier dans la collection leads avec les réponses du diagnostic
+        // Créer le dossier dans la collection leads
         await setDoc(doc(db, 'leads', newUser.uid), {
           uid: newUser.uid,
           email: newUser.email,
@@ -102,11 +96,11 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
           status: 'new',
           createdAt: new Date().toISOString(),
           isSubmitted: false,
-          source: 'quiz_eligibility',
+          source: 'account_creation',
           answers: {
-            failures: failures || 'Non renseigné',
-            region: region || 'Non renseignée',
-            hasDossier: hasDossier || 'Non renseigné'
+            failures: 'Non renseigné',
+            region: 'Non renseignée',
+            hasDossier: 'Non renseigné'
           }
         });
       }
@@ -141,18 +135,16 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center font-sans relative overflow-hidden pt-32 px-6 pb-12">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center font-sans relative overflow-hidden pt-24 px-6 pb-6">
       <Navbar 
         user={null} 
         onOpenDashboard={(mode) => {
           setAuthMode(mode);
-          if (mode === 'signup') {
-            setSignupStep(1);
-          }
           if (onSwitchMode) onSwitchMode(mode);
         }} 
         onGoHome={onBack} 
         forceScrolled={true} 
+        advisor={advisor}
       />
       
       {/* Background Auroras */}
@@ -167,7 +159,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
 
       {/* Login/Signup Container Card */}
       <div className={`w-full my-auto relative z-10 bg-white/40 text-slate-900 border-2 border-slate-900 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-xl overflow-hidden group transition-all duration-300 ${
-        authMode === 'login' ? 'max-w-md p-8 sm:p-10' : 'max-w-5xl p-0'
+        authMode === 'login' ? 'max-w-md p-8 sm:p-10' : 'max-w-6xl p-0'
       }`}>
         
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" 
@@ -187,7 +179,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
             </button>
 
             <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-8 shadow-sm">
-              <img src="/logo.png" alt="Mon Permis Logo" className="h-9 rounded-lg" />
+              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-9 rounded-lg" />
               <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider align-middle">
                 🔒 SSL
               </span>
@@ -270,7 +262,6 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
               <button
                 onClick={() => {
                   setAuthMode('signup');
-                  setSignupStep(1);
                   setAuthError('');
                   if (onSwitchMode) onSwitchMode('signup');
                 }}
@@ -281,53 +272,53 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
             </div>
           </>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-12 min-h-[550px]">
+          <div className="grid grid-cols-1 md:grid-cols-12 min-h-[480px]">
             {/* Left Column - SSL Logo, Info & Trust */}
-            <div className="md:col-span-6 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden bg-slate-950/5">
+            <div className="md:col-span-5 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden bg-slate-950/5">
               <div>
-                <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-6 shadow-sm">
-                  <img src="/logo.png" alt="Mon Permis Logo" className="h-9 rounded-lg" />
+                <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-4 py-2.5 rounded-2xl mb-4 shadow-sm">
+                  <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-8 rounded-lg" />
                   <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider align-middle">
-                    🔒 Protocole SSL
+                    🔒 SSL
                   </span>
                 </div>
 
                 {/* Promotional Card containing the Hero Image */}
-                <div className="relative z-10 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md mb-6 hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row md:h-28">
-                  <div className="h-32 md:h-full md:w-4/12 relative overflow-hidden flex-shrink-0">
+                <div className="relative z-10 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md mb-4 hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row md:h-24">
+                  <div className="h-28 md:h-full md:w-4/12 relative overflow-hidden flex-shrink-0">
                     <img 
-                      src="/smiling_driver.png" 
+                      src={advisor?.heroImageUrl || "/smiling_driver.png"} 
                       alt="Conducteur Belge Souriant" 
                       className="w-full h-full object-cover object-center"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950 via-slate-950/20 to-transparent" />
-                    <span className="absolute bottom-1.5 left-2 bg-brand-orange text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">
+                    <span className="absolute bottom-1 left-1 bg-brand-orange text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">
                       ★ 4.9/5
                     </span>
                   </div>
-                  <div className="p-3.5 bg-slate-950 text-white flex-1 flex flex-col justify-center">
-                    <h4 className="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-0.5">
+                  <div className="p-3 bg-slate-950 text-white flex-1 flex flex-col justify-center">
+                    <h4 className="text-[10px] font-black uppercase tracking-wider text-brand-orange mb-0.5">
                       Votre permis belge sans examen
                     </h4>
-                    <p className="text-[10px] text-slate-400 font-light leading-relaxed">
-                      Plus de 1 240 candidats belges accompagnés avec succès par nos experts agréés.
+                    <p className="text-[9px] text-slate-400 font-light leading-relaxed">
+                      Plus de 1 240 candidats belges accompagnés avec succès.
                     </p>
                   </div>
                 </div>
 
-                <h3 className="text-lg font-display font-extrabold text-slate-900 leading-tight mb-3">
-                  Démarrez votre Diagnostic d'Éligibilité
+                <h3 className="text-base font-display font-extrabold text-slate-900 leading-tight mb-2">
+                  Créer un compte candidat
                 </h3>
-                <p className="text-slate-600 text-xs leading-relaxed mb-4">
-                  Complétez ce flux de questionnement rapide pour vérifier instantanément si votre profil est éligible à l'accompagnement légal. L'inscription est gratuite et sécurisée.
+                <p className="text-slate-600 text-xs leading-relaxed mb-3">
+                  Créez votre compte en quelques secondes pour démarrer votre demande officielle d'homologation de permis en Belgique.
                 </p>
                 
-                <ul className="space-y-2.5 text-xs text-slate-700 font-medium">
+                <ul className="space-y-1.5 text-xs text-slate-700 font-medium">
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-500 font-bold">✓</span> Diagnostic gratuit et sans engagement
+                    <span className="text-emerald-500 font-bold">✓</span> Inscription rapide et sécurisée
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-500 font-bold">✓</span> 3 étapes simples (30 secondes max)
+                    <span className="text-emerald-500 font-bold">✓</span> Suivi en direct avec votre conseiller
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="text-emerald-500 font-bold">✓</span> Garantie de confidentialité des données
@@ -335,170 +326,71 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                 </ul>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-900/10 hidden md:block">
-                <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-3 text-center">
+              <div className="mt-4 pt-3 border-t border-slate-900/10 hidden md:block">
+                <div className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-2.5 text-center">
                   <p className="text-[10px] text-brand-orange font-bold uppercase tracking-wider">🔒 Démarche 100% Certifiée</p>
-                  <p className="text-[9px] text-slate-500 mt-0.5">La vérification de vos droits s'effectue dans le strict respect de la réglementation belge.</p>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Strict respect de la réglementation belge.</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Registration Form & Diagnostic steps */}
-            <div className="md:col-span-6 p-8 sm:p-10 flex flex-col justify-start relative z-10">
-              <button
-                onClick={onBack}
-                className="inline-flex self-end items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-6 hover:text-brand-orange hover:shadow-md cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Retour à l'accueil
-              </button>
+            {/* Right Column - Registration Form */}
+            <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between relative z-10">
+              <div>
+                <button
+                  onClick={onBack}
+                  className="inline-flex self-end items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-1.5 rounded-full font-bold transition-all focus:outline-none mb-3 hover:text-brand-orange hover:shadow-md cursor-pointer animate-[fadeIn_0.2s_ease-out]"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Retour à l'accueil
+                </button>
 
-              <div className="w-full bg-slate-200 h-1 rounded-full mb-6 overflow-hidden">
-                <div 
-                  className="bg-brand-orange h-full transition-all duration-500 ease-out"
-                  style={{ width: `${Math.min(((signupStep - 1) / 3) * 100, 100)}%` }}
-                />
-              </div>
-
-              <div className="mb-6">
-                <h2 className="text-2xl font-display font-extrabold text-slate-900">
-                  {signupStep === 4 ? 'Créer un compte' : "Diagnostic d'Éligibilité"}
-                </h2>
-                <p className="text-slate-600 text-xs mt-1 font-semibold">
-                  {signupStep === 4 
-                    ? 'Éligibilité validée ! Finalisez votre inscription sécurisée.'
-                    : `Étape ${signupStep} sur 3 : Répondez pour vérifier vos droits.`}
-                </p>
-              </div>
-
-              {authError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-xs p-4 rounded-2xl mb-6 flex items-start gap-2.5 shadow-sm animate-fadeIn">
-                  <span className="text-sm flex-shrink-0">⚠️</span>
-                  <span>{authError}</span>
+                <div className="mb-3">
+                  <h2 className="text-2xl font-display font-extrabold text-slate-900">
+                    Créer un compte
+                  </h2>
+                  <p className="text-slate-600 text-xs mt-0.5 font-semibold">
+                    Renseignez vos coordonnées pour démarrer l'accompagnement légal.
+                  </p>
                 </div>
-              )}
 
-              {/* STEP 1: Driving test failures */}
-              {signupStep === 1 && (
-                <div className="space-y-4 animate-fadeIn">
-                  <h3 className="text-sm font-bold text-slate-800 mb-4 text-center leading-snug">
-                    Combien de fois avez-vous échoué à l'examen de conduite ?
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { label: "🆕 Jamais (Premier essai)", val: "Jamais" },
-                      { label: "❌ 1 fois", val: "1 fois" },
-                      { label: "❌ 2 fois", val: "2 fois" },
-                      { label: "❌ 3 fois ou plus", val: "3 fois ou plus" }
-                    ].map((opt, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => { setFailures(opt.val); setSignupStep(2); }}
-                        className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-900 text-slate-800 font-bold text-sm text-left transition-all duration-200 cursor-pointer shadow-sm hover:border-brand-orange hover:text-brand-orange"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                {authError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-xs p-3.5 rounded-2xl mb-4 flex items-start gap-2.5 shadow-sm animate-fadeIn">
+                    <span className="text-sm flex-shrink-0">⚠️</span>
+                    <span>{authError}</span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* STEP 2: Belgium Region */}
-              {signupStep === 2 && (
-                <div className="space-y-4 animate-fadeIn">
-                  <h3 className="text-sm font-bold text-slate-800 mb-4 text-center leading-snug">
-                    Dans quelle région de Belgique résidez-vous ?
-                  </h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    {[
-                      { label: "🏙️ Bruxelles (Région de Bruxelles-Capitale)", val: "Bruxelles" },
-                      { label: "🌳 Wallonie (Région wallonne)", val: "Wallonie" },
-                      { label: "🌾 Flandre (Région flamande)", val: "Flandre" }
-                    ].map((opt, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => { setRegion(opt.val); setSignupStep(3); }}
-                        className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-900 text-slate-800 font-bold text-sm text-left transition-all duration-200 cursor-pointer shadow-sm hover:border-brand-orange hover:text-brand-orange"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep(1)}
-                    className="text-xs font-bold text-slate-500 hover:text-brand-orange flex items-center gap-1 cursor-pointer transition-colors mt-2"
-                  >
-                    ← Étape précédente
-                  </button>
-                </div>
-              )}
-
-              {/* STEP 3: Existing Auto-école dossier */}
-              {signupStep === 3 && (
-                <div className="space-y-4 animate-fadeIn">
-                  <h3 className="text-sm font-bold text-slate-800 mb-4 text-center leading-snug">
-                    Avez-vous déjà un dossier d'inscription actif en auto-école ?
-                  </h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    {[
-                      { label: "📝 Oui, j'ai déjà un dossier actif", val: "Oui" },
-                      { label: "❌ Non, aucun dossier en cours", val: "Non" }
-                    ].map((opt, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => { setHasDossier(opt.val); setSignupStep(4); }}
-                        className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-900 text-slate-800 font-bold text-sm text-left transition-all duration-200 cursor-pointer shadow-sm hover:border-brand-orange hover:text-brand-orange"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep(2)}
-                    className="text-xs font-bold text-slate-500 hover:text-brand-orange flex items-center gap-1 cursor-pointer transition-colors mt-2"
-                  >
-                    ← Étape précédente
-                  </button>
-                </div>
-              )}
-
-              {/* STEP 4: Final account registration */}
-              {signupStep === 4 && (
-                <form onSubmit={handleAuthSubmit} className="space-y-4 animate-fadeIn">
+                <form onSubmit={handleAuthSubmit} className="space-y-3 animate-fadeIn">
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Prénom</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Prénom</label>
                       <input
                         required
                         type="text"
                         value={signupFirstName}
                         onChange={(e) => setSignupFirstName(e.target.value)}
                         placeholder="Jean"
-                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Nom</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Nom</label>
                       <input
                         required
                         type="text"
                         value={signupLastName}
                         onChange={(e) => setSignupLastName(e.target.value)}
                         placeholder="Dupont"
-                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                        className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Téléphone</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Téléphone</label>
                     <input
                       type="tel"
                       value={signupPhone}
@@ -514,25 +406,25 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                         }
                       }}
                       placeholder="+32 470 00 00 00"
-                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Adresse Email</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Adresse Email</label>
                     <input 
                       required
                       type="email" 
                       value={authEmail}
                       onChange={(e) => setAuthEmail(e.target.value)}
                       placeholder="nom@exemple.be" 
-                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-3 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                      className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                     />
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Mot de Passe</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Mot de Passe</label>
                       <div className="relative">
                         <input 
                           required
@@ -540,21 +432,21 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
                           placeholder="••••••••" 
-                          className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-3 py-2.5 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                          className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-3 py-2 pr-12 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(v => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer text-xs"
                           tabIndex={-1}
                         >
-                          {showPassword ? '👁️' : '👁️‍🗨️'}
+                          {showPassword ? '👁' : '👁‍🗨'}
                         </button>
                       </div>
                     </div>
 
                     <div className="flex-1">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Confirmer le Mot de Passe</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Confirmer le Mot de Passe</label>
                       <div className="relative">
                         <input 
                           required
@@ -562,15 +454,15 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                           value={authConfirmPassword}
                           onChange={(e) => setAuthConfirmPassword(e.target.value)}
                           placeholder="••••••••" 
-                          className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-3 py-2.5 pr-12 text-sm focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
+                          className="w-full bg-white/70 border-2 border-slate-900 focus:border-brand-orange focus:bg-white rounded-xl px-3 py-2 pr-12 text-xs focus:outline-none transition-all duration-200 text-slate-900 placeholder-slate-500 hover:border-black shadow-sm"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(v => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer text-xs"
                           tabIndex={-1}
                         >
-                          {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                          {showConfirmPassword ? '👁' : '👁‍🗨'}
                         </button>
                       </div>
                     </div>
@@ -579,7 +471,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full py-3.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-bold shadow-[0_8px_20px_rgba(255,152,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3 mt-1 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-bold shadow-[0_8px_20px_rgba(255,152,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {authLoading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -587,18 +479,10 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
                       'Créer mon compte ➔'
                     )}
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep(3)}
-                    className="text-xs font-bold text-slate-500 hover:text-brand-orange flex items-center gap-1 cursor-pointer transition-colors mt-2"
-                  >
-                    ← Étape précédente
-                  </button>
                 </form>
-              )}
+              </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+              <div className="mt-4 pt-4 border-t border-slate-200/50 text-center">
                 <button
                   onClick={() => {
                     setAuthMode('login');

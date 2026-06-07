@@ -15,6 +15,44 @@ export default function ClientChat({
   chatEndRef
 }) {
   const [previewFile, setPreviewFile] = React.useState(null); // { url: string, type: 'image' | 'pdf' | 'raw' }
+  const [selectedFileForPreview, setSelectedFileForPreview] = React.useState(null); // { file: File, localUrl: string, name: string, type: 'image' | 'pdf' | 'raw' }
+
+  const onFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Le fichier dépasse 20 Mo.");
+      return;
+    }
+    const localUrl = URL.createObjectURL(file);
+    const fileType = file.type.startsWith('image/') ? 'image' : (file.type === 'application/pdf' ? 'pdf' : 'raw');
+    setSelectedFileForPreview({
+      file,
+      localUrl,
+      name: file.name,
+      type: fileType
+    });
+    e.target.value = '';
+  };
+
+  const onFormSubmit = async (e) => {
+    e.preventDefault();
+    if (selectedFileForPreview) {
+      const fileObj = selectedFileForPreview.file;
+      URL.revokeObjectURL(selectedFileForPreview.localUrl);
+      setSelectedFileForPreview(null);
+      
+      const mockEvent = {
+        target: {
+          files: [fileObj]
+        }
+      };
+      await handleClientChatFileUpload(mockEvent);
+    }
+    if (chatInput.trim()) {
+      await handleSendMessage(e);
+    }
+  };
   
   const getDownloadUrl = (url) => {
     if (!url) return '';
@@ -131,27 +169,25 @@ export default function ClientChat({
                   <div>
                     {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
                       isPdf(m.text) ? (
-                       <div className="flex flex-col gap-2 mt-1">
+                        <div className="flex flex-col gap-2 mt-1">
                           <button 
                             type="button"
                             onClick={() => setPreviewFile({ url: m.text, type: 'pdf' })}
-                            className="block max-w-[200px] w-full cursor-zoom-in text-left focus:outline-none mt-1"
+                            className="block w-28 cursor-zoom-in text-left focus:outline-none mt-1"
                           >
-                            <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl p-2 transition-all">
-                              <div className="relative aspect-[3/4] h-36 rounded-lg overflow-hidden bg-slate-950 border border-white/10 mb-1.5 flex items-center justify-center">
-                                <img 
-                                  src={m.text.replace(/\.pdf($|\?)/i, (match, p1) => `.jpg${p1 || ''}`)} 
-                                  alt="Aperçu du PDF" 
-                                  className="w-full h-full object-cover"
-                                  onLoad={scrollToBottom}
-                                  onError={(e) => { e.target.style.display = 'none'; }}
+                            <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-2xl p-2 transition-all hover:border-white/20">
+                              <div className="relative w-full h-36 rounded-xl overflow-hidden bg-slate-950 border border-white/10 mb-1.5">
+                                <iframe 
+                                  src={`${m.text}#toolbar=0&navpanes=0&scrollbar=0`}
+                                  title="PDF Preview Mini" 
+                                  className="absolute top-0 left-0 w-[200%] h-[200%] border-0 pointer-events-none transform scale-50 origin-top-left"
+                                  scrolling="no"
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/10 transition-colors">
-                                  <span className="text-2xl text-white drop-shadow">📄</span>
-                                </div>
+                                <div className="absolute inset-0 bg-transparent" />
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300">
-                                <span className="underline truncate text-white">Document PDF</span>
+                              <div className="px-2 pb-1">
+                                <p className="text-white font-bold text-xs truncate">Document PDF</p>
+                                <p className="text-[10px] text-white/45 mt-0.5">Cliquez pour agrandir 🔍</p>
                               </div>
                             </div>
                           </button>
@@ -221,40 +257,77 @@ export default function ClientChat({
         </div>
 
         {/* Input field Form */}
-        <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10 items-center">
-          <label htmlFor="client-chat-file-upload" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors text-lg" title="Joindre un fichier">
-            {chatUploading ? (
-              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            ) : (
-              "📎"
-            )}
-          </label>
-          <input
-            id="client-chat-file-upload"
-            type="file"
-            accept="image/*,application/pdf"
-            className="hidden"
-            onChange={handleClientChatFileUpload}
-            disabled={chatUploading}
-          />
-          <input 
-            type="text" 
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
-            className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors text-white"
-            disabled={chatUploading}
-          />
-          <button 
-            type="submit"
-            disabled={chatUploading}
-            className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer disabled:opacity-50"
-          >
-            <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-          </button>
-        </form>
+        <div className="flex-shrink-0 md:relative fixed bottom-16 md:bottom-auto left-0 md:left-auto right-0 md:right-auto p-4 md:p-0 bg-slate-900 md:bg-transparent border-t border-white/10 md:border-0 z-10 w-full md:w-auto">
+          {selectedFileForPreview && (
+            <div className="mb-2.5 p-2 bg-slate-900/95 border border-white/15 rounded-2xl flex items-center justify-between gap-3 animate-fade-in shadow-2xl">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {selectedFileForPreview.type === 'image' ? (
+                  <img 
+                    src={selectedFileForPreview.localUrl} 
+                    alt="Aperçu miniature" 
+                    className="w-10 h-10 object-cover rounded-lg border border-white/10"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-lg text-red-400 flex-shrink-0">
+                    {selectedFileForPreview.type === 'pdf' ? '📕' : '📎'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-xs font-bold truncate max-w-[120px] sm:max-w-[180px]">{selectedFileForPreview.name}</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">Fichier prêt à l'envoi</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    URL.revokeObjectURL(selectedFileForPreview.localUrl);
+                    setSelectedFileForPreview(null);
+                  }}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 flex items-center justify-center text-white text-xs cursor-pointer transition-colors"
+                  title="Supprimer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={onFormSubmit} className="flex gap-2 items-center w-full">
+            <label htmlFor="client-chat-file-upload" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors text-lg" title="Joindre un fichier">
+              {chatUploading ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                "📎"
+              )}
+            </label>
+            <input
+              id="client-chat-file-upload"
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={onFileSelect}
+              disabled={chatUploading}
+            />
+            <input 
+              type="text" 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder={`Posez votre question à ${(advisor.name || '').split(' ')[0]} (ex. Délai, Légalité...)`}
+              className="flex-1 bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-2xl px-4 py-3 text-xs sm:text-sm focus:outline-none transition-colors text-white"
+              disabled={chatUploading}
+            />
+            <button 
+              type="submit"
+              disabled={chatUploading}
+              className="w-12 h-12 rounded-2xl bg-brand-orange hover:bg-brand-orange-dark flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer disabled:opacity-50"
+            >
+              <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
 
       {previewFile && createPortal(

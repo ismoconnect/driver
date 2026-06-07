@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ user, onOpenDashboard, forceScrolled }) => {
+const Navbar = ({ user, onOpenDashboard, forceScrolled, advisor }) => {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(forceScrolled || false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -59,7 +59,7 @@ const Navbar = ({ user, onOpenDashboard, forceScrolled }) => {
 
             {/* Logo */}
             <a href="/accueil" onClick={(e) => { e.preventDefault(); navigate('/accueil'); }} className="flex-shrink-0 flex items-center gap-2">
-              <img src="/logo.png" alt="Mon Permis Logo" className="h-10 rounded-lg" />
+              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-10 rounded-lg" />
             </a>
 
             {/* Desktop links */}

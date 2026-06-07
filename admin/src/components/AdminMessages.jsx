@@ -1,5 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 
+const isPdf = (url) => {
+  if (!url) return false;
+  return url.toLowerCase().includes('.pdf') || url.toLowerCase().match(/\.pdf($|\?)/i);
+};
+
+const isImage = (url) => {
+  if (!url) return false;
+  if (isPdf(url)) return false;
+  return url.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || url.includes('/image/upload/');
+};
+
+const getDownloadUrl = (url) => {
+  if (!url) return '';
+  if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+  return url;
+};
+
 const AdminMessages = ({
   chats,
   selectedChatId,
@@ -120,41 +139,88 @@ const AdminMessages = ({
                       }`}>
                         <div>
                           {m.text && (m.text.startsWith('http://') || m.text.startsWith('https://')) ? (
-                            m.text.match(/\.pdf($|\?)/i) ? (
-                              <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className="block max-w-[200px] w-full cursor-zoom-in mt-1">
-                                <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-xl p-2 transition-all">
-                                  <div className="relative aspect-[3/4] h-36 rounded-lg overflow-hidden bg-slate-950 border border-white/10 mb-1.5 flex items-center justify-center">
-                                    <img 
-                                      src={m.text.replace(/\.pdf($|\?)/i, (match, p1) => `.jpg${p1 || ''}`)} 
-                                      alt="Aperçu du PDF" 
-                                      className="w-full h-full object-cover"
-                                      onLoad={scrollAdminChatToBottom}
-                                      onError={(e) => { e.target.style.display = 'none'; }}
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/10 transition-colors">
-                                      <span className="text-2xl text-white drop-shadow">📄</span>
+                            isPdf(m.text) ? (
+                              <div className="flex flex-col gap-2 mt-1">
+                                <button 
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Document PDF"); }}
+                                  className="block w-28 cursor-zoom-in text-left focus:outline-none mt-1"
+                                >
+                                  <div className="bg-slate-900/60 hover:bg-slate-950/80 border border-white/10 rounded-2xl p-2 transition-all hover:border-white/20">
+                                    <div className="relative w-full h-36 rounded-xl overflow-hidden bg-slate-950 border border-white/10 mb-1.5">
+                                      <iframe 
+                                        src={`${m.text}#toolbar=0&navpanes=0&scrollbar=0`}
+                                        title="PDF Preview Mini" 
+                                        className="absolute top-0 left-0 w-[200%] h-[200%] border-0 pointer-events-none transform scale-50 origin-top-left"
+                                        scrolling="no"
+                                      />
+                                      <div className="absolute inset-0 bg-transparent" />
+                                    </div>
+                                    <div className="px-2 pb-1">
+                                      <p className="text-white font-bold text-xs truncate">Document PDF</p>
+                                      <p className="text-[10px] text-white/45 mt-0.5">Agrandir 🔍</p>
                                     </div>
                                   </div>
-                                  <div className={`flex items-center gap-1.5 text-xs font-bold ${
-                                    isAdvisor ? 'text-slate-950 hover:text-slate-900' : 'text-indigo-400 hover:text-indigo-300'
-                                  }`}>
-                                    <span className="underline truncate">Document PDF</span>
-                                  </div>
-                                </div>
-                              </a>
-                            ) : m.text.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || m.text.includes('/image/upload/') ? (
-                              <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className="block max-w-full cursor-zoom-in">
-                                <img src={m.text} alt="Image jointe" onLoad={scrollAdminChatToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
-                              </a>
+                                </button>
+                                <a 
+                                  href={getDownloadUrl(m.text)} 
+                                  download 
+                                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[10px] transition-all w-fit cursor-pointer border ${
+                                    isAdvisor 
+                                      ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900' 
+                                      : 'bg-slate-900/40 hover:bg-slate-900/70 border-white/10 text-white hover:text-white/80'
+                                  }`}
+                                >
+                                  <span>📥</span> Télécharger
+                                </a>
+                              </div>
+                            ) : isImage(m.text) ? (
+                              <div className="flex flex-col gap-2 mt-1">
+                                <button 
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }}
+                                  className="block max-w-full cursor-zoom-in text-left focus:outline-none"
+                                >
+                                  <img src={m.text} alt="Image jointe" onLoad={scrollAdminChatToBottom} className="max-w-full rounded-xl max-h-60 border border-white/10 hover:opacity-85 transition-opacity block mt-1" />
+                                </button>
+                                <a 
+                                  href={getDownloadUrl(m.text)} 
+                                  download 
+                                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[10px] transition-all w-fit cursor-pointer border ${
+                                    isAdvisor 
+                                      ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900' 
+                                      : 'bg-slate-900/40 hover:bg-slate-900/70 border-white/10 text-white hover:text-white/80'
+                                  }`}
+                                >
+                                  <span>📥</span> Télécharger
+                                </a>
+                              </div>
                             ) : (
-                              <a href={m.text} onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }} className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 cursor-zoom-in ${
-                                isAdvisor
-                                  ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
-                                  : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
-                              }`}>
-                                <span>📎</span>
-                                <span className="underline truncate">Fichier joint</span>
-                              </a>
+                              <div className="flex flex-col gap-2 mt-1">
+                                <button 
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); setPreviewUrl(m.text); setPreviewLabel("Pièce jointe"); }}
+                                  className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-bold transition-all mt-1 cursor-zoom-in text-left ${
+                                    isAdvisor
+                                      ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900'
+                                      : 'bg-slate-950/60 hover:bg-slate-900 border-white/10 text-indigo-400 hover:text-indigo-300'
+                                  }`}
+                                >
+                                  <span>📎</span>
+                                  <span className="underline truncate text-white">Fichier joint</span>
+                                </button>
+                                <a 
+                                  href={getDownloadUrl(m.text)} 
+                                  download 
+                                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[10px] transition-all w-fit cursor-pointer border ${
+                                    isAdvisor 
+                                      ? 'bg-slate-950/20 hover:bg-slate-950/35 border-slate-950/15 text-slate-950 hover:text-slate-900' 
+                                      : 'bg-slate-900/40 hover:bg-slate-900/70 border-white/10 text-white hover:text-white/80'
+                                  }`}
+                                >
+                                  <span>📥</span> Télécharger
+                                </a>
+                              </div>
                             )
                           ) : (
                             <p>{m.text}</p>
@@ -178,7 +244,9 @@ const AdminMessages = ({
                   {chatFilePreview.type.startsWith('image/') ? (
                     <img src={chatFilePreview.url} alt="Aperçu" className="w-12 h-12 rounded-xl object-cover border border-white/10" />
                   ) : (
-                    <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-xl text-white">📄</div>
+                    <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center text-lg text-red-400 flex-shrink-0">
+                      {chatFilePreview.type === 'application/pdf' ? '📕' : '📎'}
+                    </div>
                   )}
                   <div className="min-w-0 flex flex-col">
                     <span className="text-xs font-bold text-white truncate">{chatFilePreview.name}</span>

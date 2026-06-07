@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Confidentialite() {
+export default function Confidentialite({ advisor }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export default function Confidentialite() {
       <header className="border-b border-white/5 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
           <a href="/accueil" onClick={(e) => { e.preventDefault(); navigate('/accueil'); }} className="flex items-center gap-2">
-            <img src="/logo.png" alt="Mon Permis Logo" className="h-10 rounded-lg" />
+            <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-10 rounded-lg" />
           </a>
           <button
             onClick={() => navigate('/accueil')}
@@ -83,7 +83,7 @@ export default function Confidentialite() {
               Conformément à la réglementation européenne sur la protection des données (RGPD), vous disposez à tout moment d'un droit d'accès, de rectification, de portabilité et de suppression de vos données personnelles.
             </p>
             <p>
-              Pour exercer ce droit, vous pouvez envoyer votre demande de suppression ou de modification de vos informations à l'adresse suivante : <strong>contact@mpdcb.com</strong>.
+              Pour exercer ce droit, vous pouvez envoyer votre demande de suppression ou de modification de vos informations à l'adresse suivante : <strong>{advisor?.contactEmail || "contact@permisdeconduirebe.com"}</strong>.
             </p>
           </section>
         </div>

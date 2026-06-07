@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Footer = ({ user, onOpenDashboard }) => {
+const Footer = ({ user, onOpenDashboard, advisor }) => {
   const navigate = useNavigate();
   return (
     <footer id="contact" className="relative bg-brand-dark overflow-hidden">
@@ -37,7 +37,7 @@ const Footer = ({ user, onOpenDashboard }) => {
             {/* Contact links */}
             <div className="space-y-5">
               <a
-                href="mailto:contact@mpdcb.com"
+                href={`mailto:${advisor?.contactEmail || 'contact@permisdeconduirebe.com'}`}
                 className="flex items-center gap-4 group"
               >
                 <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-brand-orange/10 group-hover:border-brand-orange/30 transition-all duration-300">
@@ -47,12 +47,12 @@ const Footer = ({ user, onOpenDashboard }) => {
                 </div>
                 <div>
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Email</div>
-                  <div className="text-white font-medium group-hover:text-brand-orange transition-colors">contact@mpdcb.com</div>
+                  <div className="text-white font-medium group-hover:text-brand-orange transition-colors">{advisor?.contactEmail || 'contact@permisdeconduirebe.com'}</div>
                 </div>
               </a>
 
               <a
-                href="https://wa.me/32466902299"
+                href={`https://wa.me/${advisor?.contactWhatsapp || '32466902299'}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-4 group"
@@ -64,7 +64,7 @@ const Footer = ({ user, onOpenDashboard }) => {
                 </div>
                 <div>
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">WhatsApp</div>
-                  <div className="text-white font-medium group-hover:text-green-400 transition-colors">+32 466 90 22 99</div>
+                  <div className="text-white font-medium group-hover:text-green-400 transition-colors">{advisor?.contactPhone || '+32 466 90 22 99'}</div>
                 </div>
               </a>
             </div>

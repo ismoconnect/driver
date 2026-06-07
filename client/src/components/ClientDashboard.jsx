@@ -638,8 +638,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center font-sans">
-        <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-white/60 text-sm font-medium">Initialisation de votre espace sécurisé...</p>
+        <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

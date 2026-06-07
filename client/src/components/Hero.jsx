@@ -186,12 +186,12 @@ const ChatWindow = () => {
   );
 };
 
-const Hero = ({ user, onOpenDashboard }) => {
+const Hero = ({ user, onOpenDashboard, advisor }) => {
   return (
     <section
       className="relative min-h-[90vh] lg:min-h-screen bg-slate-950 flex items-center justify-center overflow-hidden pt-32 pb-16 lg:pt-36 lg:pb-24"
       style={{
-        backgroundImage: "linear-gradient(to right, rgba(15, 23, 42, 0.96) 25%, rgba(15, 23, 42, 0.7) 55%, rgba(15, 23, 42, 0.35) 100%), url('/smiling_driver.png')",
+        backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.96) 25%, rgba(15, 23, 42, 0.7) 55%, rgba(15, 23, 42, 0.35) 100%), url('${advisor?.heroImageUrl || "/smiling_driver.png"}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}

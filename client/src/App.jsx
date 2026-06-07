@@ -8,8 +8,9 @@ import Footer from './components/Footer';
 import ClientDashboard from './components/ClientDashboard';
 import LegalMentions from './components/LegalMentions';
 import Confidentialite from './components/Confidentialite';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 // ─── Global auth state hook ───────────────────────────────────────────────────
 function useAuth() {
@@ -32,7 +33,6 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
       <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      <p className="text-white/50 text-sm font-medium">Chargement...</p>
     </div>
   );
 }
@@ -46,7 +46,7 @@ function ProtectedRoute({ user, authChecked, children }) {
 }
 
 // ─── Landing page ─────────────────────────────────────────────────────────────
-function LandingPage({ user, authChecked }) {
+function LandingPage({ user, authChecked, advisor }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,17 +76,17 @@ function LandingPage({ user, authChecked }) {
 
   return (
     <div className="min-h-screen bg-brand-bg-light text-brand-dark font-sans selection:bg-brand-orange selection:text-white transition-colors duration-500">
-      <Navbar user={user} onOpenDashboard={handleOpenDashboard} />
-      <Hero user={user} onOpenDashboard={handleOpenDashboard} />
+      <Navbar user={user} onOpenDashboard={handleOpenDashboard} advisor={advisor} />
+      <Hero user={user} onOpenDashboard={handleOpenDashboard} advisor={advisor} />
       <Services onOpenDashboard={handleOpenDashboard} />
       <Testimonials />
-      <Footer user={user} onOpenDashboard={handleOpenDashboard} />
+      <Footer user={user} onOpenDashboard={handleOpenDashboard} advisor={advisor} />
     </div>
   );
 }
 
 // ─── Auth page (connexion / inscription) ─────────────────────────────────────
-function AuthPage({ mode, user, authChecked }) {
+function AuthPage({ mode, user, authChecked, advisor }) {
   const navigate = useNavigate();
 
   if (!authChecked) return <LoadingScreen />;
@@ -101,12 +101,13 @@ function AuthPage({ mode, user, authChecked }) {
       onBack={() => navigate('/accueil')}
       onAuthSuccess={() => navigate('/mon-espace')}
       onSwitchMode={(newMode) => navigate(newMode === 'signup' ? '/inscription' : '/connexion')}
+      advisor={advisor}
     />
   );
 }
 
 // ─── Dashboard page (protected) ───────────────────────────────────────────────
-function DashboardPage({ user, authChecked }) {
+function DashboardPage({ user, authChecked, advisor }) {
   const navigate = useNavigate();
   const { tab } = useParams();
 
@@ -117,6 +118,7 @@ function DashboardPage({ user, authChecked }) {
         initialTab={tab}
         onBack={() => navigate('/accueil')}
         onAuthSuccess={() => navigate('/mon-espace')}
+        advisor={advisor}
       />
     </ProtectedRoute>
   );
@@ -125,22 +127,33 @@ function DashboardPage({ user, authChecked }) {
 // ─── Root App with Router ─────────────────────────────────────────────────────
 function AppRoutes() {
   const { user, authChecked } = useAuth();
+  const [advisor, setAdvisor] = useState(null);
+
+  useEffect(() => {
+    const advisorRef = doc(db, 'settings', 'advisor');
+    const unsubAdvisor = onSnapshot(advisorRef, (snap) => {
+      if (snap.exists()) {
+        setAdvisor(snap.data());
+      }
+    });
+    return () => unsubAdvisor();
+  }, []);
 
   return (
     <Routes>
       {/* Landing page */}
       <Route path="/" element={<Navigate to="/accueil" replace />} />
-      <Route path="/accueil" element={<LandingPage user={user} authChecked={authChecked} />} />
-      <Route path="/mentions-legales" element={<LegalMentions />} />
-      <Route path="/confidentialite" element={<Confidentialite />} />
+      <Route path="/accueil" element={<LandingPage user={user} authChecked={authChecked} advisor={advisor} />} />
+      <Route path="/mentions-legales" element={<LegalMentions advisor={advisor} />} />
+      <Route path="/confidentialite" element={<Confidentialite advisor={advisor} />} />
 
       {/* Auth routes */}
-      <Route path="/connexion" element={<AuthPage mode="login" user={user} authChecked={authChecked} />} />
-      <Route path="/inscription" element={<AuthPage mode="signup" user={user} authChecked={authChecked} />} />
+      <Route path="/connexion" element={<AuthPage mode="login" user={user} authChecked={authChecked} advisor={advisor} />} />
+      <Route path="/inscription" element={<AuthPage mode="signup" user={user} authChecked={authChecked} advisor={advisor} />} />
 
       {/* Protected dashboard route */}
-      <Route path="/mon-espace" element={<DashboardPage user={user} authChecked={authChecked} />} />
-      <Route path="/mon-espace/:tab" element={<DashboardPage user={user} authChecked={authChecked} />} />
+      <Route path="/mon-espace" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} />} />
+      <Route path="/mon-espace/:tab" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

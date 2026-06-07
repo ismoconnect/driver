@@ -26,7 +26,6 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center gap-4">
       <div className="w-10 h-10 border-4 border-[#b58455] border-t-transparent rounded-full animate-spin" />
-      <p className="text-gray-400 text-sm font-medium">Chargement...</p>
     </div>
   );
 }
