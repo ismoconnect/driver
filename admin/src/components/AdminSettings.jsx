@@ -13,6 +13,66 @@ const AdminSettings = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('advisor'); // 'advisor' | 'site' | 'bank' | 'pricing'
   const [previewEmail, setPreviewEmail] = useState(null); // { subject, html } or null
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'monpermis');
+      formData.append('folder', 'monpermis/settings');
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setAdvisorSettings(prev => ({ ...prev, logoUrl: data.secure_url }));
+      } else {
+        alert("Erreur lors de l'envoi de l'image.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Échec de l'envoi de l'image.");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const handleHeroUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroUploading(true);
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'monpermis');
+      formData.append('folder', 'monpermis/settings');
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setAdvisorSettings(prev => ({ ...prev, heroImageUrl: data.secure_url }));
+      } else {
+        alert("Erreur lors de l'envoi de l'image.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Échec de l'envoi de l'image.");
+    } finally {
+      setHeroUploading(false);
+    }
+  };
 
   const handleShowPreview = (type) => {
     let subject = "";
@@ -279,24 +339,70 @@ const AdminSettings = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">URL du Logo du site (Optionnel)</label>
-                <input
-                  type="text"
-                  value={advisorSettings.logoUrl || ''}
-                  onChange={(e) => setAdvisorSettings(prev => ({ ...prev, logoUrl: e.target.value }))}
-                  placeholder="Par défaut: /logo.png"
-                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
-                />
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Logo du site (Optionnel)</label>
+                <div className="flex items-center gap-3">
+                  {advisorSettings.logoUrl && (
+                    <div className="w-12 h-12 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center overflow-hidden p-1 flex-shrink-0">
+                      <img src={advisorSettings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={advisorSettings.logoUrl || ''}
+                      onChange={(e) => setAdvisorSettings(prev => ({ ...prev, logoUrl: e.target.value }))}
+                      placeholder="URL ou téléverser..."
+                      className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 pr-24 text-sm focus:outline-none transition-colors text-white"
+                    />
+                    <label className="absolute right-2 top-1.5 bottom-1.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-[11px] font-bold rounded-lg flex items-center justify-center cursor-pointer transition-colors">
+                      {logoUploading ? (
+                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "📤 Choisir"
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={logoUploading}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">URL de l'Image d'arrière-plan Hero (Optionnel)</label>
-                <input
-                  type="text"
-                  value={advisorSettings.heroImageUrl || ''}
-                  onChange={(e) => setAdvisorSettings(prev => ({ ...prev, heroImageUrl: e.target.value }))}
-                  placeholder="Par défaut: /smiling_driver.png"
-                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
-                />
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Image d'arrière-plan Hero (Optionnel)</label>
+                <div className="flex items-center gap-3">
+                  {advisorSettings.heroImageUrl && (
+                    <div className="w-12 h-12 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src={advisorSettings.heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={advisorSettings.heroImageUrl || ''}
+                      onChange={(e) => setAdvisorSettings(prev => ({ ...prev, heroImageUrl: e.target.value }))}
+                      placeholder="URL ou téléverser..."
+                      className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 pr-24 text-sm focus:outline-none transition-colors text-white"
+                    />
+                    <label className="absolute right-2 top-1.5 bottom-1.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-[11px] font-bold rounded-lg flex items-center justify-center cursor-pointer transition-colors">
+                      {heroUploading ? (
+                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "📤 Choisir"
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleHeroUpload}
+                        className="hidden"
+                        disabled={heroUploading}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
