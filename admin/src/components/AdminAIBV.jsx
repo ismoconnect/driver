@@ -30,6 +30,7 @@ const AdminAIBV = () => {
   // Logs State
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [previewEmail, setPreviewEmail] = useState(null); // { subject, html } or null
 
   // Load SMTP Config
   useEffect(() => {
@@ -210,8 +211,33 @@ const AdminAIBV = () => {
     }
   };
 
+  const handleShowPreview = () => {
+    if (!emailForm.subject || !emailForm.body) {
+      alert("Veuillez d'abord saisir un objet et un message.");
+      return;
+    }
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee; padding: 30px; border-radius: 8px; background-color: #ffffff;">
+        <div style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
+          <h2 style="color: #3b82f6; margin: 0;">${smtpConfig.fromName || 'Service AIBV'}</h2>
+        </div>
+        <div style="font-size: 14px;">
+          ${emailForm.body.replace(/\n/g, '<br />')}
+        </div>
+        <div style="margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px; text-align: center; font-size: 11px; color: #888888;">
+          Ce message a été envoyé par le service professionnel indépendant AIBV.
+        </div>
+      </div>
+    `;
+    setPreviewEmail({
+      subject: emailForm.subject,
+      html: htmlContent
+    });
+  };
+
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Tab Navigation */}
       <div className="flex gap-2 p-1.5 bg-slate-950/60 border border-white/5 rounded-2xl w-fit">
         <button
@@ -323,11 +349,18 @@ const AdminAIBV = () => {
               />
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleShowPreview}
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              >
+                <span>👁️ Aperçu HTML</span>
+              </button>
               <button
                 type="submit"
                 disabled={sending}
-                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)]"
+                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] cursor-pointer"
               >
                 {sending ? (
                   <>
@@ -499,6 +532,49 @@ const AdminAIBV = () => {
         </div>
       )}
     </div>
+
+      {/* PREVIEW EMAIL MODAL */}
+      {previewEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-white/5 bg-slate-950 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block mb-0.5">Aperçu du mail (Service AIBV)</span>
+                <h3 className="text-xs sm:text-sm font-bold text-white truncate max-w-md">Sujet : {previewEmail.subject}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewEmail(null)}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center justify-center font-bold text-slate-400 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Modal Body / Iframe Content */}
+            <div className="flex-1 bg-white overflow-hidden p-2">
+              <iframe
+                title="Email Preview"
+                srcDoc={previewEmail.html}
+                className="w-full h-full border-0 min-h-[480px]"
+              />
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-950 border-t border-white/5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewEmail(null)}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
