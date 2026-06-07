@@ -12,7 +12,10 @@ const AdminAIBV = () => {
     port: '465',
     user: '',
     pass: '',
-    fromName: 'AIBV Service'
+    fromName: 'AIBV Service',
+    headerBgColor: '#0f172a',
+    accentColor: '#3b82f6',
+    headerTextColor: '#ffffff'
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configSuccess, setConfigSuccess] = useState(false);
@@ -149,8 +152,8 @@ const AdminAIBV = () => {
       <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
           <!-- Header -->
-          <div style="background-color: #0f172a; padding: 28px 24px; text-align: center; border-bottom: 3px solid #3b82f6;">
-            <span style="color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
+          <div style="background-color: ${smtpConfig.headerBgColor || '#0f172a'}; padding: 28px 24px; text-align: center; border-bottom: 3px solid ${smtpConfig.accentColor || '#3b82f6'};">
+            <span style="color: ${smtpConfig.headerTextColor || '#ffffff'}; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
               ${smtpConfig.fromName || 'AIBV SERVICE'}
             </span>
           </div>
@@ -238,8 +241,8 @@ const AdminAIBV = () => {
       <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
           <!-- Header -->
-          <div style="background-color: #0f172a; padding: 28px 24px; text-align: center; border-bottom: 3px solid #3b82f6;">
-            <span style="color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
+          <div style="background-color: ${smtpConfig.headerBgColor || '#0f172a'}; padding: 28px 24px; text-align: center; border-bottom: 3px solid ${smtpConfig.accentColor || '#3b82f6'};">
+            <span style="color: ${smtpConfig.headerTextColor || '#ffffff'}; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">
               ${smtpConfig.fromName || 'AIBV SERVICE'}
             </span>
           </div>
@@ -488,6 +491,61 @@ const AdminAIBV = () => {
                 className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
                 required
               />
+            </div>
+
+            {/* Color Customization */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-white/5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Couleur de fond En-tête</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={smtpConfig.headerBgColor || '#0f172a'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, headerBgColor: e.target.value }))}
+                    className="w-12 h-10 bg-transparent border-0 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={smtpConfig.headerBgColor || '#0f172a'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, headerBgColor: e.target.value }))}
+                    className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors text-white font-mono"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Couleur du texte En-tête</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={smtpConfig.headerTextColor || '#ffffff'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, headerTextColor: e.target.value }))}
+                    className="w-12 h-10 bg-transparent border-0 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={smtpConfig.headerTextColor || '#ffffff'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, headerTextColor: e.target.value }))}
+                    className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors text-white font-mono"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Couleur d'accentuation (Ligne)</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={smtpConfig.accentColor || '#3b82f6'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, accentColor: e.target.value }))}
+                    className="w-12 h-10 bg-transparent border-0 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={smtpConfig.accentColor || '#3b82f6'}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, accentColor: e.target.value }))}
+                    className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors text-white font-mono"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end">
