@@ -1,6 +1,6 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5173/api/send-email'
-  : 'https://permisdeconduirebe.com/api/send-email';
+  : 'https://www.permisdeconduirebe.com/api/send-email';
 
 const emailTemplateWrapper = (content) => `
 <div style="font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; line-height: 1.6;">
