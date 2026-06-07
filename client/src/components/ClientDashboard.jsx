@@ -33,6 +33,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
   const [wizardError, setWizardError] = useState('');
 
+
   // Client Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('clientTheme') || 'dark');
 
@@ -76,6 +77,29 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const [attestationUrl, setAttestationUrl] = useState('');
+
+  const [isTransmitting, setIsTransmitting] = useState(false);
+  const [transmissionStep, setTransmissionStep] = useState(0);
+
+  useEffect(() => {
+    if (isSubmitted && !paymentValidated && activeTab === 'wizard') {
+      setIsTransmitting(true);
+      setTransmissionStep(0);
+      const timer = setTimeout(() => {
+        setIsTransmitting(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitted, paymentValidated, activeTab]);
+
+  useEffect(() => {
+    if (isTransmitting) {
+      const interval = setInterval(() => {
+        setTransmissionStep(prev => Math.min(prev + 1, 3));
+      }, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [isTransmitting]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -409,6 +433,41 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const getTotalAmount = () => {
+    let val = "0,00 €";
+    if (selectedPath === 'perception') val = advisor.perceptionAmount || "350,00 €";
+    else if (selectedPath === 'theorique') val = advisor.theoriqueAmount || "550,00 €";
+    else if (selectedPath === 'pratique') val = advisor.pratiqueAmount || "2100,00 €";
+    else if (selectedPath === 'direct') val = advisor.directLicenseAmount || "1200,00 €";
+    return val;
+  };
+
+  const getSplitPaymentDetails = () => {
+    const totalStr = getTotalAmount();
+    const clean = totalStr.replace(/[^\d.,]/g, '').replace(',', '.');
+    const totalNum = parseFloat(clean) || 0;
+
+    const firstPaymentNum = Math.min(200, totalNum);
+    const secondPaymentNum = Math.max(0, totalNum - firstPaymentNum);
+
+    const fmt = (num) => `${num.toFixed(2).replace('.', ',')} €`;
+
+    return {
+      isSplit: true,
+      total: totalStr,
+      firstPayment: fmt(firstPaymentNum),
+      secondPayment: secondPaymentNum > 0 ? fmt(secondPaymentNum) : null
+    };
+  };
+
+  const getTransferAmount = () => {
+    const details = getSplitPaymentDetails();
+    if (details.isSplit && paymentValidated) {
+      return details.secondPayment || details.total;
+    }
+    return details.firstPayment;
   };
 
   const handleSubmitDemand = async (e) => {
@@ -786,13 +845,144 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           {activeTab === 'wizard' && (
             isSubmitted ? (
               <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto py-8">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl mb-4 animate-pulse">
-                  ✓
-                </div>
                 <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">Dossier Transmis avec Succès !</h2>
                 <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-lg leading-relaxed">
                   Votre demande a bien été envoyée à nos services pour vérification légale. Votre conseiller dédié, {advisor.name}, analyse vos pièces.
                 </p>
+
+                {/* RIB / BANK DETAILS BOX */}
+                {(!paymentValidated || (getSplitPaymentDetails().isSplit && !soldeValidated)) && (
+                  isTransmitting ? (
+                    <div className="w-full mt-6 bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
+                      {/* Top animated linear progress bar */}
+                      <div className="absolute top-0 left-0 h-1.5 bg-gradient-to-r from-brand-orange via-amber-500 to-emerald-500 transition-all duration-[10000ms] ease-out" style={{ width: `${(transmissionStep + 1) * 25}%` }} />
+                      
+                      <div className="relative flex items-center justify-center mb-6">
+                        {/* Outer pulsing ring */}
+                        <div className="absolute w-16 h-16 rounded-full border border-brand-orange/30 animate-ping" />
+                        {/* Spinner */}
+                        <div className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin" />
+                      </div>
+                      
+                      <h3 className="text-white font-display font-extrabold text-base sm:text-lg tracking-tight animate-pulse mb-1">
+                        Demande en cours de transmission...
+                      </h3>
+                      <p className="text-white/40 text-[10px] sm:text-xs uppercase tracking-widest font-bold mb-4">
+                        Veuillez patienter
+                      </p>
+                      
+                      <div className="bg-slate-950/40 border border-white/5 rounded-2xl px-5 py-4 max-w-md w-full text-center transition-all duration-300">
+                        <p className="text-brand-orange text-xs sm:text-sm font-semibold min-h-[40px] flex items-center justify-center leading-relaxed">
+                          {transmissionStep === 0 && "🔒 Sécurisation du canal SSL & chiffrement des données candidat..."}
+                          {transmissionStep === 1 && "📡 Envoi de vos pièces d'identité aux serveurs d'homologation..."}
+                          {transmissionStep === 2 && "⚙️ Vérification de la complétude du dossier auprès du SPF Belgique..."}
+                          {transmissionStep === 3 && "🏦 Initialisation des frais administratifs & génération des accès de règlement..."}
+                        </p>
+                      </div>
+                      
+                      <div className="mt-6 flex items-center gap-2 text-[9px] text-white/35 uppercase tracking-wider font-semibold">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Connexion établie avec le registre SPF Mobilité</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full mt-6 text-left animate-[fadeIn_0.5s_ease-out]">
+                      <div className="bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-4 md:p-5 w-full relative overflow-hidden shadow-2xl">
+                        <div className="border-b border-white/10 pb-3 mb-3">
+                          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-orange mb-1 flex items-center gap-1.5">
+                            <span>🏦</span> Coordonnées de règlement (RIB)
+                          </h4>
+                          <p className="text-white/50 text-[10px] sm:text-xs">
+                            Veuillez effectuer le virement de l'acompte requis pour débuter l'homologation légale de votre dossier auprès du SPF Belgique.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+                          {/* Frais */}
+                          <div className="bg-slate-950/40 border border-white/5 rounded-xl p-3 flex flex-col justify-between">
+                            <div className="space-y-1.5 text-xs">
+                              <div className="flex justify-between text-white/50">
+                                <span>Formule :</span>
+                                <span className="text-white font-semibold">{
+                                  selectedPath === 'perception' ? "Perception du Risque" : 
+                                  selectedPath === 'theorique' ? "Examen Théorique" :
+                                  selectedPath === 'pratique' ? "Examen Pratique" :
+                                  "Permis Direct"
+                                }</span>
+                              </div>
+                              <div className="flex justify-between text-white/50">
+                                <span>Total de la formule :</span>
+                                <span className="text-white font-semibold">{getSplitPaymentDetails().total}</span>
+                              </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-white/5 mt-3 space-y-1 text-xs font-bold">
+                              {paymentValidated ? (
+                                <>
+                                  <div className="flex justify-between text-white/35 text-[10px]">
+                                    <span>Acompte reçu :</span>
+                                    <span className="text-emerald-400">✓ {getSplitPaymentDetails().firstPayment}</span>
+                                  </div>
+                                  <div className="flex justify-between text-brand-orange text-sm">
+                                    <span>Solde restant :</span>
+                                    <span>{getSplitPaymentDetails().secondPayment}</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between text-brand-orange text-sm">
+                                    <span>Acompte à régler :</span>
+                                    <span>{getSplitPaymentDetails().firstPayment}</span>
+                                  </div>
+                                  {getSplitPaymentDetails().secondPayment && (
+                                    <div className="flex justify-between text-white/35 text-[10px]">
+                                      <span>Solde restant :</span>
+                                      <span>{getSplitPaymentDetails().secondPayment}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Coordonnées bancaires */}
+                          <div className="bg-slate-950/40 border border-brand-orange/20 rounded-xl p-3 flex flex-col justify-between">
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                <span className="text-white/40">Bénéficiaire :</span>
+                                <span className="text-white font-bold">{advisor.beneficiary || "Mon Permis SRL"}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                <span className="text-white/40">Banque :</span>
+                                <span className="text-white font-semibold">{advisor.bankName || "BNP Paribas Fortis"}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                <span className="text-white/40">IBAN :</span>
+                                <span className="text-white font-mono font-bold tracking-wider">{advisor.iban || "BE96 3630 1234 5678"}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-white/5 pb-0.5">
+                                <span className="text-white/40">Montant :</span>
+                                <span className="text-brand-orange font-bold">{getTransferAmount()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/40">Communication :</span>
+                                <span className="text-brand-orange font-mono font-bold">MPB-{formData.firstName?.toUpperCase()}-{formData.lastName?.toUpperCase()}</span>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-lg p-1.5 text-[10px] text-amber-300 leading-normal flex items-start gap-1">
+                              <span>⚠️</span>
+                              <span>
+                                <strong>Communication exacte obligatoire</strong>. Partagez votre preuve de virement dans le chat.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+
                 <div className="flex flex-col sm:flex-row gap-3 w-full mt-6 justify-center">
                   <button onClick={() => setActiveTab('overview')} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-brand-orange hover:bg-brand-orange-dark text-white transition-all cursor-pointer">
                     Suivre mon dossier ➔
