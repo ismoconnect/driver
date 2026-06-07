@@ -867,7 +867,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 </p>
 
                 {/* RIB / BANK DETAILS BOX */}
-                {(!paymentValidated || (getSplitPaymentDetails().isSplit && !soldeValidated)) && (
+                {!paymentValidated ? (
                   isTransmitting ? (
                     <div className="w-full mt-6 bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
                       {/* Top animated linear progress bar */}
@@ -933,30 +933,15 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                             </div>
 
                             <div className="pt-3 border-t border-white/5 mt-3 space-y-1 text-xs font-bold">
-                              {paymentValidated ? (
-                                <>
-                                  <div className="flex justify-between text-white/35 text-[10px]">
-                                    <span>Acompte reçu :</span>
-                                    <span className="text-emerald-400">✓ {getSplitPaymentDetails().firstPayment}</span>
-                                  </div>
-                                  <div className="flex justify-between text-brand-orange text-sm">
-                                    <span>Solde restant :</span>
-                                    <span>{getSplitPaymentDetails().secondPayment}</span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="flex justify-between text-brand-orange text-sm">
-                                    <span>Acompte à régler :</span>
-                                    <span>{getSplitPaymentDetails().firstPayment}</span>
-                                  </div>
-                                  {getSplitPaymentDetails().secondPayment && (
-                                    <div className="flex justify-between text-white/35 text-[10px]">
-                                      <span>Solde restant :</span>
-                                      <span>{getSplitPaymentDetails().secondPayment}</span>
-                                    </div>
-                                  )}
-                                </>
+                              <div className="flex justify-between text-brand-orange text-sm">
+                                <span>Acompte à régler :</span>
+                                <span>{getSplitPaymentDetails().firstPayment}</span>
+                              </div>
+                              {getSplitPaymentDetails().secondPayment && (
+                                <div className="flex justify-between text-white/35 text-[10px]">
+                                  <span>Solde restant :</span>
+                                  <span>{getSplitPaymentDetails().secondPayment}</span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -997,6 +982,18 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                       </div>
                     </div>
                   )
+                ) : (
+                  <div className="w-full mt-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 text-center animate-[fadeIn_0.5s_ease-out]">
+                    <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-xl mx-auto mb-3">
+                      ✓
+                    </div>
+                    <h3 className="text-white font-display font-extrabold text-base sm:text-lg mb-1">
+                      Acompte validé avec succès !
+                    </h3>
+                    <p className="text-white/60 text-xs sm:text-sm max-w-md mx-auto">
+                      Votre acompte de <strong className="text-emerald-400">{getSplitPaymentDetails().firstPayment}</strong> a bien été reçu et enregistré. Votre dossier est en cours de traitement.
+                    </p>
+                  </div>
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full mt-6 justify-center">
