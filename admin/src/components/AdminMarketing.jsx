@@ -138,7 +138,7 @@ const AdminMarketing = ({
   // Copy tracking link to clipboard
   const handleCopyLink = (creaId) => {
     const siteUrl = "https://www.permisdeconduirebe.com";
-    const fullLink = `${siteUrl}?crea=${creaId}`;
+    const fullLink = `${siteUrl}/inscription?crea=${creaId}`;
     navigator.clipboard.writeText(fullLink);
     alert(`Lien copié : ${fullLink}`);
   };
@@ -463,7 +463,7 @@ const AdminMarketing = ({
                         
                         {/* URL Preview indicator */}
                         <div className="pt-2">
-                          <span className="text-[10px] text-slate-500 block">Lien généré : <code className="text-emerald-400 font-mono select-all">https://www.permisdeconduirebe.com/?crea={crea.id}</code></span>
+                          <span className="text-[10px] text-slate-500 block">Lien généré : <code className="text-emerald-400 font-mono select-all">https://www.permisdeconduirebe.com/inscription?crea={crea.id}</code></span>
                         </div>
                       </div>
                     </div>
