@@ -221,7 +221,10 @@ function AppRoutes() {
     const existingRoot = document.getElementById('fb-root');
     if (existingRoot) existingRoot.remove();
 
-    if (messengerEnabled && messengerPageId) {
+    // Check if the current route is a public route (not starting with /mon-espace)
+    const isPublicRoute = !window.location.pathname.startsWith('/mon-espace');
+
+    if (messengerEnabled && messengerPageId && isPublicRoute) {
       const fbRoot = document.createElement('div');
       fbRoot.id = 'fb-root';
       document.body.appendChild(fbRoot);
@@ -296,7 +299,7 @@ function AppRoutes() {
       }
       tag.setAttribute('content', activeVideoUrl);
     }
-  }, [marketing]);
+  }, [marketing, window.location.pathname]);
 
   return (
     <>
