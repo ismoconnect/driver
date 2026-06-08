@@ -23,6 +23,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [selectedLeadUid, setSelectedLeadUid] = useState(() => localStorage.getItem('adminSelectedLeadUid') || null);
   const [updating, setUpdating] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attestationUrlInput, setAttestationUrlInput] = useState('');
   const [attestationUploadStatus, setAttestationUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success' | 'error'
   const [attestationUploadProgress, setAttestationUploadProgress] = useState(0);
@@ -849,20 +850,37 @@ const Dashboard = ({ onLogout, initialTab }) => {
   return (
     <div className={`flex h-screen ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} overflow-hidden font-sans transition-colors duration-300`}>
       
+      {/* Sidebar mobile backdrop */}
+      {sidebarOpen && (
+        <div 
+          onClick={() => setSidebarOpen(false)} 
+          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm transition-opacity duration-300"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900/80 border-r border-white/5 flex flex-col justify-between flex-shrink-0 backdrop-blur-xl relative z-20 shadow-2xl">
+      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-slate-900/80 border-r border-white/5 flex flex-col justify-between flex-shrink-0 backdrop-blur-xl transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-2xl`}>
         <div>
-          <div className="px-8 py-8 border-b border-white/5">
-            <h1 className="text-2xl font-black tracking-tighter text-white">
-              ADMIN<span className="text-emerald-500">PRO</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-500 mt-1 tracking-widest uppercase">Portail de Gestion</p>
+          <div className="px-8 py-8 border-b border-white/5 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-black tracking-tighter text-white">
+                ADMIN<span className="text-emerald-500">PRO</span>
+              </h1>
+              <p className="text-xs font-semibold text-slate-500 mt-1 tracking-widest uppercase">Portail de Gestion</p>
+            </div>
+            {/* Mobile close button */}
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg md:hidden hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
           
           <nav className="mt-6 px-4 space-y-1">
             {/* Vue d'ensemble */}
             <button
-              onClick={() => setActiveTab('overview')}
+              onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'overview'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
@@ -878,7 +896,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             </div>
 
             <button
-              onClick={() => setActiveTab('demandes')}
+              onClick={() => { setActiveTab('demandes'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'demandes'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
@@ -889,7 +907,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
               Les demandes
             </button>
             <button
-              onClick={() => setActiveTab('users')}
+              onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'users'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -900,7 +918,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
               Mes utilisateurs
             </button>
             <button
-              onClick={() => setActiveTab('messages')}
+              onClick={() => { setActiveTab('messages'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
                 activeTab === 'messages'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -914,7 +932,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
               )}
             </button>
             <button
-              onClick={() => setActiveTab('documents')}
+              onClick={() => { setActiveTab('documents'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'documents'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -930,7 +948,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             </div>
 
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'settings'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -942,7 +960,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             </button>
 
             <button
-              onClick={() => setActiveTab('aibv')}
+              onClick={() => { setActiveTab('aibv'); setSidebarOpen(false); }}
               className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                 activeTab === 'aibv'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
@@ -955,7 +973,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
 
             {currentUserRole === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('manage_admins')}
+                onClick={() => { setActiveTab('manage_admins'); setSidebarOpen(false); }}
                 className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                   activeTab === 'manage_admins'
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
@@ -983,26 +1001,37 @@ const Dashboard = ({ onLogout, initialTab }) => {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-950 relative z-10">
         
         {/* Top Header */}
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/40 backdrop-blur-md flex-shrink-0">
-          <h2 className="text-lg font-bold text-white capitalize">
-            {activeTab === 'overview' && "🏠 Vue d'ensemble"}
-            {activeTab === 'demandes' && "📂 Les demandes"}
-            {activeTab === 'detail' && selectedLead && (
-              <span className="flex items-center gap-3">
-                <button onClick={closeDetail} className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                  ←
-                </button>
-                Dossier de {selectedLead.name}
-              </span>
-            )}
-            {activeTab === 'users' && "👥 Mes utilisateurs"}
-            {activeTab === 'messages' && "💬 Ma messagerie"}
-            {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
-            {activeTab === 'settings' && "⚙️ Paramètres"}
-            {activeTab === 'aibv' && "📧 Service AIBV"}
-            {activeTab === 'manage_admins' && "👥 Gestion des Admins"}
-          </h2>
-          <div className="flex items-center gap-4">
+        <header className="h-20 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 md:px-8 bg-slate-900/40 backdrop-blur-md flex-shrink-0 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Hamburger Button */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg md:hidden hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-white capitalize truncate">
+              {activeTab === 'overview' && "🏠 Vue d'ensemble"}
+              {activeTab === 'demandes' && "📂 Les demandes"}
+              {activeTab === 'detail' && selectedLead && (
+                <span className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <button onClick={closeDetail} className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors flex-shrink-0">
+                    ←
+                  </button>
+                  <span className="truncate">Dossier de {selectedLead.name}</span>
+                </span>
+              )}
+              {activeTab === 'users' && "👥 Mes utilisateurs"}
+              {activeTab === 'messages' && "💬 Ma messagerie"}
+              {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
+              {activeTab === 'settings' && "⚙️ Paramètres"}
+              {activeTab === 'aibv' && "📧 Service AIBV"}
+              {activeTab === 'manage_admins' && "👥 Gestion des Admins"}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
             {/* Theme Toggle Button */}
             <button
               onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
@@ -1015,14 +1044,14 @@ const Dashboard = ({ onLogout, initialTab }) => {
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)] text-sm sm:text-base">
               A
             </div>
           </div>
         </header>
 
         {/* Scrollable Viewport */}
-        <main className="flex-1 overflow-y-auto p-8 h-full custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 h-full custom-scrollbar">
           
           {activeTab === 'overview' && (
             <AdminOverview
