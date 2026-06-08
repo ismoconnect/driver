@@ -7,6 +7,37 @@ const AdminMarketing = ({
   savingSettings,
   settingsSuccess
 }) => {
+  const [ogUploading, setOgUploading] = React.useState(false);
+
+  const handleOgImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setOgUploading(true);
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'monpermis');
+      formData.append('folder', 'monpermis/settings');
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setAdvisorSettings(prev => ({ ...prev, ogImageUrl: data.secure_url }));
+      } else {
+        alert("Erreur lors de l'envoi de l'image.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Échec de l'envoi de l'image.");
+    } finally {
+      setOgUploading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       {settingsSuccess && (
@@ -115,14 +146,37 @@ const AdminMarketing = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">URL de l'image d'illustration (og:image)</label>
-                <input
-                  type="text"
-                  value={advisorSettings.ogImageUrl || ''}
-                  onChange={(e) => setAdvisorSettings(prev => ({ ...prev, ogImageUrl: e.target.value }))}
-                  placeholder="Ex: https://votre-site.com/image-partage.jpg"
-                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white font-mono"
-                />
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Image d'illustration (og:image)</label>
+                <div className="flex items-center gap-3">
+                  {advisorSettings.ogImageUrl && (
+                    <div className="w-12 h-12 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src={advisorSettings.ogImageUrl} alt="Illustration" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={advisorSettings.ogImageUrl || ''}
+                      onChange={(e) => setAdvisorSettings(prev => ({ ...prev, ogImageUrl: e.target.value }))}
+                      placeholder="URL ou téléverser..."
+                      className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 pr-24 text-sm focus:outline-none transition-colors text-white font-mono"
+                    />
+                    <label className="absolute right-2 top-1.5 bottom-1.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-[11px] font-bold rounded-lg flex items-center justify-center cursor-pointer transition-colors">
+                      {ogUploading ? (
+                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "📤 Choisir"
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleOgImageUpload}
+                        className="hidden"
+                        disabled={ogUploading}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
