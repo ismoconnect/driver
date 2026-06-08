@@ -1,6 +1,6 @@
 export const config = {
   // Run middleware on homepage and main entry routes
-  matcher: ['/', '/accueil'],
+  matcher: ['/', '/accueil', '/inscription'],
 };
 
 export default function middleware(request) {
