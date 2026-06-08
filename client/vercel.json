@@ -1,16 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/((?!api/.*).*)",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*([fF]acebook|[tT]witter|[lL]inkedin|[eE]mbedly|[qQ]uora|[pP]interest|[sS]lack|[vV]k|[wW]hats[aA]pp|[oO]pen[gG]raph|[gG]oogle|[bB]ot|[fF]etch|[aA]xios|[nN]ode|[pP]review).*"
-        }
-      ],
-      "destination": "/api/og"
-    },
     { "source": "/((?!api/.*).*)", "destination": "/index.html" }
   ]
 }
