@@ -201,7 +201,9 @@ const Dashboard = ({ onLogout, initialTab }) => {
     messengerEnabled: false,
     ogTitle: "",
     ogDescription: "",
-    ogImageUrl: ""
+    ogImageUrl: "",
+    ogVideoUrl: "",
+    creatives: {}
   });
   const [savingMarketing, setSavingMarketing] = useState(false);
   const [marketingSuccess, setMarketingSuccess] = useState(false);
@@ -535,7 +537,9 @@ const Dashboard = ({ onLogout, initialTab }) => {
         messengerEnabled: marketingSettings.messengerEnabled === true || marketingSettings.messengerEnabled === 'true',
         ogTitle: marketingSettings.ogTitle || "",
         ogDescription: marketingSettings.ogDescription || "",
-        ogImageUrl: marketingSettings.ogImageUrl || ""
+        ogImageUrl: marketingSettings.ogImageUrl || "",
+        ogVideoUrl: marketingSettings.ogVideoUrl || "",
+        creatives: marketingSettings.creatives || {}
       });
       setMarketingSuccess(true);
       setTimeout(() => setMarketingSuccess(false), 3000);

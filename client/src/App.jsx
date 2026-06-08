@@ -171,7 +171,23 @@ function AppRoutes() {
   // ─── Meta Pixel & Messenger Integration ────────────────────────────────────────
   useEffect(() => {
     if (!marketing) return;
-    const { metaPixelId, metaPixelEnabled, messengerPageId, messengerEnabled, ogTitle, ogDescription, ogImageUrl } = marketing;
+    const { metaPixelId, metaPixelEnabled, messengerPageId, messengerEnabled } = marketing;
+    
+    // Resolve dynamic creatives
+    let activeTitle = marketing.ogTitle;
+    let activeDescription = marketing.ogDescription;
+    let activeImageUrl = marketing.ogImageUrl;
+    let activeVideoUrl = marketing.ogVideoUrl;
+
+    const params = new URLSearchParams(window.location.search);
+    const creaId = params.get('crea');
+    if (creaId && marketing.creatives && marketing.creatives[creaId]) {
+      const targetCrea = marketing.creatives[creaId];
+      if (targetCrea.ogTitle) activeTitle = targetCrea.ogTitle;
+      if (targetCrea.ogDescription) activeDescription = targetCrea.ogDescription;
+      if (targetCrea.ogImageUrl) activeImageUrl = targetCrea.ogImageUrl;
+      if (targetCrea.ogVideoUrl) activeVideoUrl = targetCrea.ogVideoUrl;
+    }
 
     // 1. Meta Pixel Script Loader
     if (metaPixelEnabled && metaPixelId) {
@@ -235,24 +251,24 @@ function AppRoutes() {
     }
 
     // 3. Open Graph Metadata Updater
-    if (ogTitle) {
-      document.title = ogTitle;
+    if (activeTitle) {
+      document.title = activeTitle;
       let tag = document.querySelector('meta[property="og:title"]');
       if (!tag) {
         tag = document.createElement('meta');
         tag.setAttribute('property', 'og:title');
         document.head.appendChild(tag);
       }
-      tag.setAttribute('content', ogTitle);
+      tag.setAttribute('content', activeTitle);
     }
-    if (ogDescription) {
+    if (activeDescription) {
       let ogDesc = document.querySelector('meta[property="og:description"]');
       if (!ogDesc) {
         ogDesc = document.createElement('meta');
         ogDesc.setAttribute('property', 'og:description');
         document.head.appendChild(ogDesc);
       }
-      ogDesc.setAttribute('content', ogDescription);
+      ogDesc.setAttribute('content', activeDescription);
 
       let desc = document.querySelector('meta[name="description"]');
       if (!desc) {
@@ -260,16 +276,25 @@ function AppRoutes() {
         desc.setAttribute('name', 'description');
         document.head.appendChild(desc);
       }
-      desc.setAttribute('content', ogDescription);
+      desc.setAttribute('content', activeDescription);
     }
-    if (ogImageUrl) {
+    if (activeImageUrl) {
       let tag = document.querySelector('meta[property="og:image"]');
       if (!tag) {
         tag = document.createElement('meta');
         tag.setAttribute('property', 'og:image');
         document.head.appendChild(tag);
       }
-      tag.setAttribute('content', ogImageUrl);
+      tag.setAttribute('content', activeImageUrl);
+    }
+    if (activeVideoUrl) {
+      let tag = document.querySelector('meta[property="og:video"]');
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', 'og:video');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', activeVideoUrl);
     }
   }, [marketing]);
 
