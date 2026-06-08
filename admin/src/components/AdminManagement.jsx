@@ -213,53 +213,121 @@ const AdminManagement = () => {
             Aucun administrateur trouvé.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Nom Complet</th>
-                  <th className="py-3 px-4">Adresse E-mail</th>
-                  <th className="py-3 px-4">Rôle</th>
-                  <th className="py-3 px-4">UID Firebase</th>
-                  <th className="py-3 px-4">Date de création</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-slate-300">
-                {admins.map((admin) => (
-                  <tr key={admin.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-white">{admin.name || 'Nom non défini'}</td>
-                    <td className="py-3 px-4 font-mono">{admin.email}</td>
-                    <td className="py-3 px-4">
-                      <select
-                        value={admin.role || 'admin'}
-                        onChange={(e) => handleRoleChange(admin.id, e.target.value)}
-                        className="bg-slate-950/80 border border-white/10 focus:border-emerald-500 rounded-lg px-2 py-1.5 text-xs focus:outline-none transition-colors text-white font-semibold cursor-pointer"
-                      >
-                        <option value="admin">Admin (Conseiller)</option>
-                        <option value="super_admin">Super Admin (Gestionnaire)</option>
-                      </select>
-                      {admin.id === auth.currentUser?.uid && (
-                        <span className="ml-2 text-[10px] text-slate-500 font-medium">(Vous)</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 font-mono text-[10px]">{admin.uid}</td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {admin.createdAt ? new Date(admin.createdAt.seconds * 1000).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="py-3 px-4 text-right">
+          <>
+            {/* Mobile View: Cards */}
+            <div className="space-y-4 block sm:hidden">
+              {admins.map((admin) => (
+                <div key={admin.id} className="bg-slate-950/40 border border-white/5 rounded-2xl p-4 space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="font-semibold text-white text-xs">
+                      {admin.name || 'Nom non défini'}
+                    </div>
+                    {admin.id === auth.currentUser?.uid && (
+                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                        Vous
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Adresse E-mail</span>
+                      <div className="font-mono text-xs text-slate-300 break-all bg-slate-950/60 p-2 rounded-lg border border-white/5">
+                        {admin.email}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Rôle</span>
+                        <select
+                          value={admin.role || 'admin'}
+                          onChange={(e) => handleRoleChange(admin.id, e.target.value)}
+                          className="w-full bg-slate-950/80 border border-white/10 focus:border-emerald-500 rounded-lg px-2 py-1.5 text-xs focus:outline-none transition-colors text-white font-semibold cursor-pointer"
+                        >
+                          <option value="admin">Admin (Conseiller)</option>
+                          <option value="super_admin">Super Admin (Gestionnaire)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Créé le</span>
+                        <div className="text-xs text-slate-300 bg-slate-950/30 p-2 rounded-lg border border-white/5 h-[34px] flex items-center justify-center font-medium">
+                          {admin.createdAt ? new Date(admin.createdAt.seconds * 1000).toLocaleDateString() : '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">UID Firebase</span>
+                      <div className="font-mono text-[10px] text-slate-500 break-all bg-slate-950/20 p-2 rounded-lg border border-white/5 select-all">
+                        {admin.uid}
+                      </div>
+                    </div>
+                  </div>
+
+                  {admin.id !== auth.currentUser?.uid && (
+                    <div className="pt-2 border-t border-white/5 flex justify-end">
                       <button
                         onClick={() => handleDeleteAdmin(admin.id, admin.name)}
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/30 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/30 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer w-full text-center"
                       >
-                        Retirer
+                        Retirer l'administrateur
                       </button>
-                    </td>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View: Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">Nom Complet</th>
+                    <th className="py-3 px-4">Adresse E-mail</th>
+                    <th className="py-3 px-4">Rôle</th>
+                    <th className="py-3 px-4">UID Firebase</th>
+                    <th className="py-3 px-4">Date de création</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-slate-300">
+                  {admins.map((admin) => (
+                    <tr key={admin.id} className="hover:bg-white/5 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-white">{admin.name || 'Nom non défini'}</td>
+                      <td className="py-3 px-4 font-mono">{admin.email}</td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={admin.role || 'admin'}
+                          onChange={(e) => handleRoleChange(admin.id, e.target.value)}
+                          className="bg-slate-950/80 border border-white/10 focus:border-emerald-500 rounded-lg px-2 py-1.5 text-xs focus:outline-none transition-colors text-white font-semibold cursor-pointer"
+                        >
+                          <option value="admin">Admin (Conseiller)</option>
+                          <option value="super_admin">Super Admin (Gestionnaire)</option>
+                        </select>
+                        {admin.id === auth.currentUser?.uid && (
+                          <span className="ml-2 text-[10px] text-slate-500 font-medium">(Vous)</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 font-mono text-[10px]">{admin.uid}</td>
+                      <td className="py-3 px-4 text-slate-400">
+                        {admin.createdAt ? new Date(admin.createdAt.seconds * 1000).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => handleDeleteAdmin(admin.id, admin.name)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/30 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Retirer
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

@@ -211,7 +211,7 @@ const AdminSettings = ({
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       
       {/* Sub-tabs Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-3 w-full scrollbar-none border-b border-white/10">
         {subTabs.map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -219,7 +219,7 @@ const AdminSettings = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 min-w-[150px] p-3 rounded-2xl text-left border transition-all duration-300 cursor-pointer flex flex-col gap-0.5 ${
+              className={`flex-shrink-0 min-w-[130px] sm:min-w-[150px] sm:flex-1 p-3 rounded-2xl text-left border transition-all duration-300 cursor-pointer flex flex-col gap-0.5 ${
                 isActive
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                   : 'bg-white/5 border-transparent text-slate-400 hover:bg-white/[0.08] hover:text-white'

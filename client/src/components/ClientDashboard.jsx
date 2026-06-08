@@ -11,7 +11,7 @@ import ClientOverview from './ClientOverview';
 import ClientWizard from './ClientWizard';
 import ClientChat from './ClientChat';
 
-export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, initialTab }) {
+export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, initialTab, advisor: propAdvisor }) {
   const navigate = useNavigate();
   // Authentication states
   const [user, setUser] = useState(null);
@@ -145,7 +145,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   });
 
   // Advisor settings state
-  const [advisor, setAdvisor] = useState({
+  const [advisor, setAdvisor] = useState(() => propAdvisor || {
     name: "Jean-Pierre Dumont",
     title: "Expert Agréé SPF Belgique",
     isOnline: true,
@@ -153,6 +153,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   });
 
   useEffect(() => {
+    if (propAdvisor) {
+      setAdvisor(propAdvisor);
+    }
+  }, [propAdvisor]);
+
+  useEffect(() => {
+    if (propAdvisor) return;
     const advisorRef = doc(db, 'settings', 'advisor');
     const unsubAdvisor = onSnapshot(advisorRef, (snap) => {
       if (snap.exists()) {
@@ -160,7 +167,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       }
     });
     return () => unsubAdvisor();
-  }, []);
+  }, [propAdvisor]);
 
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -187,34 +194,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         });
       });
 
-      if (list.length === 0) {
-        setMessages([
-          {
-            id: 'welcome-1',
-            sender: 'advisor',
-            text: `Bonjour ! Je suis ${advisor.name}, votre conseiller dédié. Bienvenue dans votre Espace Permis sécurisé. 🇧🇪`,
-            time: "Aujourd'hui, 10:15",
-          },
-          {
-            id: 'welcome-2',
-            sender: 'advisor',
-            text: "Pour lancer officiellement votre dossier d'obtention sans examen, veuillez vous rendre dans l'onglet 'Faire ma demande' et compléter les étapes.",
-            time: "Aujourd'hui, 10:16",
-          }
-        ]);
-      } else {
+      if (list.length > 0) {
         const lastMsg = list[list.length - 1];
         if (lastMsg.sender === 'advisor') {
           setDoc(doc(db, 'chats', user.uid), {
             unreadByClient: false
           }, { merge: true }).catch(err => console.error("Error updating unreadByClient:", err));
         }
-        setMessages(list);
       }
+      setMessages(list);
     });
 
     return () => unsubscribe();
-  }, [user, advisor.name]);
+  }, [user]);
 
   // Track client presence / active tab
   useEffect(() => {

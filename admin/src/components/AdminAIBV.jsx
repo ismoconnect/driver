@@ -400,11 +400,11 @@ const AdminAIBV = ({ leads = [] }) => {
               />
             </div>
 
-            <div className="flex justify-end gap-3 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
               <button
                 type="button"
                 onClick={handleLoadTemplate}
-                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm w-full sm:w-auto"
               >
                 <span>📂 Charger le modèle</span>
               </button>
@@ -412,21 +412,21 @@ const AdminAIBV = ({ leads = [] }) => {
                 type="button"
                 onClick={handleSaveTemplate}
                 disabled={savingTemplate}
-                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm w-full sm:w-auto"
               >
                 <span>{savingTemplate ? "Sauvegarde..." : "💾 Enregistrer le modèle"}</span>
               </button>
               <button
                 type="button"
                 onClick={handleShowPreview}
-                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm w-full sm:w-auto"
               >
                 <span>👁️ Aperçu HTML</span>
               </button>
               <button
                 type="submit"
                 disabled={sending}
-                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] cursor-pointer text-xs sm:text-sm"
+                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] cursor-pointer text-xs sm:text-sm w-full sm:w-auto"
               >
                 {sending ? (
                   <>
@@ -655,42 +655,76 @@ const AdminAIBV = ({ leads = [] }) => {
               Aucun e-mail envoyé pour le moment.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-white/5 text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-4">Destinataire</th>
-                    <th className="py-3 px-4">Objet</th>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Statut</th>
-                    <th className="py-3 px-4">Détails/Erreur</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-slate-300">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-3 px-4 font-mono font-medium">{log.to}</td>
-                      <td className="py-3 px-4 font-semibold">{log.subject}</td>
-                      <td className="py-3 px-4 text-slate-400">
-                        {log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'En cours...'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                          log.status === 'Success'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                        }`}>
-                          {log.status === 'Success' ? 'Réussi' : 'Échec'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 italic max-w-xs truncate" title={log.error}>
-                        {log.error || '-'}
-                      </td>
+            <>
+              {/* Mobile View: Cards */}
+              <div className="space-y-3 block sm:hidden">
+                {logs.map((log) => (
+                  <div key={log.id} className="bg-slate-950/40 border border-white/5 rounded-2xl p-4 space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Destinataire</span>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${
+                        log.status === 'Success'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      }`}>
+                        {log.status === 'Success' ? 'Réussi' : 'Échec'}
+                      </span>
+                    </div>
+                    <div className="font-mono text-xs text-white break-all bg-slate-950/60 p-2 rounded-lg border border-white/5">
+                      {log.to}
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Objet</span>
+                      <div className="text-xs font-semibold text-slate-200 bg-slate-950/30 p-2 rounded-lg border border-white/5">
+                        {log.subject}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-white/5">
+                      <span>{log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'En cours...'}</span>
+                      {log.error && <span className="text-red-400 italic truncate max-w-[150px]" title={log.error}>{log.error}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 text-slate-500 uppercase tracking-wider">
+                      <th className="py-3 px-4">Destinataire</th>
+                      <th className="py-3 px-4">Objet</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Statut</th>
+                      <th className="py-3 px-4">Détails/Erreur</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-slate-300">
+                    {logs.map((log) => (
+                      <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 font-mono font-medium">{log.to}</td>
+                        <td className="py-3 px-4 font-semibold">{log.subject}</td>
+                        <td className="py-3 px-4 text-slate-400">
+                          {log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'En cours...'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                            log.status === 'Success'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                          }`}>
+                            {log.status === 'Success' ? 'Réussi' : 'Échec'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 italic max-w-xs truncate" title={log.error}>
+                          {log.error || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}

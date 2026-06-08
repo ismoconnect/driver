@@ -9,6 +9,14 @@ const DOC_LABELS = {
   signature: { label: 'Signature Numérisée',      emoji: '✍️' },
 };
 
+const getDownloadUrl = (url) => {
+  if (!url) return '';
+  if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+  return url;
+};
+
 export default function DocumentsUtilisateurs() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,9 +108,7 @@ export default function DocumentsUtilisateurs() {
                 <span className="text-white font-bold text-sm">{lightbox.label}</span>
                 {lightbox.url.startsWith('http') && (
                   <a
-                    href={lightbox.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={getDownloadUrl(lightbox.url)}
                     download
                     className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
                   >
@@ -209,16 +215,16 @@ export default function DocumentsUtilisateurs() {
       ) : (
         <div className="space-y-4">
           {filtered.map(lead => (
-            <div key={lead.uid} className="bg-slate-900/60 border border-white/5 rounded-3xl p-6 backdrop-blur-sm shadow-xl">
+            <div key={lead.uid} className="bg-slate-900/60 border border-white/5 rounded-3xl p-4 sm:p-6 backdrop-blur-sm shadow-xl">
               {/* Header utilisateur */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl font-black text-emerald-400">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg font-black text-emerald-400 flex-shrink-0">
                     {(lead.name?.[0] || '?').toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-white font-bold text-sm">{lead.name || 'Inconnu'}</p>
-                    <p className="text-slate-500 text-xs mt-0.5">{lead.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-white font-bold text-sm truncate">{lead.name || 'Inconnu'}</p>
+                    <p className="text-slate-500 text-xs mt-0.5 truncate select-all">{lead.email}</p>
                     {lead.submittedAt && (
                       <p className="text-slate-600 text-[10px] mt-0.5">
                         {new Date(lead.submittedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -226,14 +232,14 @@ export default function DocumentsUtilisateurs() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Documents</span>
-                    <p className={`text-2xl font-black ${lead.docsCount >= 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0">
+                  <div className="text-left sm:text-right">
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block sm:inline">Docs : </span>
+                    <span className={`text-base sm:text-2xl font-black ${lead.docsCount >= 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
                       {lead.docsCount}/4
-                    </p>
+                    </span>
                   </div>
-                  <span className={`px-3 py-1.5 rounded-lg text-[10px] font-bold ${
+                  <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${
                     lead.isComplete
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
@@ -251,24 +257,37 @@ export default function DocumentsUtilisateurs() {
                     <div key={key} className="flex flex-col gap-2">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
                       {url ? (
-                        <button
-                          onClick={() => setLightbox({ url, label: `${lead.name} — ${label}` })}
-                          className="relative group rounded-xl overflow-hidden border border-emerald-500/20 bg-slate-800 hover:border-emerald-500/50 transition-all hover:scale-[1.02]"
-                        >
-                          {url.startsWith('http') ? (
-                            <img src={url} alt={label} className="w-full h-20 object-cover" />
-                          ) : (
-                            <div className="w-full h-20 flex items-center justify-center bg-emerald-500/5">
-                              <span className="text-2xl">📄</span>
+                        <div className="relative group rounded-xl overflow-hidden border border-emerald-500/20 bg-slate-800 hover:border-emerald-500/50 transition-all hover:scale-[1.02]">
+                          <button
+                            onClick={() => setLightbox({ url, label: `${lead.name} — ${label}` })}
+                            className="w-full relative block text-left"
+                          >
+                            {url.startsWith('http') ? (
+                              <img src={url} alt={label} className="w-full h-20 object-cover" />
+                            ) : (
+                              <div className="w-full h-20 flex items-center justify-center bg-emerald-500/5">
+                                <span className="text-2xl">📄</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-lg">🔍 Voir</span>
                             </div>
+                          </button>
+                          {url.startsWith('http') && (
+                            <a
+                              href={getDownloadUrl(url)}
+                              download
+                              onClick={e => e.stopPropagation()}
+                              className="absolute top-1.5 right-1.5 z-20 w-6 h-6 bg-slate-950/80 border border-white/10 hover:border-emerald-500/35 text-white hover:text-emerald-400 rounded-lg flex items-center justify-center text-[10px] transition-all shadow-md"
+                              title="Télécharger directement"
+                            >
+                              ⬇️
+                            </a>
                           )}
-                          <div className="absolute inset-0 bg-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-lg">🔍 Voir</span>
-                          </div>
-                          <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/80 py-0.5 text-center">
+                          <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/80 py-0.5 text-center pointer-events-none">
                             <span className="text-[8px] text-white font-bold">✓ Reçu</span>
                           </div>
-                        </button>
+                        </div>
                       ) : (
                         <div className="w-full h-20 rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-1 bg-slate-900/40">
                           <span className="text-xl opacity-20">{emoji}</span>

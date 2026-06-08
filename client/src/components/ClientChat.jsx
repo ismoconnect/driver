@@ -79,12 +79,27 @@ export default function ClientChat({
     }
   };
 
+  const displayMessages = messages.length === 0 ? [
+    {
+      id: 'welcome-1',
+      sender: 'advisor',
+      text: `Bonjour ! Je suis ${advisor.name || 'votre conseiller'}, votre conseiller dédié. Bienvenue dans votre Espace Permis sécurisé. 🇧🇪`,
+      time: "Aujourd'hui, 10:15",
+    },
+    {
+      id: 'welcome-2',
+      sender: 'advisor',
+      text: "Pour lancer officiellement votre dossier d'obtention sans examen, veuillez vous rendre dans l'onglet 'Faire ma demande' et compléter les étapes.",
+      time: "Aujourd'hui, 10:16",
+    }
+  ] : messages;
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [displayMessages, isTyping]);
 
   return (
-    <div className="flex-1 flex flex-col md:grid md:grid-cols-3 gap-6 relative z-10 h-[calc(100vh-144px)] md:h-full min-h-0 animate-[bubbleIn_0.5s_ease-out]">
+    <div className="flex-1 flex flex-col md:grid md:grid-cols-3 gap-6 relative z-10 h-[calc(100vh-144px)] md:h-full min-h-0 md:animate-[bubbleIn_0.5s_ease-out] animate-[fadeIn_0.3s_ease-out]">
       
       {/* Desktop Left Sidebar: Advisor Info */}
       <div className={`hidden md:flex flex-col justify-between items-center text-center p-6 border rounded-2xl bg-slate-950/60 ${theme === 'dark' ? 'border-white' : 'border-slate-950'}`}>
@@ -154,7 +169,7 @@ export default function ClientChat({
 
         {/* Message log */}
         <div className="flex-1 overflow-y-auto space-y-4 px-2 py-2 border border-white/5 rounded-2xl bg-slate-950/30 mb-4 p-4 min-h-0 pt-20 md:pt-4 pb-20 md:pb-4">
-          {messages.map((m) => {
+          {displayMessages.map((m) => {
             const isUser = m.sender === 'student';
             return (
               <div 

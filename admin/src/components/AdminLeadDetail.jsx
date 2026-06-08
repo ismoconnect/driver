@@ -224,20 +224,20 @@ const AdminLeadDetail = ({
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
 
       {/* === TOP BANNER === */}
-      <div className="bg-slate-900/80 rounded-3xl border border-white/5 p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+      <div className="bg-slate-900/80 rounded-3xl border border-white/5 p-6 md:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full transform translate-x-1/3 -translate-y-1/3" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-2xl font-black text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl sm:text-2xl font-black text-emerald-400 flex-shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
               {(selectedLead.name?.[0] || '?').toUpperCase()}
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">{selectedLead.name}</h2>
-              <p className="text-sm font-medium text-slate-400 mt-1">ID : <span className="text-emerald-400 font-mono">#{selectedLead.id?.slice(0, 12)}</span></p>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">{selectedLead.name}</h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-400 mt-1">ID : <span className="text-emerald-400 font-mono">#{selectedLead.id?.slice(0, 12)}</span></p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={`px-4 py-2 rounded-xl text-sm font-bold shadow-sm ${
+          <div className="flex flex-wrap items-center gap-3">
+            <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm ${
               selectedLead.status === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
               selectedLead.status === 'processing' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
               'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
@@ -246,7 +246,7 @@ const AdminLeadDetail = ({
             </span>
             <button
               onClick={() => { handleReset({ stopPropagation: () => {} }, selectedLead); }}
-              className="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 bg-white/5 hover:bg-red-500/10 hover:text-red-400 border border-white/5 hover:border-red-500/20 transition-all"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 bg-white/5 hover:bg-red-500/10 hover:text-red-400 border border-white/5 hover:border-red-500/20 transition-all"
             >
               🔄 Réinitialiser
             </button>
@@ -257,7 +257,7 @@ const AdminLeadDetail = ({
       {/* === INFORMATIONS PERSONNELLES === */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">Informations Personnelles</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 sm:p-6 backdrop-blur-sm shadow-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[
             { label: 'Nom complet', value: selectedLead.name },
             { label: 'Email', value: selectedLead.email },
@@ -266,9 +266,9 @@ const AdminLeadDetail = ({
             { label: 'Adresse', value: selectedLead.rawLead?.address || selectedLead.rawUser?.address || 'Non renseigné' },
             { label: 'Registre National', value: selectedLead.rawLead?.nationalRegister || selectedLead.rawUser?.nationalRegister || 'Non spécifié' },
           ].map((item, i) => (
-            <div key={i} className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">{item.label}</p>
-              <p className="font-bold text-white text-sm">{item.value}</p>
+            <div key={i} className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.label}</p>
+              <p className="font-bold text-white text-sm break-all">{item.value}</p>
             </div>
           ))}
         </div>
@@ -277,7 +277,7 @@ const AdminLeadDetail = ({
       {/* === DÉTAILS DE LA DEMANDE === */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">Détails de la Demande</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 sm:p-6 backdrop-blur-sm shadow-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[
             { label: 'Catégorie permis', value: `Permis ${selectedLead.rawLead?.licenseCategory || selectedLead.rawUser?.licenseCategory || 'B'} (${selectedLead.rawLead?.transmission || selectedLead.rawUser?.transmission || 'Manuel'})` },
             { label: 'Tentatives ratées', value: selectedLead.rawLead?.failedAttempts || '0' },
@@ -286,8 +286,8 @@ const AdminLeadDetail = ({
             { label: 'Date de soumission', value: selectedLead.rawLead?.submittedAt ? new Date(selectedLead.rawLead.submittedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Non soumis' },
             { label: 'Dossier soumis', value: selectedLead.rawLead?.isSubmitted ? '✅ Oui' : '❌ Non' },
           ].map((item, i) => (
-            <div key={i} className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">{item.label}</p>
+            <div key={i} className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.label}</p>
               <p className="font-bold text-white text-sm">{item.value}</p>
             </div>
           ))}
@@ -432,18 +432,6 @@ const AdminLeadDetail = ({
                       <p className="text-xs text-slate-400">{phase.desc}</p>
                     </div>
 
-                    {phase.num === 2 && (
-                      <>
-                        {hasSelectedPath && !isEditingPath && (
-                          <button
-                            onClick={() => setIsEditingPath(true)}
-                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 rounded-lg text-[10px] font-bold transition-all"
-                          >
-                            ✏️ Modifier la formule
-                          </button>
-                        )}
-                      </>
-                    )}
                   </div>
 
                   {phase.num === 2 && (!hasSelectedPath || isEditingPath) && (
@@ -507,7 +495,7 @@ const AdminLeadDetail = ({
                             }
                             setUpdating(false);
                           }}
-                          className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
+                          className={`w-full sm:w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
                             isBillingActive
                               ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border-emerald-500/30'
                               : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400'
@@ -604,7 +592,7 @@ const AdminLeadDetail = ({
                             }
                             setUpdating(false);
                           }}
-                          className={`w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
+                          className={`w-full sm:w-64 justify-center flex items-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all duration-300 border cursor-pointer ${
                             !isBillingActive
                               ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed opacity-55'
                               : isPaymentValidated
@@ -787,7 +775,7 @@ const AdminLeadDetail = ({
                         <button
                           disabled={updating || (selectedLead.status !== 'completed' && (isSplit ? !isSoldeValidated : !isPaymentValidated))}
                           onClick={() => handleUpdateStatus(selectedLead.status === 'completed' ? 'processing' : 'completed')}
-                          className={`w-64 justify-center flex items-center px-4 py-2 rounded-lg font-black text-xs transition-all duration-300 border cursor-pointer ${
+                          className={`w-full sm:w-64 justify-center flex items-center px-4 py-2 rounded-lg font-black text-xs transition-all duration-300 border cursor-pointer ${
                             selectedLead.status === 'completed'
                               ? 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
                               : (selectedLead.status !== 'completed' && (isSplit ? !isSoldeValidated : !isPaymentValidated))

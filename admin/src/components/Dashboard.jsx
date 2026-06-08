@@ -1051,7 +1051,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
         </header>
 
         {/* Scrollable Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 h-full custom-scrollbar">
+        <main className={`flex-1 overflow-y-auto ${activeTab === 'messages' ? 'p-0' : 'p-4 sm:p-6 md:p-8'} h-full custom-scrollbar`}>
           
           {activeTab === 'overview' && (
             <AdminOverview

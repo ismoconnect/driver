@@ -39,6 +39,31 @@ const AdminMessages = ({
 }) => {
   const adminChatEndRef = useRef(null);
 
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(chats.length / itemsPerPage) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [chats.length, totalPages, currentPage]);
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentChats = chats.slice(indexOfFirstItem, indexOfLastItem);
+
   const scrollAdminChatToBottom = () => {
     if (adminChatEndRef.current) {
       adminChatEndRef.current.scrollIntoView({ behavior: 'auto' });
@@ -52,12 +77,14 @@ const AdminMessages = ({
   }, [chatMessages, selectedChatId]);
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-12rem)] animate-fade-in">
+    <div className="flex gap-0 md:gap-6 h-[calc(100vh-5rem)] md:h-[calc(100vh-12rem)] animate-fade-in">
       {/* Left pane: Chats List */}
-      <div className="w-1/3 bg-slate-900/60 border border-white/5 rounded-3xl p-5 flex flex-col gap-4 overflow-hidden backdrop-blur-sm">
+      <div className={`w-full md:w-1/3 bg-slate-900/60 md:border md:border-white/5 md:rounded-3xl rounded-none border-0 p-5 flex flex-col gap-4 overflow-hidden backdrop-blur-sm ${
+        selectedChatId ? 'hidden md:flex' : 'flex'
+      }`}>
         <h3 className="text-sm font-bold text-white uppercase tracking-wider">Conversations Actives</h3>
         <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-          {chats.map((chat) => {
+          {currentChats.map((chat) => {
             const isSelected = selectedChatId === chat.id;
             return (
               <div
@@ -92,17 +119,48 @@ const AdminMessages = ({
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto flex-shrink-0">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 disabled:opacity-45 disabled:pointer-events-none transition-all cursor-pointer"
+            >
+              Précédent
+            </button>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Page {currentPage} sur {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 disabled:opacity-45 disabled:pointer-events-none transition-all cursor-pointer"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right pane: Active Thread */}
-      <div className="flex-1 bg-slate-900/60 border border-white/5 rounded-3xl overflow-hidden flex flex-col backdrop-blur-sm relative">
+      <div className={`flex-1 bg-slate-900/60 md:border md:border-white/5 md:rounded-3xl rounded-none border-0 overflow-hidden flex flex-col backdrop-blur-sm relative ${
+        selectedChatId ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedChatId ? (
           <>
             {/* Selected Chat Header */}
             {(() => {
               const activeChat = chats.find(c => c.id === selectedChatId);
               return (
-                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-slate-900/40">
+                <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3 bg-slate-900/40">
+                  <button
+                    onClick={() => setSelectedChatId(null)}
+                    className="md:hidden w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors flex-shrink-0 font-bold"
+                  >
+                    ←
+                  </button>
                   <div>
                     <h4 className="font-bold text-white text-sm">{activeChat?.userName || 'Candidat'}</h4>
                     <p className="text-xs text-slate-500 mt-0.5">{activeChat?.userEmail}</p>
