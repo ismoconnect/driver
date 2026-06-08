@@ -159,7 +159,7 @@ function AppRoutes() {
   }, []);
 
   useEffect(() => {
-    const marketingRef = doc(db, 'settings', 'marketing');
+    const marketingRef = doc(db, 'marketing', 'settings');
     const unsubMarketing = onSnapshot(marketingRef, (snap) => {
       if (snap.exists()) {
         setMarketing(snap.data());

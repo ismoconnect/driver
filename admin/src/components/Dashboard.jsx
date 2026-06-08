@@ -292,9 +292,9 @@ const Dashboard = ({ onLogout, initialTab }) => {
     return () => unsubscribe();
   }, []);
 
-  // Listen to marketing settings in real-time (dedicated document settings/marketing)
+  // Listen to marketing settings in real-time (dedicated collection marketing/settings)
   useEffect(() => {
-    const docRef = doc(db, "settings", "marketing");
+    const docRef = doc(db, "marketing", "settings");
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         setMarketingSettings(prev => ({ ...prev, ...docSnap.data() }));
@@ -527,7 +527,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
     setSavingMarketing(true);
     setMarketingSuccess(false);
     try {
-      const docRef = doc(db, "settings", "marketing");
+      const docRef = doc(db, "marketing", "settings");
       await setDoc(docRef, {
         metaPixelId: marketingSettings.metaPixelId || "",
         metaPixelEnabled: marketingSettings.metaPixelEnabled === true || marketingSettings.metaPixelEnabled === 'true',
