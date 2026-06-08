@@ -46,23 +46,22 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 animate-fade-in">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-900/60 border border-white/5 p-6 rounded-3xl backdrop-blur-sm shadow-xl">
-          <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Dossiers</p>
-          <p className="text-4xl font-black text-white">{leads.length}</p>
+      <div className="grid grid-cols-3 gap-3 md:gap-6">
+        <div className="bg-slate-900/60 border border-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl backdrop-blur-sm shadow-xl">
+          <p className="text-slate-400 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-1 md:mb-2">Total</p>
+          <p className="text-lg sm:text-2xl md:text-4xl font-black text-white">{leads.length}</p>
         </div>
-        <div className="bg-slate-900/60 border border-white/5 p-6 rounded-3xl backdrop-blur-sm shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2" />
-          <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Nouveaux</p>
-          <p className="text-4xl font-black text-emerald-400">{leads.filter(l => l.status === 'new').length}</p>
+        <div className="bg-slate-900/60 border border-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl backdrop-blur-sm shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 blur-2xl rounded-full transform translate-x-1/2 -translate-y-1/2" />
+          <p className="text-slate-400 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-1 md:mb-2">Nouveaux</p>
+          <p className="text-lg sm:text-2xl md:text-4xl font-black text-emerald-400">{leads.filter(l => l.status === 'new').length}</p>
         </div>
-        <div className="bg-slate-900/60 border border-white/5 p-6 rounded-3xl backdrop-blur-sm shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2" />
-          <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">En Cours</p>
-          <p className="text-4xl font-black text-amber-400">{leads.filter(l => l.status === 'processing').length}</p>
+        <div className="bg-slate-900/60 border border-white/5 p-4 md:p-6 rounded-2xl md:rounded-3xl backdrop-blur-sm shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 blur-2xl rounded-full transform translate-x-1/2 -translate-y-1/2" />
+          <p className="text-slate-400 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-1 md:mb-2">En Cours</p>
+          <p className="text-lg sm:text-2xl md:text-4xl font-black text-amber-400">{leads.filter(l => l.status === 'processing').length}</p>
         </div>
       </div>
 
@@ -100,8 +99,64 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
         </div>
       </div>
 
-      {/* Table / List */}
-      <div className="bg-slate-900/80 rounded-3xl border border-white/5 overflow-hidden shadow-2xl backdrop-blur-xl">
+      {/* Mobile list view */}
+      <div className="block md:hidden space-y-4">
+        {sortedLeads.map((lead) => (
+          <div 
+            key={lead.id} 
+            onClick={() => openDetail(lead)}
+            className="bg-slate-900/60 border border-white/5 p-4 rounded-2xl space-y-3 shadow-lg hover:border-emerald-500/20 active:bg-slate-900/80 transition-all cursor-pointer"
+          >
+            <div className="flex justify-between items-start gap-2">
+              <div>
+                <h4 className="text-sm font-bold text-white truncate max-w-[170px]">{lead.name}</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">{lead.date}</p>
+              </div>
+              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
+                lead.status === 'new' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                lead.status === 'processing' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                lead.status === 'completed' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                'bg-white/5 text-slate-400 border border-white/5'
+              }`}>
+                {lead.status === 'new' ? 'Nouveau' : lead.status === 'processing' ? 'En cours' : 'Terminé'}
+              </span>
+            </div>
+            
+            <div className="text-[11px] text-slate-300 break-all bg-slate-950/40 px-3 py-2 rounded-xl border border-white/5 font-mono">
+              {lead.email}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1" onClick={e => e.stopPropagation()}>
+              <button 
+                onClick={() => openDetail(lead)}
+                className="text-[10px] font-bold text-slate-400 hover:text-indigo-400 bg-white/5 hover:bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-white/5 hover:border-indigo-500/20 transition-all"
+              >
+                ⚙️ Gérer
+              </button>
+              <button 
+                onClick={(e) => handleReset(e, lead)}
+                className="text-[10px] font-bold text-slate-400 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-white/5 hover:border-emerald-500/20 transition-all"
+              >
+                🔄 Reset
+              </button>
+              <button 
+                onClick={(e) => handleDelete(e, lead)}
+                className="text-[10px] font-bold text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-3 py-1.5 rounded-lg border border-white/5 hover:border-red-500/20 transition-all"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+        {sortedLeads.length === 0 && !loading && (
+          <div className="text-center py-12 text-slate-500 text-xs">
+            Aucune demande trouvée.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block bg-slate-900/80 rounded-3xl border border-white/5 overflow-hidden shadow-2xl backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-white/5">
             <thead className="bg-slate-900">
@@ -112,7 +167,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                 >
                   Client {sortField === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                 <th className="px-6 py-5 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
+                <th className="px-6 py-5 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</th>
                 <th className="px-6 py-5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -155,7 +210,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                   </td>
                 </tr>
               ))}
-               {sortedLeads.length === 0 && !loading && (
+              {sortedLeads.length === 0 && !loading && (
                 <tr>
                   <td colSpan="3" className="px-6 py-16 text-center text-slate-500 font-medium">
                     Aucune demande trouvée.
