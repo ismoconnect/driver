@@ -109,6 +109,11 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
         sendWelcomeEmail(newUser.email, signupFirstName.trim(), advisor).catch(err => {
           console.error("Failed to send welcome email:", err);
         });
+
+        // Suivi de conversion Pixel Meta
+        if (window.fbq) {
+          window.fbq('track', 'CompleteRegistration');
+        }
       }
       if (onAuthSuccess) onAuthSuccess();
     } catch (error) {

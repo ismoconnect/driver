@@ -12,6 +12,24 @@ import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
+// ─── Facebook Pixel Route Tracker ──────────────────────────────────────────────
+function FacebookPixelTracker({ advisor }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!advisor) return;
+    const { metaPixelId, metaPixelEnabled } = advisor;
+
+    if (metaPixelEnabled && metaPixelId) {
+      if (window.fbq) {
+        window.fbq("track", "PageView");
+      }
+    }
+  }, [location.pathname, advisor]);
+
+  return null;
+}
+
 // ─── Global auth state hook ───────────────────────────────────────────────────
 function useAuth() {
   const [user, setUser] = useState(null);
@@ -139,8 +157,115 @@ function AppRoutes() {
     return () => unsubAdvisor();
   }, []);
 
+  // ─── Meta Pixel & Messenger Integration ────────────────────────────────────────
+  useEffect(() => {
+    if (!advisor) return;
+    const { metaPixelId, metaPixelEnabled, messengerPageId, messengerEnabled, ogTitle, ogDescription, ogImageUrl } = advisor;
+
+    // 1. Meta Pixel Script Loader
+    if (metaPixelEnabled && metaPixelId) {
+      if (!window.fbq) {
+        /* eslint-disable */
+        !(function (f, b, e, v, n, t, s) {
+          if (f.fbq) return;
+          n = f.fbq = function () {
+            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+          };
+          if (!f._fbq) f._fbq = n;
+          n.push = n;
+          n.loaded = !0;
+          n.version = "2.0";
+          n.queue = [];
+          t = b.createElement(e);
+          t.async = !0;
+          t.src = v;
+          s = b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t, s);
+        })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+        /* eslint-enable */
+        window.fbq("init", metaPixelId);
+      }
+      window.fbq("track", "PageView");
+    }
+
+    // 2. Facebook Messenger Chat Widget
+    const existingChat = document.getElementById('fb-customer-chat');
+    if (existingChat) existingChat.remove();
+    const existingRoot = document.getElementById('fb-root');
+    if (existingRoot) existingRoot.remove();
+
+    if (messengerEnabled && messengerPageId) {
+      const fbRoot = document.createElement('div');
+      fbRoot.id = 'fb-root';
+      document.body.appendChild(fbRoot);
+
+      const chatDiv = document.createElement('div');
+      chatDiv.id = 'fb-customer-chat';
+      chatDiv.className = 'fb-customerchat';
+      chatDiv.setAttribute('page_id', messengerPageId);
+      chatDiv.setAttribute('attribution', 'biz_inbox');
+      document.body.appendChild(chatDiv);
+
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          xfbml:            true,
+          version:          'v18.0'
+        });
+      };
+
+      if (!document.getElementById('facebook-jssdk')) {
+        const script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.src = 'https://connect.facebook.net/fr_FR/sdk/xfbml.customerchat.js';
+        document.body.appendChild(script);
+      } else if (window.FB) {
+        window.FB.XFBML.parse();
+      }
+    }
+
+    // 3. Open Graph Metadata Updater
+    if (ogTitle) {
+      document.title = ogTitle;
+      let tag = document.querySelector('meta[property="og:title"]');
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', 'og:title');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', ogTitle);
+    }
+    if (ogDescription) {
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (!ogDesc) {
+        ogDesc = document.createElement('meta');
+        ogDesc.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDesc);
+      }
+      ogDesc.setAttribute('content', ogDescription);
+
+      let desc = document.querySelector('meta[name="description"]');
+      if (!desc) {
+        desc = document.createElement('meta');
+        desc.setAttribute('name', 'description');
+        document.head.appendChild(desc);
+      }
+      desc.setAttribute('content', ogDescription);
+    }
+    if (ogImageUrl) {
+      let tag = document.querySelector('meta[property="og:image"]');
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', 'og:image');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', ogImageUrl);
+    }
+  }, [advisor]);
+
   return (
-    <Routes>
+    <>
+      <FacebookPixelTracker advisor={advisor} />
+      <Routes>
       {/* Landing page */}
       <Route path="/" element={<Navigate to="/accueil" replace />} />
       <Route path="/accueil" element={<LandingPage user={user} authChecked={authChecked} advisor={advisor} />} />
@@ -157,7 +282,8 @@ function AppRoutes() {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

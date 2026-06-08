@@ -15,6 +15,7 @@ import AdminSettings from './AdminSettings';
 import AdminLeadDetail from './AdminLeadDetail';
 import AdminAIBV from './AdminAIBV';
 import AdminManagement from './AdminManagement';
+import AdminMarketing from './AdminMarketing';
 
 const Dashboard = ({ onLogout, initialTab }) => {
   const navigate = useNavigate();
@@ -484,7 +485,16 @@ const Dashboard = ({ onLogout, initialTab }) => {
         emailFormulaSelectedSubject: advisorSettings.emailFormulaSelectedSubject || "📋 Votre inscription est bien reçue - Mon Permis",
         emailFormulaSelectedBody: advisorSettings.emailFormulaSelectedBody || "Nous avons bien reçu votre dossier d'inscription pour la **{formulaName}** d'un montant de **{amount}**.\n\nNos équipes procèdent actuellement à la vérification de vos documents d'identité pour démarrer la constitution officielle de votre dossier auprès des services agréés.",
         emailSoldeInitiatedSubject: advisorSettings.emailSoldeInitiatedSubject || "⚡ Votre document est prêt & Appel de solde - Mon Permis",
-        emailSoldeInitiatedBody: advisorSettings.emailSoldeInitiatedBody || "Félicitations, l'attestation ou le certificat lié à votre phase pour la **{formulaName}** est maintenant prêt.\n\nVous pouvez dès à présent régler le solde restant de **{amount}** par virement bancaire pour finaliser et clore votre dossier."
+        emailSoldeInitiatedBody: advisorSettings.emailSoldeInitiatedBody || "Félicitations, l'attestation ou le certificat lié à votre phase pour la **{formulaName}** est maintenant prêt.\n\nVous pouvez dès à présent régler le solde restant de **{amount}** par virement bancaire pour finaliser et clore votre dossier.",
+
+        // Marketing Meta / Facebook Settings
+        metaPixelId: advisorSettings.metaPixelId || "",
+        metaPixelEnabled: advisorSettings.metaPixelEnabled === true || advisorSettings.metaPixelEnabled === 'true',
+        messengerPageId: advisorSettings.messengerPageId || "",
+        messengerEnabled: advisorSettings.messengerEnabled === true || advisorSettings.messengerEnabled === 'true',
+        ogTitle: advisorSettings.ogTitle || "",
+        ogDescription: advisorSettings.ogDescription || "",
+        ogImageUrl: advisorSettings.ogImageUrl || ""
       });
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 3000);
@@ -861,136 +871,148 @@ const Dashboard = ({ onLogout, initialTab }) => {
       {/* Sidebar */}
       <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-slate-900/80 border-r border-white/5 flex flex-col justify-between flex-shrink-0 backdrop-blur-xl transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-2xl`}>
         <div>
-          <div className="px-8 py-8 border-b border-white/5 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-black tracking-tighter text-white">
+              <h1 className="text-xl font-black tracking-tighter text-white">
                 ADMIN<span className="text-emerald-500">PRO</span>
               </h1>
-              <p className="text-xs font-semibold text-slate-500 mt-1 tracking-widest uppercase">Portail de Gestion</p>
+              <p className="text-[10px] font-semibold text-slate-500 mt-0.5 tracking-widest uppercase">Portail de Gestion</p>
             </div>
             {/* Mobile close button */}
             <button 
               onClick={() => setSidebarOpen(false)}
-              className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg md:hidden hover:bg-white/5 transition-colors cursor-pointer"
+              className="p-1.5 -mr-1.5 text-slate-400 hover:text-white rounded-lg md:hidden hover:bg-white/5 transition-colors cursor-pointer"
             >
               ✕
             </button>
           </div>
           
-          <nav className="mt-6 px-4 space-y-1">
+          <nav className="mt-3.5 px-3 space-y-0.5">
             {/* Vue d'ensemble */}
             <button
               onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'overview'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">🏠</span>
+              <span className="mr-2 text-base">🏠</span>
               Vue d'ensemble
             </button>
 
-            <div className="pt-2 pb-1 px-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Gestion</p>
+            <div className="pt-1.5 pb-0.5 px-1">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Gestion</p>
             </div>
 
             <button
               onClick={() => { setActiveTab('demandes'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'demandes'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">📂</span>
+              <span className="mr-2 text-base">📂</span>
               Les demandes
             </button>
             <button
               onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'users'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">👥</span>
+              <span className="mr-2 text-base">👥</span>
               Mes utilisateurs
             </button>
             <button
               onClick={() => { setActiveTab('messages'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 relative ${
                 activeTab === 'messages'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">💬</span>
+              <span className="mr-2 text-base">💬</span>
               Ma messagerie
               {chats.some(c => c.unreadByAdmin) && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </button>
             <button
               onClick={() => { setActiveTab('documents'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'documents'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">📁</span>
+              <span className="mr-2 text-base">📁</span>
               Dossiers utilisateurs
             </button>
 
-            <div className="pt-2 pb-1 px-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Configuration</p>
+            <div className="pt-1.5 pb-0.5 px-1">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Configuration</p>
             </div>
 
             <button
               onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'settings'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">⚙️</span>
+              <span className="mr-2 text-base">⚙️</span>
               Paramètres
             </button>
 
             <button
               onClick={() => { setActiveTab('aibv'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                 activeTab === 'aibv'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="mr-3 text-lg">📧</span>
+              <span className="mr-2 text-base">📧</span>
               Service AIBV
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('marketing'); setSidebarOpen(false); }}
+              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
+                activeTab === 'marketing'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="mr-2 text-base">📢</span>
+              Marketing Facebook
             </button>
 
             {currentUserRole === 'super_admin' && (
               <button
                 onClick={() => { setActiveTab('manage_admins'); setSidebarOpen(false); }}
-                className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
                   activeTab === 'manage_admins'
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <span className="mr-3 text-lg">👥</span>
+                <span className="mr-2 text-base">👥</span>
                 Gestion Admins
               </button>
             )}
           </nav>
         </div>
 
-        <div className="p-4 border-t border-white/5">
+        <div className="p-3 border-t border-white/5">
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center px-4 py-3 text-sm font-bold text-red-400 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/30 rounded-xl transition-all duration-300"
+            className="w-full flex items-center justify-center px-3 py-2 text-xs font-bold text-red-400 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/30 rounded-lg transition-all duration-300"
           >
             Déconnexion
           </button>
@@ -1028,6 +1050,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
               {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
               {activeTab === 'settings' && "⚙️ Paramètres"}
               {activeTab === 'aibv' && "📧 Service AIBV"}
+              {activeTab === 'marketing' && "📢 Marketing Facebook"}
               {activeTab === 'manage_admins' && "👥 Gestion des Admins"}
             </h2>
           </div>
@@ -1138,6 +1161,16 @@ const Dashboard = ({ onLogout, initialTab }) => {
               handleTheoriqueTotalChange={handleTheoriqueTotalChange}
               handlePratiqueTotalChange={handlePratiqueTotalChange}
               handleDirectTotalChange={handleDirectTotalChange}
+            />
+          )}
+
+          {activeTab === 'marketing' && (
+            <AdminMarketing
+              advisorSettings={advisorSettings}
+              setAdvisorSettings={setAdvisorSettings}
+              handleSaveSettings={handleSaveSettings}
+              savingSettings={savingSettings}
+              settingsSuccess={settingsSuccess}
             />
           )}
 
