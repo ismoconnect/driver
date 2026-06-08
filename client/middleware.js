@@ -8,7 +8,7 @@ export default function middleware(request) {
   const userAgent = request.headers.get('user-agent') || '';
 
   // Case-insensitive test for search engine spiders, social sharing crawlers, and embed tools
-  const isBot = /facebook|twitter|linkedin|embed|quora|pinterest|slack|vk|whatsapp|opengraph|google|bot|fetch|axios|node|preview/i.test(userAgent);
+  const isBot = /facebook|twitter|linkedin|embed|quora|pinterest|slack|vk|whatsapp|opengraph|google|bot|fetch|axios|node|preview|got|http|client|crawler|spider|scanner/i.test(userAgent);
 
   if (isBot) {
     // Rewrite the request URL to Vercel Serverless Function '/api/og'
