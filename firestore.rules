@@ -7,6 +7,11 @@ service cloud.firestore {
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // Helper: Vérifie si l'utilisateur connecté est un super administrateur
+    function isSuperAdmin() {
+      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
     // ── Collection "users" ──────────────────────────────────────────────────
     // Créée à l'inscription. Chaque utilisateur lit/écrit son profil, les admins peuvent tout lire/écrire.
     match /users/{userId} {
@@ -42,10 +47,15 @@ service cloud.firestore {
     }
 
     // ── Collection "admins" ──────────────────────────────────────────────────
-    // Lecture seule par l'admin concerné. Écriture via Admin SDK uniquement.
+    // Lecture et écriture autorisées pour les administrateurs
     match /admins/{adminId} {
-      allow read: if request.auth != null && request.auth.uid == adminId;
-      allow write: if false;
+      allow read, write: if isAdmin();
+    }
+
+    // ── Collection "aibv_emails_logs" ────────────────────────────────────────
+    // Lecture et écriture autorisées pour les administrateurs pour l'historique d'envoi
+    match /aibv_emails_logs/{logId} {
+      allow read, write: if isAdmin();
     }
 
     // Bloquer tout le reste par défaut

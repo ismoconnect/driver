@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
-const AdminAIBV = () => {
+const AdminAIBV = ({ leads = [] }) => {
   const [subTab, setSubTab] = useState('send'); // 'send' | 'config' | 'logs'
-  const [leads, setLeads] = useState([]);
-  
+  const [showPassword, setShowPassword] = useState(false);
+
   // SMTP Config State
   const [smtpConfig, setSmtpConfig] = useState({
     host: '',
@@ -15,7 +15,9 @@ const AdminAIBV = () => {
     fromName: 'AIBV Service',
     headerBgColor: '#0f172a',
     accentColor: '#3b82f6',
-    headerTextColor: '#ffffff'
+    headerTextColor: '#ffffff',
+    footerTitle: 'SERVICE PROFESSIONNEL INDÉPENDANT AIBV',
+    footerContent: "Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires."
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configSuccess, setConfigSuccess] = useState(false);
@@ -29,6 +31,46 @@ const AdminAIBV = () => {
   const [selectedLeadId, setSelectedLeadId] = useState('');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null); // { success: boolean, message: string }
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true);
+    try {
+      await setDoc(doc(db, 'settings', 'aibv_email_template'), {
+        subject: emailForm.subject,
+        body: emailForm.body
+      });
+      alert("Modèle d'e-mail sauvegardé avec succès !");
+    } catch (err) {
+      console.error("Erreur sauvegarde modèle:", err);
+      alert("Erreur lors de la sauvegarde du modèle.");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleLoadTemplate = async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'settings', 'aibv_email_template'));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setEmailForm(prev => ({
+          ...prev,
+          subject: data.subject || '',
+          body: data.body || ''
+        }));
+      }
+    } catch (err) {
+      console.error("Erreur chargement modèle:", err);
+    }
+  };
+
+  // Load Saved Email Template on Mount
+  useEffect(() => {
+    if (subTab === 'send') {
+      handleLoadTemplate();
+    }
+  }, [subTab]);
 
   // Logs State
   const [logs, setLogs] = useState([]);
@@ -49,29 +91,6 @@ const AdminAIBV = () => {
     };
     fetchSmtpConfig();
   }, []);
-
-  // Fetch Leads for recipient picker
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const leadsData = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.email) {
-            leadsData.push({ id: doc.id, name: data.name, email: data.email });
-          }
-        });
-        setLeads(leadsData);
-      } catch (err) {
-        console.error("Erreur chargement leads:", err);
-      }
-    };
-    if (subTab === 'send') {
-      fetchLeads();
-    }
-  }, [subTab]);
 
   // Fetch Logs
   const fetchLogs = async () => {
@@ -117,7 +136,7 @@ const AdminAIBV = () => {
   // Lead selection handler
   const handleSelectLead = (leadId) => {
     setSelectedLeadId(leadId);
-    if (leadId) {
+    if (leadId && leadId !== 'other') {
       const lead = leads.find(l => l.id === leadId);
       if (lead) {
         setEmailForm(prev => ({ ...prev, to: lead.email }));
@@ -165,8 +184,8 @@ const AdminAIBV = () => {
           
           <!-- Footer -->
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">SERVICE PROFESSIONNEL INDÉPENDANT AIBV</p>
-            <p style="margin: 0; line-height: 1.5;">Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires.</p>
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">${smtpConfig.footerTitle || 'SERVICE PROFESSIONNEL INDÉPENDANT AIBV'}</p>
+            <p style="margin: 0; line-height: 1.5;">${smtpConfig.footerContent || "Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires."}</p>
           </div>
         </div>
       </div>
@@ -254,8 +273,8 @@ const AdminAIBV = () => {
           
           <!-- Footer -->
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">SERVICE PROFESSIONNEL INDÉPENDANT AIBV</p>
-            <p style="margin: 0; line-height: 1.5;">Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires.</p>
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #64748b;">${smtpConfig.footerTitle || 'SERVICE PROFESSIONNEL INDÉPENDANT AIBV'}</p>
+            <p style="margin: 0; line-height: 1.5;">${smtpConfig.footerContent || "Ce courriel et ses pièces jointes sont confidentiels et établis à l'attention exclusive de ses destinataires."}</p>
           </div>
         </div>
       </div>
@@ -332,11 +351,12 @@ const AdminAIBV = () => {
                   className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
                 >
                   <option value="">-- Sélectionner --</option>
-                  {leads.map((lead) => (
+                  {leads.filter(l => l.email).map((lead) => (
                     <option key={lead.id} value={lead.id}>
                       {lead.name} ({lead.email})
                     </option>
                   ))}
+                  <option value="other">Autre (Saisie manuelle)</option>
                 </select>
               </div>
 
@@ -380,18 +400,33 @@ const AdminAIBV = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={handleLoadTemplate}
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
+              >
+                <span>📂 Charger le modèle</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                disabled={savingTemplate}
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
+              >
+                <span>{savingTemplate ? "Sauvegarde..." : "💾 Enregistrer le modèle"}</span>
+              </button>
               <button
                 type="button"
                 onClick={handleShowPreview}
-                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer"
+                className="bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
               >
                 <span>👁️ Aperçu HTML</span>
               </button>
               <button
                 type="submit"
                 disabled={sending}
-                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] cursor-pointer"
+                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.2)] cursor-pointer text-xs sm:text-sm"
               >
                 {sending ? (
                   <>
@@ -469,14 +504,32 @@ const AdminAIBV = () => {
               {/* SMTP Password */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Mot de passe SMTP</label>
-                <input
-                  type="password"
-                  value={smtpConfig.pass || ''}
-                  onChange={(e) => setSmtpConfig(prev => ({ ...prev, pass: e.target.value }))}
-                  placeholder="Mot de passe du compte mail"
-                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={smtpConfig.pass || ''}
+                    onChange={(e) => setSmtpConfig(prev => ({ ...prev, pass: e.target.value }))}
+                    placeholder="Mot de passe du compte mail"
+                    className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none transition-colors text-white"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -545,6 +598,30 @@ const AdminAIBV = () => {
                     className="flex-1 bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors text-white font-mono"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Footer Customization */}
+            <div className="space-y-4 pt-4 border-t border-white/5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Titre du pied de page (Footer)</label>
+                <input
+                  type="text"
+                  value={smtpConfig.footerTitle || ''}
+                  onChange={(e) => setSmtpConfig(prev => ({ ...prev, footerTitle: e.target.value }))}
+                  placeholder="Ex: SERVICE PROFESSIONNEL INDÉPENDANT AIBV"
+                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Contenu du pied de page (Footer)</label>
+                <textarea
+                  value={smtpConfig.footerContent || ''}
+                  onChange={(e) => setSmtpConfig(prev => ({ ...prev, footerContent: e.target.value }))}
+                  placeholder="Ex: Ce courriel et ses pièces jointes sont confidentiels..."
+                  rows={3}
+                  className="w-full bg-slate-950/80 border border-white/15 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors text-white resize-y"
+                />
               </div>
             </div>
 

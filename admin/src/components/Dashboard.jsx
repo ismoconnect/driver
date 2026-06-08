@@ -14,11 +14,13 @@ import AdminMessages from './AdminMessages';
 import AdminSettings from './AdminSettings';
 import AdminLeadDetail from './AdminLeadDetail';
 import AdminAIBV from './AdminAIBV';
+import AdminManagement from './AdminManagement';
 
 const Dashboard = ({ onLogout, initialTab }) => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
   const [selectedLeadUid, setSelectedLeadUid] = useState(() => localStorage.getItem('adminSelectedLeadUid') || null);
   const [updating, setUpdating] = useState(false);
   const [attestationUrlInput, setAttestationUrlInput] = useState('');
@@ -77,6 +79,41 @@ const Dashboard = ({ onLogout, initialTab }) => {
   useEffect(() => {
     localStorage.setItem('adminTheme', theme);
   }, [theme]);
+
+  // Fetch current admin user role with automatic bootstrap if no super_admin exists
+  useEffect(() => {
+    let unsubAdminsList = () => {};
+    const user = auth.currentUser;
+    if (user) {
+      unsubAdminsList = onSnapshot(collection(db, 'admins'), (snap) => {
+        const adminsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const hasSuperAdmin = adminsList.some(a => a.role === 'super_admin');
+        const userDoc = adminsList.find(a => a.id === user.uid);
+        
+        if (!hasSuperAdmin) {
+          // Si aucun super_admin n'existe encore en base, on donne temporairement les droits pour éviter le blocage
+          setCurrentUserRole('super_admin');
+        } else if (userDoc) {
+          setCurrentUserRole(userDoc.role || 'admin');
+        } else {
+          setCurrentUserRole('admin');
+        }
+      }, (err) => {
+        console.error("Error fetching admins list for role:", err);
+        setCurrentUserRole('admin');
+      });
+    } else {
+      setCurrentUserRole(null);
+    }
+    return () => unsubAdminsList();
+  }, []);
+
+  // Redirect if non-super_admin tries to access manage_admins
+  useEffect(() => {
+    if (currentUserRole && currentUserRole !== 'super_admin' && activeTab === 'manage_admins') {
+      setActiveTab('overview');
+    }
+  }, [currentUserRole, activeTab]);
 
   // Derive selectedLead from leads array using stored UID
   const selectedLead = leads.find(l => l.uid === selectedLeadUid) || null;
@@ -580,10 +617,13 @@ const Dashboard = ({ onLogout, initialTab }) => {
   // ─── Synchronisation temps réel : deux listeners parallèles ───────────────
   const leadsDataRef  = useRef([]);
   const usersDataRef  = useRef([]);
+  const adminsDataRef = useRef([]);
 
   const mergeAndSet = () => {
     const leadsData = leadsDataRef.current;
     const usersData = usersDataRef.current;
+    const adminsData = adminsDataRef.current;
+    const adminUids = new Set(adminsData.map(a => a.uid || a.id));
 
     // Map pour accès rapide par UID
     const usersMap = Object.fromEntries(usersData.map(u => [u.uid || u.id, u]));
@@ -592,6 +632,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
     // 1. Tous les documents leads, enrichis avec la collection users
     for (const lead of leadsData) {
       const uid = lead.uid || lead.id;
+      if (adminUids.has(uid)) continue;
       const user = usersMap[uid] || {};
       const firstName = lead.firstName || user.firstName || '';
       const lastName  = lead.lastName  || user.lastName  || '';
@@ -614,6 +655,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
     // 2. Utilisateurs sans document leads
     for (const user of usersData) {
       const uid = user.uid || user.id;
+      if (adminUids.has(uid)) continue;
       if (combined.find(c => c.uid === uid)) continue;
       const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '—';
       combined.push({
@@ -666,9 +708,20 @@ const Dashboard = ({ onLogout, initialTab }) => {
       (err) => console.error('users listener error:', err)
     );
 
+    // Listener 3 — collection admins
+    const unsubAdmins = onSnapshot(
+      query(collection(db, 'admins')),
+      (snap) => {
+        adminsDataRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        mergeAndSet();
+      },
+      (err) => console.error('admins listener error:', err)
+    );
+
     return () => {
       unsubLeads();
       unsubUsers();
+      unsubAdmins();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -899,6 +952,20 @@ const Dashboard = ({ onLogout, initialTab }) => {
               <span className="mr-3 text-lg">📧</span>
               Service AIBV
             </button>
+
+            {currentUserRole === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('manage_admins')}
+                className={`w-full flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                  activeTab === 'manage_admins'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span className="mr-3 text-lg">👥</span>
+                Gestion Admins
+              </button>
+            )}
           </nav>
         </div>
 
@@ -933,6 +1000,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
             {activeTab === 'settings' && "⚙️ Paramètres"}
             {activeTab === 'aibv' && "📧 Service AIBV"}
+            {activeTab === 'manage_admins' && "👥 Gestion des Admins"}
           </h2>
           <div className="flex items-center gap-4">
             {/* Theme Toggle Button */}
@@ -1057,7 +1125,11 @@ const Dashboard = ({ onLogout, initialTab }) => {
           )}
 
           {activeTab === 'aibv' && (
-            <AdminAIBV />
+            <AdminAIBV leads={leads} />
+          )}
+
+          {activeTab === 'manage_admins' && currentUserRole === 'super_admin' && (
+            <AdminManagement currentUserRole={currentUserRole} />
           )}
 
         </main>
