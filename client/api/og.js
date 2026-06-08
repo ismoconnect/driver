@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 export default async function handler(req, res) {
   try {
     // 1. Fetch marketing settings from Firestore REST API
@@ -20,12 +17,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2. Read the static index.html file
-    const filePath = path.join(process.cwd(), 'index.html');
-    let html = fs.readFileSync(filePath, 'utf8');
-
-    // 3. Construct and inject the Open Graph meta tags
-    const metaTags = `
+    // 2. Generate the index.html content using a template to avoid filesystem packaging errors on Vercel
+    const html = `<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${ogTitle}</title>
     <meta name="description" content="${ogDescription}" />
     <meta property="og:title" content="${ogTitle}" />
@@ -36,27 +34,35 @@ export default async function handler(req, res) {
     <meta name="twitter:title" content="${ogTitle}" />
     <meta name="twitter:description" content="${ogDescription}" />
     <meta name="twitter:image" content="${ogImageUrl}" />
-    `;
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>`;
 
-    // Remove any default title tag to avoid duplicates, and inject new tags
-    html = html.replace(/<title>.*?<\/title>/gi, '');
-    html = html.replace('</head>', `${metaTags}\n</head>`);
-
-    // 4. Return the modified HTML page
+    // 3. Return the HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate'); // cache for 60 seconds
+    res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate'); // 10 seconds cache
     return res.status(200).send(html);
 
   } catch (error) {
     console.error("Error generating OG tags:", error);
-    // Fallback: just return index.html unmodified
-    try {
-      const filePath = path.join(process.cwd(), 'index.html');
-      const html = fs.readFileSync(filePath, 'utf8');
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(html);
-    } catch (e) {
-      return res.status(500).send("Internal Server Error");
-    }
+    // Safe fallback html
+    const fallbackHtml = `<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mon Permis de Conduire Belge</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>`;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(fallbackHtml);
   }
 }
