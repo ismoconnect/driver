@@ -193,6 +193,19 @@ const Dashboard = ({ onLogout, initialTab }) => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
 
+  // Marketing Settings States
+  const [marketingSettings, setMarketingSettings] = useState({
+    metaPixelId: "",
+    metaPixelEnabled: false,
+    messengerPageId: "",
+    messengerEnabled: false,
+    ogTitle: "",
+    ogDescription: "",
+    ogImageUrl: ""
+  });
+  const [savingMarketing, setSavingMarketing] = useState(false);
+  const [marketingSuccess, setMarketingSuccess] = useState(false);
+
   // Chat / Messages States
   const [chats, setChats] = useState([]);
   const [selectedChatId, setSelectedChatId] = useState(() => localStorage.getItem('adminSelectedChatId') || null);
@@ -274,6 +287,17 @@ const Dashboard = ({ onLogout, initialTab }) => {
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         setAdvisorSettings(prev => ({ ...prev, ...docSnap.data() }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to marketing settings in real-time (dedicated document settings/marketing)
+  useEffect(() => {
+    const docRef = doc(db, "settings", "marketing");
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setMarketingSettings(prev => ({ ...prev, ...docSnap.data() }));
       }
     });
     return () => unsubscribe();
@@ -487,14 +511,6 @@ const Dashboard = ({ onLogout, initialTab }) => {
         emailSoldeInitiatedSubject: advisorSettings.emailSoldeInitiatedSubject || "⚡ Votre document est prêt & Appel de solde - Mon Permis",
         emailSoldeInitiatedBody: advisorSettings.emailSoldeInitiatedBody || "Félicitations, l'attestation ou le certificat lié à votre phase pour la **{formulaName}** est maintenant prêt.\n\nVous pouvez dès à présent régler le solde restant de **{amount}** par virement bancaire pour finaliser et clore votre dossier.",
 
-        // Marketing Meta / Facebook Settings
-        metaPixelId: advisorSettings.metaPixelId || "",
-        metaPixelEnabled: advisorSettings.metaPixelEnabled === true || advisorSettings.metaPixelEnabled === 'true',
-        messengerPageId: advisorSettings.messengerPageId || "",
-        messengerEnabled: advisorSettings.messengerEnabled === true || advisorSettings.messengerEnabled === 'true',
-        ogTitle: advisorSettings.ogTitle || "",
-        ogDescription: advisorSettings.ogDescription || "",
-        ogImageUrl: advisorSettings.ogImageUrl || ""
       });
       setSettingsSuccess(true);
       setTimeout(() => setSettingsSuccess(false), 3000);
@@ -503,6 +519,31 @@ const Dashboard = ({ onLogout, initialTab }) => {
       alert("Erreur lors de la sauvegarde des paramètres.");
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleSaveMarketing = async (e) => {
+    e.preventDefault();
+    setSavingMarketing(true);
+    setMarketingSuccess(false);
+    try {
+      const docRef = doc(db, "settings", "marketing");
+      await setDoc(docRef, {
+        metaPixelId: marketingSettings.metaPixelId || "",
+        metaPixelEnabled: marketingSettings.metaPixelEnabled === true || marketingSettings.metaPixelEnabled === 'true',
+        messengerPageId: marketingSettings.messengerPageId || "",
+        messengerEnabled: marketingSettings.messengerEnabled === true || marketingSettings.messengerEnabled === 'true',
+        ogTitle: marketingSettings.ogTitle || "",
+        ogDescription: marketingSettings.ogDescription || "",
+        ogImageUrl: marketingSettings.ogImageUrl || ""
+      });
+      setMarketingSuccess(true);
+      setTimeout(() => setMarketingSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la sauvegarde des paramètres marketing.");
+    } finally {
+      setSavingMarketing(false);
     }
   };
 
@@ -1166,11 +1207,11 @@ const Dashboard = ({ onLogout, initialTab }) => {
 
           {activeTab === 'marketing' && (
             <AdminMarketing
-              advisorSettings={advisorSettings}
-              setAdvisorSettings={setAdvisorSettings}
-              handleSaveSettings={handleSaveSettings}
-              savingSettings={savingSettings}
-              settingsSuccess={settingsSuccess}
+              advisorSettings={marketingSettings}
+              setAdvisorSettings={setMarketingSettings}
+              handleSaveSettings={handleSaveMarketing}
+              savingSettings={savingMarketing}
+              settingsSuccess={marketingSuccess}
             />
           )}
 

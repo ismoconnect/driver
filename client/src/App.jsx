@@ -13,19 +13,19 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 // ─── Facebook Pixel Route Tracker ──────────────────────────────────────────────
-function FacebookPixelTracker({ advisor }) {
+function FacebookPixelTracker({ marketing }) {
   const location = useLocation();
 
   useEffect(() => {
-    if (!advisor) return;
-    const { metaPixelId, metaPixelEnabled } = advisor;
+    if (!marketing) return;
+    const { metaPixelId, metaPixelEnabled } = marketing;
 
     if (metaPixelEnabled && metaPixelId) {
       if (window.fbq) {
         window.fbq("track", "PageView");
       }
     }
-  }, [location.pathname, advisor]);
+  }, [location.pathname, marketing]);
 
   return null;
 }
@@ -146,6 +146,7 @@ function DashboardPage({ user, authChecked, advisor }) {
 function AppRoutes() {
   const { user, authChecked } = useAuth();
   const [advisor, setAdvisor] = useState(null);
+  const [marketing, setMarketing] = useState(null);
 
   useEffect(() => {
     const advisorRef = doc(db, 'settings', 'advisor');
@@ -157,10 +158,20 @@ function AppRoutes() {
     return () => unsubAdvisor();
   }, []);
 
+  useEffect(() => {
+    const marketingRef = doc(db, 'settings', 'marketing');
+    const unsubMarketing = onSnapshot(marketingRef, (snap) => {
+      if (snap.exists()) {
+        setMarketing(snap.data());
+      }
+    });
+    return () => unsubMarketing();
+  }, []);
+
   // ─── Meta Pixel & Messenger Integration ────────────────────────────────────────
   useEffect(() => {
-    if (!advisor) return;
-    const { metaPixelId, metaPixelEnabled, messengerPageId, messengerEnabled, ogTitle, ogDescription, ogImageUrl } = advisor;
+    if (!marketing) return;
+    const { metaPixelId, metaPixelEnabled, messengerPageId, messengerEnabled, ogTitle, ogDescription, ogImageUrl } = marketing;
 
     // 1. Meta Pixel Script Loader
     if (metaPixelEnabled && metaPixelId) {
@@ -260,11 +271,11 @@ function AppRoutes() {
       }
       tag.setAttribute('content', ogImageUrl);
     }
-  }, [advisor]);
+  }, [marketing]);
 
   return (
     <>
-      <FacebookPixelTracker advisor={advisor} />
+      <FacebookPixelTracker marketing={marketing} />
       <Routes>
       {/* Landing page */}
       <Route path="/" element={<Navigate to="/accueil" replace />} />
