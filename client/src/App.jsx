@@ -215,42 +215,57 @@ function AppRoutes() {
       window.fbq("track", "PageView");
     }
 
-    // 2. Facebook Messenger Chat Widget
-    const existingChat = document.getElementById('fb-customer-chat');
-    if (existingChat) existingChat.remove();
-    const existingRoot = document.getElementById('fb-root');
-    if (existingRoot) existingRoot.remove();
+    // 2. Facebook Messenger Chat Widget (m.me floating button)
+    const existingButton = document.getElementById('messenger-floating-btn');
+    if (existingButton) existingButton.remove();
 
     // Check if the current route is a public route (not starting with /mon-espace)
     const isPublicRoute = !window.location.pathname.startsWith('/mon-espace');
 
     if (messengerEnabled && messengerPageId && isPublicRoute) {
-      const fbRoot = document.createElement('div');
-      fbRoot.id = 'fb-root';
-      document.body.appendChild(fbRoot);
+      const btn = document.createElement('a');
+      btn.id = 'messenger-floating-btn';
+      btn.href = `https://m.me/${messengerPageId}`;
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      btn.setAttribute('aria-label', 'Discuter sur Messenger');
+      
+      // Inline styles for a premium glassmorphic, animated floating button matching our design guidelines
+      Object.assign(btn.style, {
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        width: '60px',
+        height: '60px',
+        backgroundColor: '#0084ff',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 8px 24px rgba(0, 132, 255, 0.4)',
+        zIndex: '9999',
+        transition: 'transform 0.3s ease, background-color 0.3s ease',
+        cursor: 'pointer'
+      });
 
-      const chatDiv = document.createElement('div');
-      chatDiv.id = 'fb-customer-chat';
-      chatDiv.className = 'fb-customerchat';
-      chatDiv.setAttribute('page_id', messengerPageId);
-      chatDiv.setAttribute('attribution', 'biz_inbox');
-      document.body.appendChild(chatDiv);
-
-      window.fbAsyncInit = function() {
-        window.FB.init({
-          xfbml:            true,
-          version:          'v18.0'
-        });
+      // Hover effects
+      btn.onmouseenter = () => {
+        btn.style.transform = 'scale(1.1) translateY(-4px)';
+        btn.style.backgroundColor = '#0073e6';
+      };
+      btn.onmouseleave = () => {
+        btn.style.transform = 'scale(1) translateY(0)';
+        btn.style.backgroundColor = '#0084ff';
       };
 
-      if (!document.getElementById('facebook-jssdk')) {
-        const script = document.createElement('script');
-        script.id = 'facebook-jssdk';
-        script.src = 'https://connect.facebook.net/fr_FR/sdk/xfbml.customerchat.js';
-        document.body.appendChild(script);
-      } else if (window.FB) {
-        window.FB.XFBML.parse();
-      }
+      // Modern Messenger SVG logo
+      btn.innerHTML = `
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.477 2 2 6.145 2 11.25c0 2.91 1.455 5.513 3.734 7.238.196.149.324.37.333.614l.08 2.052c.01.272.296.463.557.382l2.302-.716a.78.78 0 0 1 .45-.027c.808.243 1.666.377 2.544.377 5.523 0 10-4.145 10-9.25S17.523 2 12 2zm1.225 11.758-2.038-2.176-3.972 2.176 4.368-4.637 2.083 2.176 3.927-2.176-4.368 4.637z" fill="white"/>
+        </svg>
+      `;
+
+      document.body.appendChild(btn);
     }
 
     // 3. Open Graph Metadata Updater
