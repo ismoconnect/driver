@@ -1288,6 +1288,17 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             scrollbar-color: rgba(255, 255, 255, 0.65) transparent;
           }
         }
+        @media (max-width: 767px) {
+          ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+        }
 
         .light-theme {
           background-color: #f1f5f9 !important;

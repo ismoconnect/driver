@@ -65,25 +65,6 @@ export default function ClientOverview({
   return (
     <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto min-h-0">
       
-      {/* Header card info */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-1.5 sm:pb-3">
-        <div>
-          <h2 className="text-xl sm:text-3xl font-display font-extrabold text-white">
-            Bonjour, {formData.firstName || 'Candidat'} 👋
-          </h2>
-          <p className="text-white/60 text-[10px] sm:text-sm mt-0.5 sm:mt-1">
-            {isSubmitted 
-              ? "Votre demande d'obtention de permis officiel est en cours de traitement." 
-              : "Complétez votre demande pour initier l'obtention de votre permis de conduire."}
-          </p>
-        </div>
-        <div className={`bg-slate-800/80 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl px-3 py-1 sm:px-4 sm:py-2 flex items-center gap-2 sm:gap-3`}>
-          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-orange animate-pulse" />
-          <span className="text-[10px] sm:text-xs font-semibold text-white/95 uppercase tracking-wide">
-            ID Dossier : {isSubmitted ? `#MPB-${user.uid.slice(0, 5).toUpperCase()}` : "MPB-NON-INITIALISÉ"}
-          </span>
-        </div>
-      </div>
 
       {/* TIMELINE DU CIRCUIT */}
       <div className="flex flex-col gap-1.5 sm:gap-3">
