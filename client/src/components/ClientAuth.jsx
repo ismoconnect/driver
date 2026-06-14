@@ -288,7 +288,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 min-h-[480px]">
             {/* Left Column - SSL Logo, Info & Trust */}
-            <div className="md:col-span-5 bg-slate-900/5 border-b md:border-b-0 md:border-r border-slate-900/10 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden bg-slate-950/5">
+            <div className="md:col-span-5 bg-slate-900/5 border-t md:border-t-0 md:border-r border-slate-900/10 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden bg-slate-950/5 order-2 md:order-1">
               <div>
                 <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-4 py-2.5 rounded-2xl mb-4 shadow-sm">
                   <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-8 rounded-lg" />
@@ -349,7 +349,7 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
             </div>
 
             {/* Right Column - Registration Form */}
-            <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between relative z-10">
+            <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between relative z-10 order-1 md:order-2">
               <div>
                 <button
                   onClick={onBack}

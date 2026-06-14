@@ -140,7 +140,7 @@ export default function ClientChat({
       </div>
 
       {/* Chat Area (Right 2 cols on desktop) */}
-      <div className={`md:col-span-2 flex flex-col h-full bg-slate-950/20 border rounded-2xl p-4 min-h-0 relative ${theme === 'dark' ? 'border-white' : 'border-slate-950'}`}>
+      <div className={`md:col-span-2 flex flex-col h-full bg-slate-950/20 border rounded-2xl p-4 min-h-0 relative ${theme === 'dark' ? 'border-black' : 'border-slate-950'}`}>
         
         {/* Header Info */}
         <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 flex-shrink-0 md:relative fixed top-[53px] md:top-auto left-0 md:left-auto right-0 md:right-auto px-4 py-3 md:p-0 bg-slate-900 md:bg-transparent z-10">

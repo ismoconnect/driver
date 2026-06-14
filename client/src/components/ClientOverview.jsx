@@ -26,6 +26,20 @@ export default function ClientOverview({
   uploadToCloudinary
 }) {
   
+  const [activeTooltip, setActiveTooltip] = React.useState(null);
+
+  React.useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveTooltip(null);
+    };
+    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
+  
   const getTotalAmount = () => {
     let val = "0,00 €";
     if (selectedPath === 'perception') val = advisor.perceptionAmount || "350,00 €";
@@ -98,10 +112,10 @@ export default function ClientOverview({
         {/* Ligne de progression horizontale */}
         <div className="relative">
           {/* Trait de connexion fond */}
-          <div className="hidden lg:block absolute top-8 left-[calc(10%+16px)] right-[calc(10%+16px)] h-0.5 bg-white/5 z-0" />
+          <div className="hidden lg:block absolute top-8 left-[calc(10%+16px)] right-[calc(10%+16px)] h-1 bg-white/15 z-0" />
           {/* Trait de progression coloré */}
           <div
-            className="hidden lg:block absolute top-8 left-[calc(10%+16px)] h-0.5 bg-gradient-to-r from-emerald-500 to-brand-orange z-0 transition-all duration-700"
+            className="hidden lg:block absolute top-8 left-[calc(10%+16px)] h-1 bg-gradient-to-r from-emerald-500 to-brand-orange z-0 transition-all duration-700"
             style={{ 
               width: !isSubmitted 
                 ? '20%' 
@@ -149,7 +163,7 @@ export default function ClientOverview({
             }}
           />
 
-          <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-3 pb-3 scrollbar-none snap-x snap-mandatory lg:mx-0 lg:px-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pb-3 lg:mx-0 lg:px-0">
             {[
               {
                 num: 1,
@@ -243,40 +257,53 @@ export default function ClientOverview({
               const isActive = phase.status === 'active';
               const isReady = phase.status === 'ready';
               const isLocked = phase.status === 'locked';
+
+              const isPhase2Done = (selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'theorique' && applicationStatus === 'completed'));
+              const isPhase3Done = (selectedPath === 'pratique' || selectedPath === 'direct' || (selectedPath === 'perception' && applicationStatus === 'completed'));
+              const isPhase4Done = (selectedPath === 'direct' || (selectedPath === 'pratique' && applicationStatus === 'completed'));
+
               return (
                 <div
                   key={phase.num}
-                  className={`group relative p-2.5 sm:p-3.5 rounded-2xl flex flex-col gap-1 sm:gap-1.5 transition-all duration-500 border cursor-default flex-shrink-0 w-[240px] sm:w-[260px] lg:w-auto snap-start ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isLocked) {
+                      setActiveTooltip(activeTooltip === phase.num ? null : phase.num);
+                    }
+                  }}
+                  className={`group relative p-3 sm:p-3.5 rounded-2xl flex flex-col gap-1 sm:gap-1.5 transition-all duration-500 border cursor-pointer w-full lg:w-auto ${
+                    phase.num === 5 ? 'col-span-2 lg:col-span-1' : ''
+                  } ${
                     isDone
                       ? 'bg-slate-950/50 border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_4px_20px_rgba(52,211,153,0.08)]'
                     : isActive
                       ? 'bg-white/5 border-brand-orange/40 shadow-[0_8px_20px_rgba(255,152,0,0.08)] hover:border-brand-orange/70'
                     : isReady
                       ? 'bg-brand-orange/8 border-brand-orange/40 shadow-[0_8px_20px_rgba(255,152,0,0.1)] hover:border-brand-orange/70'
-                    : 'bg-slate-950/30 border-white/8 opacity-40 hover:opacity-100 hover:bg-slate-900/60 hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]'
+                    : 'bg-slate-950/35 border-white/10 opacity-80 hover:opacity-100 hover:bg-slate-900/60 hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]'
                   }`}
                 >
-                  <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider border transition-all duration-300 ${
-                    isDone ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-                    : isActive ? 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange animate-pulse'
-                    : isReady ? 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange animate-pulse'
-                    : 'bg-white/5 border-white/10 text-white/30 group-hover:bg-white/10 group-hover:text-white/60 group-hover:border-white/20'
+                  <span className={`self-start text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider border transition-all duration-300 ${
+                    isDone ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    : isActive ? 'bg-brand-orange/20 border-brand-orange/45 text-brand-orange animate-pulse'
+                    : isReady ? 'bg-brand-orange/20 border-brand-orange/45 text-brand-orange animate-pulse'
+                    : 'bg-white/10 border-white/20 text-white/60 group-hover:bg-white/15 group-hover:text-white/80'
                   }`}>
                     {phase.badge}
                   </span>
 
                   <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
-                    <span className={`text-xl transition-all duration-300 ${isLocked ? 'grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-80' : ''}`}>
+                    <span className={`text-xl transition-all duration-300 ${isLocked ? 'grayscale opacity-75 group-hover:grayscale-0 group-hover:opacity-95' : ''}`}>
                       {phase.icon}
                     </span>
                     <div>
-                      <p className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${isLocked ? 'text-white/20 group-hover:text-white/40' : 'text-white/30'}`}>
+                      <p className={`text-[8.5px] sm:text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${isLocked ? 'text-white/50 group-hover:text-white/70' : 'text-white/40'}`}>
                         Phase {phase.num}
                       </p>
                       <h4 className={`font-bold text-xs leading-tight transition-colors duration-300 ${
                         isDone ? 'text-white'
                         : isActive || isReady ? 'text-white'
-                        : 'text-white/35 group-hover:text-white/80'
+                        : 'text-white/80 group-hover:text-white/95'
                       }`}>
                         {phase.title}
                       </h4>
@@ -284,18 +311,77 @@ export default function ClientOverview({
                   </div>
 
                   <p className={`text-[10px] leading-relaxed transition-colors duration-300 ${
-                    isDone ? 'text-white/55'
-                    : isActive || isReady ? 'text-white/55'
-                    : 'text-white/20 group-hover:text-white/50'
+                    isDone ? 'text-white/70'
+                    : isActive || isReady ? 'text-white/70'
+                    : 'text-white/60 group-hover:text-white/85'
                   }`}>
                     {isDone ? phase.desc_done : phase.desc_pending}
                   </p>
 
-                  {isLocked && (
-                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-800 border border-white/15 text-white/80 text-[9px] font-semibold px-3 py-1.5 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10">
-                      🔓 Se débloque après validation du dossier
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 border-r border-b border-white/15 rotate-45 -mt-1" />
-                    </div>
+                  {isLocked && (() => {
+                    let positionClasses = 'left-1/2 -translate-x-1/2';
+                    let arrowClasses = 'left-1/2 -translate-x-1/2';
+                    if (phase.num === 1 || phase.num === 3) {
+                      positionClasses = 'left-1/2 -translate-x-1/2 max-sm:left-1 max-sm:translate-x-0';
+                      arrowClasses = 'left-1/2 -translate-x-1/2 max-sm:left-6 max-sm:-translate-x-0';
+                    } else if (phase.num === 2 || phase.num === 4) {
+                      positionClasses = 'left-1/2 -translate-x-1/2 max-sm:left-auto max-sm:right-1 max-sm:translate-x-0';
+                      arrowClasses = 'left-1/2 -translate-x-1/2 max-sm:left-auto max-sm:right-6 max-sm:-translate-x-0';
+                    }
+                    return (
+                      <div className={`absolute -top-12 bg-slate-800 border border-white/20 text-white text-[9px] font-bold px-2 py-1.5 rounded-lg shadow-xl transition-all duration-300 pointer-events-none text-center whitespace-normal sm:whitespace-nowrap w-[130px] sm:w-auto z-20 ${positionClasses} ${
+                        activeTooltip === phase.num ? 'opacity-100 scale-100' : 'opacity-0 scale-95 md:group-hover:opacity-100 md:group-hover:scale-100'
+                      }`}>
+                        🔓 Se débloque après validation du dossier
+                        <div className={`absolute top-full w-2 h-2 bg-slate-800 border-r border-b border-white/20 rotate-45 -mt-1 ${arrowClasses}`} />
+                      </div>
+                    );
+                  })()}
+
+                  {/* Connecteurs sur mobile */}
+                  {phase.num === 1 && (
+                    <>
+                      {/* Background track */}
+                      <div className="hidden max-lg:block absolute top-1/2 -translate-y-1/2 right-[-12px] w-[12px] h-[3px] bg-white/25 z-0 pointer-events-none" />
+                      {/* Active progress */}
+                      <div className="hidden max-lg:block absolute top-1/2 -translate-y-1/2 right-[-12px] w-[12px] h-[3px] bg-emerald-500 z-10 pointer-events-none transition-all duration-500" />
+                    </>
+                  )}
+                  {phase.num === 2 && (
+                    <>
+                      {/* Background track */}
+                      <div className="hidden max-lg:block absolute bottom-[-8px] left-[20%] z-0 pointer-events-none">
+                        <div className="w-[3px] h-[8px] bg-white/25" />
+                        <div className="absolute bottom-0 right-0 w-[calc(50vw-14px)] h-[3px] bg-white/25">
+                          <div className="absolute top-[3px] left-0 w-[3px] h-[8px] bg-white/25" />
+                        </div>
+                      </div>
+                      {/* Active progress */}
+                      {isPhase2Done && (
+                        <div className="hidden max-lg:block absolute bottom-[-8px] left-[20%] z-10 pointer-events-none">
+                          <div className="w-[3px] h-[8px] bg-emerald-500" />
+                          <div className="absolute bottom-0 right-0 w-[calc(50vw-14px)] h-[3px] bg-emerald-500">
+                            <div className="absolute top-[3px] left-0 w-[3px] h-[8px] bg-emerald-500" />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {phase.num === 3 && (
+                    <>
+                      {/* Background track */}
+                      <div className="hidden max-lg:block absolute top-1/2 -translate-y-1/2 right-[-12px] w-[12px] h-[3px] bg-white/25 z-0 pointer-events-none" />
+                      {/* Active progress */}
+                      <div className={`hidden max-lg:block absolute top-1/2 -translate-y-1/2 right-[-12px] w-[12px] h-[3px] z-10 pointer-events-none transition-all duration-500 ${isPhase3Done ? 'bg-emerald-500' : 'bg-transparent'}`} />
+                    </>
+                  )}
+                  {phase.num === 4 && (
+                    <>
+                      {/* Background track */}
+                      <div className="hidden max-lg:block absolute bottom-[-12px] left-1/4 w-[3px] h-[12px] bg-white/25 z-0 pointer-events-none" />
+                      {/* Active progress */}
+                      <div className={`hidden max-lg:block absolute bottom-[-12px] left-1/4 w-[3px] h-[12px] z-10 pointer-events-none transition-all duration-500 ${isPhase4Done ? 'bg-emerald-500' : 'bg-transparent'}`} />
+                    </>
                   )}
                 </div>
               );
@@ -434,7 +520,7 @@ export default function ClientOverview({
       </div>
 
       {/* legal disclaimer compliance */}
-      <div className="border-t border-white/10 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pb-8 md:pr-28">
+      <div className="hidden md:flex border-t border-white/10 pt-4 mt-6 flex-col sm:flex-row items-center justify-between gap-4 pb-8 md:pr-28">
         <span className="text-[10px] text-white/45 leading-relaxed max-w-xl text-center sm:text-left">
           ⚖️ <strong className="text-white/60">Mentions légales & Conformité</strong> : Procédure 100% encadrée par les directives administratives européennes et les articles de réciprocité en vigueur. Enregistré au registre officiel belge.
         </span>

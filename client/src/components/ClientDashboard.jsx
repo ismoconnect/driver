@@ -13,7 +13,7 @@ import ClientChat from './ClientChat';
 import ClientDocuments from './ClientDocuments';
 import ClientProfile from './ClientProfile';
 
-export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, initialTab, advisor: propAdvisor }) {
+export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, initialTab, advisor: propAdvisor, marketing }) {
   const navigate = useNavigate();
   // Authentication states
   const [user, setUser] = useState(null);
@@ -41,6 +41,13 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
   // Client Theme State (light / dark mode)
   const [theme, setTheme] = useState(() => localStorage.getItem('clientTheme') || 'dark');
+
+  // Force dark theme if theme toggle is disabled
+  useEffect(() => {
+    if (marketing?.themeToggleDisabled === true || marketing?.themeToggleDisabled === 'true') {
+      setTheme('dark');
+    }
+  }, [marketing]);
 
   // Persist theme changes to localStorage
   useEffect(() => {
@@ -143,6 +150,23 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     transmission: 'Manuel',
     licenseCategory: 'Permis B (Voiture)',
   });
+
+  const getInitials = () => {
+    if (!user) return '?';
+    const first = (formData?.firstName || '').trim();
+    const last = (formData?.lastName || '').trim();
+    if (first && last) {
+      return (first[0] + last[0]).toUpperCase();
+    } else if (first) {
+      return first.slice(0, 2).toUpperCase();
+    } else if (last) {
+      return last.slice(0, 2).toUpperCase();
+    } else if (user.email) {
+      const parts = user.email.split('@')[0];
+      return parts.slice(0, 2).toUpperCase();
+    }
+    return 'MP';
+  };
 
   // Simulated uploads state
   const [uploads, setUploads] = useState({
@@ -750,7 +774,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     <div className={`h-screen ${isGrandLayout ? 'md:overflow-y-auto overflow-hidden' : 'overflow-hidden'} ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
       {/* --- DASHBOARD HEADER --- */}
       <header className="bg-slate-900 border-b-2 border-emerald-500 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 cursor-pointer select-none active:opacity-85 transition-opacity" onClick={onBack} title="Retourner à l'accueil">
           <img src="/logo.png" alt="Mon Permis Logo" className="h-9 sm:h-10 rounded-lg" />
           <span className="ml-3 hidden sm:inline-block bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
             🔒 Espace Sécurisé SSL
@@ -759,16 +783,32 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all text-sm shadow-sm hover:scale-105 cursor-pointer ${
-              theme === 'dark' 
-                ? 'border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 text-white' 
-                : 'border-slate-200 hover:border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800'
+            onClick={() => setActiveTab('profile')}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all text-xs font-black font-mono tracking-wider shadow-sm hover:scale-105 cursor-pointer ${
+              activeTab === 'profile'
+                ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
+                : theme === 'dark'
+                  ? 'border-white/35 hover:border-white/50 bg-white/5 hover:bg-white/10 text-white'
+                  : 'border-slate-300 hover:border-slate-400 bg-slate-100 hover:bg-slate-200 text-slate-800'
             }`}
-            title={theme === 'dark' ? 'Passer au mode clair' : 'Passer au mode sombre'}
+            title="Mon Compte"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {getInitials()}
           </button>
+
+          {!(marketing?.themeToggleDisabled === true || marketing?.themeToggleDisabled === 'true') && (
+            <button
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all text-sm shadow-sm hover:scale-105 cursor-pointer ${
+                theme === 'dark' 
+                  ? 'border-white/35 hover:border-white/50 bg-white/5 hover:bg-white/10 text-white' 
+                  : 'border-slate-300 hover:border-slate-400 bg-slate-100 hover:bg-slate-200 text-slate-800'
+              }`}
+              title={theme === 'dark' ? 'Passer au mode clair' : 'Passer au mode sombre'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          )}
           <span className="hidden md:inline-block text-xs text-white/50 truncate max-w-[240px] font-semibold">
             Candidat : {formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}`.trim() : user.email}
           </span>
@@ -784,7 +824,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
           <button 
             onClick={handleLogout}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full border border-red-500/20 hover:border-red-500/40 bg-red-500/5 hover:bg-red-500/15 text-red-400/90 transition-all duration-300 cursor-pointer"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full border border-red-500/50 hover:border-red-500/75 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all duration-300 cursor-pointer"
             title="Se déconnecter"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -795,7 +835,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 ${isGrandLayout ? 'min-h-0 md:min-h-fit' : 'min-h-0'} ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-0 md:pb-8 ${isGrandLayout ? 'min-h-0 md:min-h-fit' : 'min-h-0'} ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -953,7 +993,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 ${isGrandLayout ? 'h-auto md:h-auto' : 'h-full md:h-full'} ${
+        <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 pb-14 md:pb-0 ${isGrandLayout ? 'h-auto md:h-auto' : 'h-full md:h-full'} ${
           activeTab === 'chat' 
             ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl md:p-6` 
             : isGrandLayout
@@ -992,7 +1032,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           {activeTab === 'wizard' && (
             isSubmitted ? (
               <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto py-8">
-                <h2 className="text-xl sm:text-2xl font-display font-extrabold text-white">
+                <h2 className={`text-xl sm:text-2xl font-display font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {soldeValidated 
                     ? "Félicitations ! Votre Dossier est Terminé"
                     : paymentValidated 
@@ -1000,7 +1040,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                     : "Dossier Transmis avec Succès !"
                   }
                 </h2>
-                <p className="text-white/60 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed">
+                <p className={`text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed ${theme === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>
                   {soldeValidated ? (
                     selectedPath === 'theorique' ? (
                       "Votre certificat de dispense théorique a été homologué avec succès. Vous pouvez désormais récupérer le document officiel."
@@ -1519,7 +1559,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           background: linear-gradient(to right, #f97316, #fbbf24) !important;
         }
 
-        .light-theme main [class*="bg-white\\/"] {
+        .light-theme main [class*="bg-white/"] {
           background-color: #f1f5f9 !important;
           border-color: #e2e8f0 !important;
         }
@@ -1528,14 +1568,14 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         .light-theme main [class*="divide-white"] > * { border-color: #e2e8f0 !important; }
 
         .light-theme main [class*="text-white"]          { color: #0f172a !important; }
-        .light-theme main [class*="text-white\\/9"]      { color: #0f172a !important; }
-        .light-theme main [class*="text-white\\/8"]      { color: #1e293b !important; }
-        .light-theme main [class*="text-white\\/7"]      { color: #334155 !important; }
-        .light-theme main [class*="text-white\\/6"]      { color: #334155 !important; }
-        .light-theme main [class*="text-white\\/5"]      { color: #475569 !important; }
-        .light-theme main [class*="text-white\\/4"]      { color: #64748b !important; }
-        .light-theme main [class*="text-white\\/3"]      { color: #94a3b8 !important; }
-        .light-theme main [class*="text-white\\/2"]      { color: #94a3b8 !important; }
+        .light-theme main [class*="text-white/9"]      { color: #0f172a !important; }
+        .light-theme main [class*="text-white/8"]      { color: #1e293b !important; }
+        .light-theme main [class*="text-white/7"]      { color: #334155 !important; }
+        .light-theme main [class*="text-white/6"]      { color: #334155 !important; }
+        .light-theme main [class*="text-white/5"]      { color: #475569 !important; }
+        .light-theme main [class*="text-white/4"]      { color: #64748b !important; }
+        .light-theme main [class*="text-white/3"]      { color: #94a3b8 !important; }
+        .light-theme main [class*="text-white/2"]      { color: #94a3b8 !important; }
 
         .light-theme main h1,.light-theme main h2,.light-theme main h3,
         .light-theme main h4,.light-theme main h5,.light-theme main h6 { color: #0f172a !important; }

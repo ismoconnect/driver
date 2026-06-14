@@ -538,6 +538,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
         ogDescription: marketingSettings.ogDescription || "",
         ogImageUrl: marketingSettings.ogImageUrl || "",
         ogVideoUrl: marketingSettings.ogVideoUrl || "",
+        themeToggleDisabled: marketingSettings.themeToggleDisabled === true || marketingSettings.themeToggleDisabled === 'true',
         creatives: marketingSettings.creatives || {}
       });
       setMarketingSuccess(true);

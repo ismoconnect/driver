@@ -23,6 +23,68 @@ export default function ClientWizard({
   const [previewUrl, setPreviewUrl] = React.useState(null);
   const [previewLabel, setPreviewLabel] = React.useState('');
   
+  const [isCategoryOpen, setIsCategoryOpen] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsCategoryOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  const licenseGroups = [
+    {
+      label: "Voitures & Véhicules légers",
+      options: [
+        { value: "Permis B (Voiture)", label: "Permis B (Voiture)" },
+        { value: "Permis B96 (Voiture + Remorque)", label: "Permis B96 (Voiture + Remorque)" },
+        { value: "Permis BE (Voiture + Remorque lourde)", label: "Permis BE (Voiture + Remorque lourde)" }
+      ]
+    },
+    {
+      label: "Deux-roues & Motos",
+      options: [
+        { value: "Permis AM (Cyclomoteur 50cc)", label: "Permis AM (Cyclomoteur 50cc)" },
+        { value: "Permis A1 (Moto légère 125cc)", label: "Permis A1 (Moto légère 125cc)" },
+        { value: "Permis A2 (Moto moyenne ≤ 35kW)", label: "Permis A2 (Moto moyenne ≤ 35kW)" },
+        { value: "Permis A (Moto lourde > 35kW)", label: "Permis A (Moto lourde > 35kW)" }
+      ]
+    },
+    {
+      label: "Camions (Transport de marchandises)",
+      options: [
+        { value: "Permis C1 (Camion 3.5t - 7.5t)", label: "Permis C1 (Camion 3.5t - 7.5t)" },
+        { value: "Permis C1E (Camion 3.5t - 7.5t + Remorque)", label: "Permis C1E (Camion 3.5t - 7.5t + Remorque)" },
+        { value: "Permis C (Camion > 3.5t)", label: "Permis C (Camion > 3.5t)" },
+        { value: "Permis CE (Camion + Remorque lourde)", label: "Permis CE (Camion + Remorque lourde)" }
+      ]
+    },
+    {
+      label: "Autobus & Autocars",
+      options: [
+        { value: "Permis D1 (Minibus max 16 passagers)", label: "Permis D1 (Minibus max 16 passagers)" },
+        { value: "Permis D1E (Minibus + Remorque)", label: "Permis D1E (Minibus + Remorque)" },
+        { value: "Permis D (Bus / Autocar)", label: "Permis D (Bus / Autocar)" },
+        { value: "Permis DE (Bus + Remorque lourde)", label: "Permis DE (Bus + Remorque lourde)" }
+      ]
+    },
+    {
+      label: "Autres",
+      options: [
+        { value: "Permis G (Tracteur agricole)", label: "Permis G (Tracteur agricole)" }
+      ]
+    }
+  ];
+
+  const handleSelectCategory = (value) => {
+    handleInputChange({ target: { name: 'licenseCategory', value } });
+    setIsCategoryOpen(false);
+  };
+  
   React.useEffect(() => {
     // Scroll scrollable containers to top on step change
     const scrollableContainers = document.querySelectorAll('.overflow-y-auto, .overflow-auto');
@@ -62,7 +124,7 @@ export default function ClientWizard({
   };
 
   return (
-    <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden md:overflow-visible min-h-0 md:min-h-fit pb-16">
+    <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden md:overflow-visible min-h-0 md:min-h-fit pb-2 md:pb-16">
       <div className="overflow-y-auto md:overflow-y-visible">
         {/* Header */}
         <div className="border-b-2 border-white/30 pb-2 mb-3 md:pb-5 md:mb-6">
@@ -168,7 +230,7 @@ export default function ClientWizard({
             </div>
 
             <div className="col-span-2">
-              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Adresse de résidence en Belgique</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Adresse</label>
               <input 
                 required
                 type="text" 
@@ -198,98 +260,62 @@ export default function ClientWizard({
               <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-3 flex flex-col justify-between`}>
                 <div>
                   <span className="text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400">{badge}</span>
-                  <h4 className="text-white font-semibold text-[10px] sm:text-xs md:text-sm mt-0.5 leading-tight">{label}</h4>
+                  <div className="flex items-center gap-1.5 mt-0.5 mb-2">
+                    <span className="text-sm sm:text-base">{emoji}</span>
+                    <h5 className="font-bold text-[10px] sm:text-xs text-white leading-tight">{label}</h5>
+                  </div>
                 </div>
-
-                <div className="mt-2 sm:mt-4">
-                  {uploading[field] ? (
-                    <div className="border border-dashed border-brand-orange/40 rounded-xl p-3 sm:p-6 flex flex-col items-center justify-center text-center gap-1 sm:gap-2">
-                      <div className="w-4 h-4 sm:w-6 sm:h-6 border border-brand-orange border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[8px] sm:text-[10px] text-white/50">Chargement...</span>
-                    </div>
-                  ) : uploads[field] ? (
-                    <div className="relative group rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900">
-                      {uploads[field].match(/\.(jpg|jpeg|png|gif|webp)$/i) || uploads[field].includes('cloudinary') ? (
-                        <img
-                          src={uploads[field]}
-                          alt={label}
-                          className="w-full h-14 sm:h-20 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-14 sm:h-20 flex items-center justify-center bg-emerald-500/10">
-                          <span className="text-lg sm:text-3xl">📄</span>
+                
+                <div className="flex flex-col gap-1.5 mt-auto">
+                  {uploads[field] ? (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between bg-slate-950/60 border border-emerald-500/25 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs text-emerald-400 font-medium w-full">
+                        <span className="truncate max-w-[80px]">✓ Ajouté</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewUrl(uploads[field]);
+                              setPreviewLabel(label);
+                            }}
+                            className="text-[9px] font-bold text-white bg-white/10 px-2 py-1 rounded hover:bg-white/20 transition cursor-pointer"
+                          >
+                            👁️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteDocument(field)}
+                            className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded hover:bg-red-500/20 transition cursor-pointer"
+                          >
+                            ✕
+                          </button>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => { setPreviewUrl(uploads[field]); setPreviewLabel(label); }}
-                          className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-white/30 cursor-pointer border-0"
-                        >
-                          Voir
-                        </button>
-                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-950 bg-brand-orange px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-brand-orange-dark cursor-pointer">
-                          Changer
-                          <input type="file" accept={accept} className="hidden"
-                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => deleteDocument(field)}
-                          className="text-[8px] sm:text-[10px] font-bold text-white bg-red-600 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-red-700 cursor-pointer"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-1.5 py-0.5 sm:px-2 sm:py-1 flex items-center gap-1">
-                        <span className="text-[8px] sm:text-[9px] text-white font-bold font-sans">✓ Prêt</span>
                       </div>
                     </div>
                   ) : (
-                    <label className="cursor-pointer border border-dashed border-white/15 hover:border-brand-orange hover:bg-white/[0.02] rounded-xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center transition-all gap-1.5 sm:gap-2 w-full">
-                      <input type="file" accept={accept} className="hidden"
-                        onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                      <span className="hidden sm:block text-xl text-white/30">{emoji}</span>
-                      <span className="hidden sm:block text-[10px] text-white/55 font-medium">
-                        {isMobile() ? 'Choisir' : 'Glisser ou cliquer'}
-                      </span>
-
-                      {isMobile() ? (
-                        <div className="flex flex-col gap-1.5 w-full">
-                          <span className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold rounded-lg transition-colors">
-                            📁 Fichier
-                          </span>
-                          {accept.includes('image') && (
-                            <span
-                              role="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const camInput = document.getElementById(`cam-wiz-${field}`);
-                                if (camInput) camInput.click();
-                              }}
-                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[9px] font-bold rounded-lg transition-colors border border-brand-orange/30"
-                            >
-                              📷 Photo
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="block text-[10px] font-bold text-brand-orange underline underline-offset-2">
-                          Parcourir...
-                        </span>
-                      )}
-                      {isMobile() && accept.includes('image') && (
-                        <input
-                          type="file"
-                          id={`cam-wiz-${field}`}
-                          accept="image/*"
-                          capture="environment"
-                          className="hidden"
-                          onChange={(e) => uploadToCloudinary(field, e.target.files[0])}
-                        />
-                      )}
-                    </label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept={accept}
+                        disabled={uploading[field]}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadToCloudinary(field, file);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <button
+                        type="button"
+                        disabled={uploading[field]}
+                        className={`w-full py-2 rounded-xl text-[10px] sm:text-xs font-bold border transition-all ${
+                          uploading[field]
+                            ? 'bg-slate-900 border-white/10 text-white/40 cursor-wait'
+                            : 'bg-white/5 border-white/15 hover:border-brand-orange hover:bg-brand-orange/5 text-white/80'
+                        }`}
+                      >
+                        {uploading[field] ? 'Envoi...' : 'Ajouter ➔'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -297,28 +323,35 @@ export default function ClientWizard({
           </div>
         )}
 
-        {/* STEP 3: EXPERIENCE & CONFIG */}
+        {/* STEP 3: PATH SELECTION */}
         {wizardStep === 3 && (
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 gap-y-5 sm:gap-y-8 animate-[bubbleIn_0.4s_ease-out]">
-            <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-xl p-3 md:p-4`}>
-              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-brand-orange mb-2">🛣️ Circuit d'obtention</p>
-              <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-4 animate-[bubbleIn_0.4s_ease-out]">
+            {/* Interactive obtention visual circuit component on step 3 */}
+            <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-3">
+              <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-2.5 flex items-center gap-1">
+                <span>🗺️</span> Circuit d'obtention
+              </h4>
+              <div className="flex items-center justify-between gap-0.5 xs:gap-1 max-w-lg mx-auto">
                 {[
-                  { icon: '📋', label: 'Affiliation Candidat', done: true },
-                  { icon: '📖', label: 'Examen Théorique', done: selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'theorique' || !selectedPath },
-                  { icon: '👁️', label: 'Perception de Risque', done: selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'perception', locked: selectedPath === 'theorique' || !selectedPath },
-                  { icon: '🚗', label: 'Examen Pratique', done: selectedPath === 'direct', active: selectedPath === 'pratique', locked: selectedPath === 'perception' || selectedPath === 'theorique' || !selectedPath },
-                  { icon: '🏆', label: 'Permis Définitif', active: selectedPath === 'direct', locked: selectedPath !== 'direct' || !selectedPath },
-                ].map((item, i) => (
-                  <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] md:text-xs font-semibold border ${
-                    item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                      : item.active ? 'bg-brand-orange/15 border-brand-orange/40 text-brand-orange animate-pulse' 
-                      : 'bg-white/5 border-white/10 text-white/30'
-                  }`}>
-                    <span>{item.icon}</span>
-                    <span className="hidden xs:inline">{item.label}</span>
-                    {item.done && <span>✓</span>}
-                    {item.locked && <span>🔒</span>}
+                  { num: 1, label: 'Affiliation', done: true },
+                  { num: 2, label: 'Théorique', done: selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct' },
+                  { num: 3, label: 'Perception', done: selectedPath === 'pratique' || selectedPath === 'direct', locked: selectedPath === 'theorique' },
+                  { num: 4, label: 'Pratique', done: selectedPath === 'direct', locked: selectedPath === 'theorique' || selectedPath === 'perception' },
+                  { num: 5, label: 'Permis', locked: selectedPath !== 'direct' }
+                ].map((item, index) => (
+                  <div 
+                    key={item.num}
+                    className={`flex-1 flex flex-col items-center justify-center p-1 py-1.5 xs:p-2 rounded-lg border text-center transition-all ${
+                      item.done 
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold'
+                        : item.locked
+                        ? 'bg-white/5 border-white/5 text-white/30'
+                        : 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange font-bold animate-pulse'
+                    }`}
+                  >
+                    <span className="text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] uppercase tracking-wider block opacity-75">{item.label}</span>
+                    {item.done && <span className="text-[9px] sm:text-xs">✓</span>}
+                    {item.locked && <span className="text-[9px] sm:text-xs">🔒</span>}
                   </div>
                 ))}
               </div>
@@ -330,39 +363,47 @@ export default function ClientWizard({
                   <label className="block text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
                     Catégorie de permis
                   </label>
-                  <select
-                    name="licenseCategory"
-                    value={formData.licenseCategory || 'Permis B (Voiture)'}
-                    onChange={handleInputChange}
-                    className="w-full bg-slate-950/80 border border-white/40 rounded-xl px-3 py-2.5 sm:py-3.5 text-xs md:text-[15px] focus:outline-none transition-colors text-white"
-                  >
-                    <optgroup label="Voitures & Véhicules légers" className="bg-slate-900 text-white font-bold">
-                      <option value="Permis B (Voiture)">Permis B (Voiture)</option>
-                      <option value="Permis B96 (Voiture + Remorque)">Permis B96 (Voiture + Remorque)</option>
-                      <option value="Permis BE (Voiture + Remorque lourde)">Permis BE (Voiture + Remorque lourde)</option>
-                    </optgroup>
-                    <optgroup label="Deux-roues & Motos" className="bg-slate-900 text-white font-bold">
-                      <option value="Permis AM (Cyclomoteur 50cc)">Permis AM (Cyclomoteur 50cc)</option>
-                      <option value="Permis A1 (Moto légère 125cc)">Permis A1 (Moto légère 125cc)</option>
-                      <option value="Permis A2 (Moto moyenne ≤ 35kW)">Permis A2 (Moto moyenne ≤ 35kW)</option>
-                      <option value="Permis A (Moto lourde > 35kW)">Permis A (Moto lourde &gt; 35kW)</option>
-                    </optgroup>
-                    <optgroup label="Camions (Transport de marchandises)" className="bg-slate-900 text-white font-bold">
-                      <option value="Permis C1 (Camion 3.5t - 7.5t)">Permis C1 (Camion 3.5t - 7.5t)</option>
-                      <option value="Permis C1E (Camion 3.5t - 7.5t + Remorque)">Permis C1E (Camion 3.5t - 7.5t + Remorque)</option>
-                      <option value="Permis C (Camion > 3.5t)">Permis C (Camion &gt; 3.5t)</option>
-                      <option value="Permis CE (Camion + Remorque lourde)">Permis CE (Camion + Remorque lourde)</option>
-                    </optgroup>
-                    <optgroup label="Autobus & Autocars" className="bg-slate-900 text-white font-bold">
-                      <option value="Permis D1 (Minibus max 16 passagers)">Permis D1 (Minibus max 16 passagers)</option>
-                      <option value="Permis D1E (Minibus + Remorque)">Permis D1E (Minibus + Remorque)</option>
-                      <option value="Permis D (Bus / Autocar)">Permis D (Bus / Autocar)</option>
-                      <option value="Permis DE (Bus + Remorque lourde)">Permis DE (Bus + Remorque lourde)</option>
-                    </optgroup>
-                    <optgroup label="Autres" className="bg-slate-900 text-white font-bold">
-                      <option value="Permis G (Tracteur agricole)">Permis G (Tracteur agricole)</option>
-                    </optgroup>
-                  </select>
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                      className="w-full bg-slate-950/80 border border-white/40 rounded-xl px-3 py-2.5 sm:py-3.5 text-xs md:text-[15px] focus:outline-none transition-colors text-white flex items-center justify-between text-left cursor-pointer"
+                    >
+                      <span>{formData.licenseCategory || 'Permis B (Voiture)'}</span>
+                      <svg className={`w-4 h-4 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isCategoryOpen && (
+                      <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900 border border-white/15 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto py-1.5">
+                        {licenseGroups.map((group, groupIdx) => (
+                          <div key={groupIdx} className="mb-2 last:mb-0">
+                            <div className="px-3 py-1 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-slate-950/30">
+                              {group.label}
+                            </div>
+                            {group.options.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => handleSelectCategory(option.value)}
+                                className={`w-full text-left px-4 py-2 text-xs sm:text-sm hover:bg-brand-orange/15 transition-colors flex items-center justify-between ${
+                                  (formData.licenseCategory || 'Permis B (Voiture)') === option.value
+                                    ? 'bg-brand-orange/10 text-brand-orange font-bold'
+                                    : 'text-white/80'
+                                }`}
+                              >
+                                <span>{option.label}</span>
+                                {(formData.licenseCategory || 'Permis B (Voiture)') === option.value && (
+                                  <span className="text-brand-orange font-bold">✓</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>

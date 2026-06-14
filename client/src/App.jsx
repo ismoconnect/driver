@@ -132,7 +132,7 @@ function LandingPage({ user, authChecked, advisor }) {
 }
 
 // ─── Auth page (connexion / inscription) ─────────────────────────────────────
-function AuthPage({ mode, user, authChecked, advisor }) {
+function AuthPage({ mode, user, authChecked, advisor, marketing }) {
   const navigate = useNavigate();
 
   if (!authChecked) return <LoadingScreen />;
@@ -148,12 +148,13 @@ function AuthPage({ mode, user, authChecked, advisor }) {
       onAuthSuccess={() => navigate('/mon-espace')}
       onSwitchMode={(newMode) => navigate(newMode === 'signup' ? '/inscription' : '/connexion')}
       advisor={advisor}
+      marketing={marketing}
     />
   );
 }
 
 // ─── Dashboard page (protected) ───────────────────────────────────────────────
-function DashboardPage({ user, authChecked, advisor }) {
+function DashboardPage({ user, authChecked, advisor, marketing }) {
   const navigate = useNavigate();
   const { tab } = useParams();
 
@@ -165,6 +166,7 @@ function DashboardPage({ user, authChecked, advisor }) {
         onBack={() => navigate('/accueil')}
         onAuthSuccess={() => navigate('/mon-espace')}
         advisor={advisor}
+        marketing={marketing}
       />
     </ProtectedRoute>
   );
@@ -175,6 +177,7 @@ function AppRoutes() {
   const { user, authChecked } = useAuth();
   const [advisor, setAdvisor] = useState(null);
   const [marketing, setMarketing] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     const advisorRef = doc(db, 'settings', 'advisor');
@@ -224,7 +227,7 @@ function AppRoutes() {
     if (existingButton) existingButton.remove();
 
     // Check if the current route is a public route (not starting with /mon-espace)
-    const isPublicRoute = !window.location.pathname.startsWith('/mon-espace');
+    const isPublicRoute = !location.pathname.startsWith('/mon-espace');
 
     // WhatsApp Floating Button - omnipresent across all routes
     const existingWaButton = document.getElementById('whatsapp-floating-btn');
@@ -242,12 +245,21 @@ function AppRoutes() {
       waBtn.setAttribute('aria-label', 'Discuter sur WhatsApp');
 
       const isMobile = window.innerWidth < 768;
-      const isMemberSpace = window.location.pathname.startsWith('/mon-espace');
+      const isMemberSpace = location.pathname.startsWith('/mon-espace');
+      const isChatTab = location.pathname.endsWith('/chat');
       let bottomOffset = '24px';
-      if (isMemberSpace) {
-        bottomOffset = isMobile ? '90px' : '24px';
+      if (hasMessenger) {
+        if (isMemberSpace && isMobile) {
+          bottomOffset = isChatTab ? '225px' : '155px';
+        } else {
+          bottomOffset = '96px';
+        }
       } else {
-        bottomOffset = (hasMessenger && isPublicRoute) ? '96px' : '24px';
+        if (isMemberSpace && isMobile) {
+          bottomOffset = isChatTab ? '155px' : '85px';
+        } else {
+          bottomOffset = '24px';
+        }
       }
 
       Object.assign(waBtn.style, {
@@ -285,7 +297,7 @@ function AppRoutes() {
       document.body.appendChild(waBtn);
     }
 
-    if (hasMessenger && isPublicRoute) {
+    if (hasMessenger) {
       const btn = document.createElement('a');
       btn.id = 'messenger-floating-btn';
       btn.href = `https://m.me/${messengerPageId}`;
@@ -293,7 +305,10 @@ function AppRoutes() {
       btn.rel = 'noopener noreferrer';
       btn.setAttribute('aria-label', 'Discuter sur Messenger');
       
-      const bottomPos = '24px';
+      const isMobile = window.innerWidth < 768;
+      const isMemberSpace = location.pathname.startsWith('/mon-espace');
+      const isChatTab = location.pathname.endsWith('/chat');
+      const bottomPos = (isMemberSpace && isMobile) ? (isChatTab ? '155px' : '85px') : '24px';
 
       // Inline styles for a premium glassmorphic, animated floating button matching our design guidelines
       Object.assign(btn.style, {
@@ -379,7 +394,7 @@ function AppRoutes() {
       }
       tag.setAttribute('content', activeVideoUrl);
     }
-  }, [marketing, window.location.pathname]);
+  }, [marketing, location.pathname]);
 
   return (
     <>
@@ -392,12 +407,12 @@ function AppRoutes() {
       <Route path="/confidentialite" element={<Confidentialite advisor={advisor} />} />
 
       {/* Auth routes */}
-      <Route path="/connexion" element={<AuthPage mode="login" user={user} authChecked={authChecked} advisor={advisor} />} />
-      <Route path="/inscription" element={<AuthPage mode="signup" user={user} authChecked={authChecked} advisor={advisor} />} />
+      <Route path="/connexion" element={<AuthPage mode="login" user={user} authChecked={authChecked} advisor={advisor} marketing={marketing} />} />
+      <Route path="/inscription" element={<AuthPage mode="signup" user={user} authChecked={authChecked} advisor={advisor} marketing={marketing} />} />
 
       {/* Protected dashboard route */}
-      <Route path="/mon-espace" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} />} />
-      <Route path="/mon-espace/:tab" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} />} />
+      <Route path="/mon-espace" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} marketing={marketing} />} />
+      <Route path="/mon-espace/:tab" element={<DashboardPage user={user} authChecked={authChecked} advisor={advisor} marketing={marketing} />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

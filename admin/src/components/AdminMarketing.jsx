@@ -222,6 +222,25 @@ const AdminMarketing = ({
             </div>
           </div>
 
+          {/* Interface / UI Config */}
+          <div className="bg-slate-950/40 border border-white/5 rounded-2xl p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h5 className="text-sm font-bold text-white">Bouton de changement de thème</h5>
+                <p className="text-[11px] text-slate-500 mt-1">Désactivez cette option pour masquer le sélecteur jour/nuit (clair/sombre) sur l'espace candidat et forcer le thème sombre.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={!(advisorSettings.themeToggleDisabled === true || advisorSettings.themeToggleDisabled === 'true')}
+                  onChange={(e) => setAdvisorSettings(prev => ({ ...prev, themeToggleDisabled: !e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 peer-checked:after:bg-slate-950 peer-checked:after:border-slate-950"></div>
+              </label>
+            </div>
+          </div>
+
           {/* Default Open Graph Preview Manager */}
           <div className="bg-slate-950/40 border border-white/5 rounded-2xl p-6 space-y-4">
             <div>

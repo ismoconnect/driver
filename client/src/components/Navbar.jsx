@@ -59,7 +59,7 @@ const Navbar = ({ user, onOpenDashboard, forceScrolled, advisor }) => {
 
             {/* Logo */}
             <a href="/accueil" onClick={(e) => { e.preventDefault(); navigate('/accueil'); }} className="flex-shrink-0 flex items-center gap-2">
-              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-10 rounded-lg" />
+              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-8 sm:h-10 rounded-lg" />
             </a>
 
             {/* Desktop links */}
@@ -101,6 +101,15 @@ const Navbar = ({ user, onOpenDashboard, forceScrolled, advisor }) => {
                 </div>
               )}
             </div>
+
+            {/* Mobile quick-access button */}
+            <button
+              onClick={() => onOpenDashboard('login')}
+              className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 text-white ml-auto mr-1 cursor-pointer transition-all duration-200 active:scale-95"
+            >
+              <span>👤</span>
+              <span>{user ? 'Espace' : 'Connexion'}</span>
+            </button>
 
             {/* Mobile menu button */}
             <button
