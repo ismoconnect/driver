@@ -12,6 +12,7 @@ export default function middleware(request) {
 
   if (isBot) {
     // Rewrite the request URL to Vercel Serverless Function '/api/og'
+    url.searchParams.set('original_path', url.pathname);
     url.pathname = '/api/og';
     return new Response(null, {
       headers: {

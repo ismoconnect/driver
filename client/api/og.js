@@ -10,7 +10,15 @@ export default async function handler(req, res) {
     let ogVideoUrl = "";
 
     // 2. Read query parameters to determine if a specific creative is requested
-    const { crea } = req.query || {};
+    const { crea, original_path } = req.query || {};
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.permisdeconduirebe.com';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    
+    // Construct the canonical og:url
+    let ogUrl = `${protocol}://${host}${original_path || '/'}`;
+    if (crea) {
+      ogUrl += `?crea=${crea}`;
+    }
 
     if (firestoreRes.ok) {
       const data = await firestoreRes.json();
@@ -57,6 +65,7 @@ export default async function handler(req, res) {
     <meta property="og:title" content="${ogTitle}" />
     <meta property="og:description" content="${ogDescription}" />
     <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:url" content="${ogUrl}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Mon Permis Plus" />
     <meta name="twitter:card" content="summary_large_image" />
