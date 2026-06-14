@@ -124,7 +124,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
             </div>
             
             <div className="text-[11px] text-slate-300 break-all bg-slate-950/40 px-3 py-2 rounded-xl border border-white/5 font-mono">
-              {lead.email}
+              {lead.phone || lead.email}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-1" onClick={e => e.stopPropagation()}>
@@ -184,7 +184,7 @@ const AdminDemandes = ({ leads, loading, openDetail, handleReset, handleDelete }
                     <div className="text-xs font-medium text-slate-500 mt-1">{lead.date}</div>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-center">
-                    <div className="text-sm font-medium text-slate-300">{lead.email}</div>
+                    <div className="text-sm font-medium text-slate-300">{lead.phone || lead.email}</div>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-right text-sm">
                     <button 
