@@ -83,7 +83,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [transmissionStep, setTransmissionStep] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isInitializing || isLoadingData) return;
     const storageKey = `transmissionCompleted_${user.uid}`;
     
     if (!isSubmitted) {
@@ -104,7 +104,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     } else {
       setIsTransmitting(false);
     }
-  }, [isSubmitted, paymentValidated, activeTab, user]);
+  }, [isSubmitted, paymentValidated, activeTab, user, isInitializing, isLoadingData]);
 
   useEffect(() => {
     if (isTransmitting) {
@@ -122,7 +122,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     birthDate: '',
     phone: '',
     address: '',
-    nationalRegister: '',
     failedAttempts: 'Jamais',
     transmission: 'Manuel',
     licenseCategory: 'Permis B (Voiture)',
@@ -276,7 +275,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               birthDate: leadData?.birthDate || '',
               phone: resolvedPhone,
               address: leadData?.address || '',
-              nationalRegister: leadData?.nationalRegister || '',
               failedAttempts: leadData?.failedAttempts || leadData?.answers?.failures || 'Jamais',
               transmission: leadData?.transmission || 'Manuel',
               licenseCategory: leadData?.licenseCategory || 'Permis B (Voiture)',
@@ -528,7 +526,6 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         birthDate: formData.birthDate,
         phone: formData.phone,
         address: formData.address,
-        nationalRegister: formData.nationalRegister,
         failedAttempts: formData.failedAttempts,
         transmission: formData.transmission,
         licenseCategory: formData.licenseCategory || 'Permis B (Voiture)',
@@ -897,6 +894,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               showUpgradeConfirm={showUpgradeConfirm}
               setShowUpgradeConfirm={setShowUpgradeConfirm}
               handleUpgradeToPath={handleUpgradeToPath}
+              uploads={uploads}
+              uploading={uploading}
+              uploadToCloudinary={uploadToCloudinary}
             />
           )}
 
@@ -959,7 +959,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
 
                 {/* RIB / BANK DETAILS BOX */}
                 {(!paymentValidated || (soldeInitiated && !soldeValidated)) ? (
-                  isTransmitting ? (
+                  (isTransmitting || isLoadingData) ? (
                     <div className="w-full mt-6 bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] shadow-2xl relative overflow-hidden animate-[fadeIn_0.5s_ease-out]">
                       {/* Top animated linear progress bar */}
                       <div className="absolute top-0 left-0 h-1.5 bg-gradient-to-r from-brand-orange via-amber-500 to-emerald-500 transition-all duration-[20000ms] ease-out" style={{ width: `${(transmissionStep + 1) * 25}%` }} />

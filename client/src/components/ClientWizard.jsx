@@ -24,14 +24,8 @@ export default function ClientWizard({
 
   const validateStep1 = () => {
     setWizardError('');
-    if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.birthDate || !formData.phone?.trim() || !formData.address?.trim() || !formData.nationalRegister?.trim()) {
+    if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.birthDate || !formData.phone?.trim() || !formData.address?.trim()) {
       setWizardError('Veuillez remplir tous les champs obligatoires.');
-      return false;
-    }
-    // Validation du numéro de registre national belge
-    const cleanNr = formData.nationalRegister.replace(/[^\d]/g, '');
-    if (cleanNr.length < 11) {
-      setWizardError('Format de Registre National Belge invalide (Ex. 95.05.23-123.45). Doit contenir 11 chiffres.');
       return false;
     }
     return true;
@@ -39,16 +33,6 @@ export default function ClientWizard({
 
   const validateStep2 = () => {
     setWizardError('');
-    const missing = [];
-    if (!uploads.idFront) missing.push("Carte d'Identité (Recto)");
-    if (!uploads.idBack) missing.push("Carte d'Identité (Verso)");
-    if (!uploads.photo) missing.push("Photo d'Identité Récente");
-    if (!uploads.signature) missing.push("Signature Numérisée");
-
-    if (missing.length > 0) {
-      setWizardError(`Veuillez téléverser les pièces requises : ${missing.join(', ')}.`);
-      return false;
-    }
     return true;
   };
 
@@ -180,31 +164,22 @@ export default function ClientWizard({
               />
             </div>
 
-            <div className="col-span-2">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Numéro de Registre National Belge (11 chiffres)
-              </label>
-              <input 
-                required
-                type="text" 
-                name="nationalRegister"
-                value={formData.nationalRegister}
-                onChange={handleInputChange}
-                placeholder="Ex. 95.05.23-123.45" 
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white"
-              />
-            </div>
+
           </div>
         )}
 
         {/* STEP 2: DOCUMENT UPLOADS */}
         {wizardStep === 2 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-4 animate-[bubbleIn_0.4s_ease-out]">
+            <div className="col-span-2 bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-[10px] sm:text-xs p-3 rounded-2xl mb-2 flex items-start gap-2.5 shadow-sm">
+              <span className="text-sm flex-shrink-0">💡</span>
+              <span><strong>Optionnel pour l'instant :</strong> Vous pouvez continuer sans téléverser vos documents maintenant et les ajouter plus tard depuis votre espace candidat.</span>
+            </div>
             {[
-              { field: 'idFront', label: 'Carte d\'Identité (Recto)', badge: 'Requis Front', accept: 'image/*,application/pdf', emoji: '🪪' },
-              { field: 'idBack',  label: 'Carte d\'Identité (Verso)',  badge: 'Requis Back',  accept: 'image/*,application/pdf', emoji: '🪪' },
-              { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Requis Officiel', accept: 'image/*', emoji: '📸' },
-              { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
+              { field: 'idFront', label: 'Carte d\'Identité (Recto)', badge: 'Optionnel', accept: 'image/*,application/pdf', emoji: '🪪' },
+              { field: 'idBack',  label: 'Carte d\'Identité (Verso)',  badge: 'Optionnel',  accept: 'image/*,application/pdf', emoji: '🪪' },
+              { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Optionnel', accept: 'image/*', emoji: '📸' },
+              { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Optionnel', accept: 'image/*', emoji: '✍️' },
             ].map(({ field, label, badge, accept, emoji }) => (
               <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-3 flex flex-col justify-between`}>
                 <div>

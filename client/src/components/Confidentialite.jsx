@@ -44,7 +44,7 @@ export default function Confidentialite({ advisor }) {
               Nous collectons uniquement les informations nécessaires au traitement de votre dossier d'homologation de permis de conduire belge :
             </p>
             <ul className="list-disc pl-5 space-y-2 text-slate-300">
-              <li>Données d'identification (Nom, prénom, date de naissance, numéro de Registre National).</li>
+              <li>Données d'identification (Nom, prénom, date de naissance).</li>
               <li>Coordonnées (Adresse postale, numéro de téléphone, adresse e-mail).</li>
               <li>Documents justificatifs (Copie d'identité recto/verso, photo d'identité, signature).</li>
             </ul>

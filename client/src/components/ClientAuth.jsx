@@ -114,6 +114,9 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
         if (window.fbq) {
           window.fbq('track', 'CompleteRegistration');
         }
+
+        // Forcer le nouvel utilisateur à atterrir sur l'onglet 'wizard' (Faire ma demande)
+        localStorage.setItem('clientActiveTab', 'wizard');
       }
       if (onAuthSuccess) onAuthSuccess();
     } catch (error) {

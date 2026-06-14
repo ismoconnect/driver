@@ -19,7 +19,10 @@ export default function ClientOverview({
   theme,
   showUpgradeConfirm,
   setShowUpgradeConfirm,
-  handleUpgradeToPath
+  handleUpgradeToPath,
+  uploads = {},
+  uploading = {},
+  uploadToCloudinary
 }) {
   
   const getTotalAmount = () => {
@@ -426,7 +429,6 @@ export default function ClientOverview({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-0.5 md:gap-y-1 text-[9.5px] md:text-[10.5px]">
               <p className="text-white/50 truncate">Candidat : <span className="text-white font-semibold">{formData.firstName} {formData.lastName}</span></p>
               <p className="text-white/50 truncate">Permis : <span className="text-brand-orange font-semibold">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} ({formData.transmission})</span></p>
-              <p className="text-white/50 truncate">N° Registre : <span className="text-white font-mono">{formData.nationalRegister || "Non spécifié"}</span></p>
               <p className="text-white/50 truncate">Formule : <span className="text-brand-orange font-semibold">{
                 selectedPath === 'perception' ? "Perception" : 
                 selectedPath === 'theorique' ? "Examen Théorique" :
@@ -587,6 +589,89 @@ export default function ClientOverview({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* COMPOSANT DE TÉLÉVERSEMENT DES PIÈCES JUSTIFICATIVES */}
+      {isSubmitted && (
+        <div className={`bg-slate-950/60 border border-white/5 rounded-3xl p-4 sm:p-5 w-full mt-1.5 text-left relative overflow-hidden shadow-2xl`}>
+          <div className="border-b border-white/10 pb-2.5 mb-3">
+            <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 flex items-center gap-1.5">
+              <span>🪪</span> Vos pièces justificatives ({Object.values(uploads || {}).filter(Boolean).length} / 4 fournies)
+            </h4>
+            <p className="text-white/60 text-[9px] sm:text-[11px] leading-relaxed">
+              Pour que votre conseiller puisse finaliser et soumettre officiellement votre dossier auprès du SPF Mobilité, veuillez fournir les documents ci-dessous ou les transmettre directement par le chat.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { field: 'idFront', label: 'Carte d\'Identité (Recto)', badge: 'Identité Front', accept: 'image/*,application/pdf', emoji: '🪪' },
+              { field: 'idBack',  label: 'Carte d\'Identité (Verso)',  badge: 'Identité Back',  accept: 'image/*,application/pdf', emoji: '🪪' },
+              { field: 'photo',   label: 'Photo d\'Identité Récente',  badge: 'Photo Officielle', accept: 'image/*', emoji: '📸' },
+              { field: 'signature', label: 'Signature Numérisée (Fond blanc)', badge: 'Signature', accept: 'image/*', emoji: '✍️' },
+            ].map(({ field, label, badge, accept, emoji }) => {
+              const fileUrl = uploads?.[field];
+              const isUploading = uploading?.[field];
+              return (
+                <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white/5' : 'border-slate-200'} rounded-2xl p-2.5 flex flex-col justify-between min-h-[140px]`}>
+                  <div>
+                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
+                    <h4 className="text-white font-semibold text-[9.5px] sm:text-[11px] mt-0.5 leading-tight">{label}</h4>
+                  </div>
+
+                  <div className="mt-2">
+                    {isUploading ? (
+                      <div className="border border-dashed border-brand-orange/40 rounded-xl p-3 flex flex-col items-center justify-center text-center gap-1">
+                        <div className="w-4 h-4 border border-brand-orange border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[8px] text-white/50">Chargement...</span>
+                      </div>
+                    ) : fileUrl ? (
+                      <div className="relative group rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900">
+                        {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) || fileUrl.includes('cloudinary') ? (
+                          <img
+                            src={fileUrl}
+                            alt={label}
+                            className="w-full h-12 sm:h-14 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-12 sm:h-14 flex items-center justify-center bg-emerald-500/10">
+                            <span className="text-base">📄</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                          <a href={fileUrl} target="_blank" rel="noopener noreferrer"
+                            className="text-[8px] font-bold text-white bg-white/20 px-1.5 py-0.5 rounded hover:bg-white/30">
+                            Voir ↗
+                          </a>
+                          <label className="text-[8px] font-bold text-white bg-brand-orange/80 px-1.5 py-0.5 rounded hover:bg-brand-orange cursor-pointer">
+                            Changer
+                            <input type="file" accept={accept} className="hidden"
+                              onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                          </label>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-1.5 py-0.5 flex items-center gap-1">
+                          <span className="text-[8px] text-white font-bold font-sans">✓ Prêt</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border border-dashed border-white/10 hover:border-brand-orange rounded-xl p-2 flex flex-col items-center justify-center text-center transition-colors gap-1">
+                        <span className="text-xs text-white/30">{emoji}</span>
+                        <span className="text-[8px] text-white/50 font-medium">Non fourni</span>
+                        <label className="relative cursor-pointer w-full mt-1">
+                          <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                          <span className="block text-[8px] font-bold text-brand-orange underline underline-offset-2">
+                            Ajouter...
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

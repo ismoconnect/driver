@@ -264,7 +264,6 @@ const AdminLeadDetail = ({
             { label: 'Téléphone', value: selectedLead.phone || 'Non renseigné' },
             { label: 'Date de naissance', value: selectedLead.rawLead?.birthDate || selectedLead.rawUser?.birthDate || 'Non renseigné' },
             { label: 'Adresse', value: selectedLead.rawLead?.address || selectedLead.rawUser?.address || 'Non renseigné' },
-            { label: 'Registre National', value: selectedLead.rawLead?.nationalRegister || selectedLead.rawUser?.nationalRegister || 'Non spécifié' },
           ].map((item, i) => (
             <div key={i} className="space-y-1">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.label}</p>
