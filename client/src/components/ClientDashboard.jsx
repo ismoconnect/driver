@@ -814,26 +814,49 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 </p>
               </div>
             </div>
-            {isSubmitted && (
-              <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
-                {applicationStatus === 'completed' ? (
-                  <>
+            {isSubmitted && (() => {
+              const totalUploaded = Object.values(uploads || {}).filter(Boolean).length;
+              const hasRejectedDocs = Object.keys(rejectedDocs || {}).length > 0 && Object.values(rejectedDocs || {}).some(msg => msg && msg.trim() !== '');
+
+              if (applicationStatus === 'completed') {
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
                     <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Dossier validé</span>
-                  </>
-                ) : applicationStatus === 'processing' ? (
-                  <>
+                  </div>
+                );
+              }
+              if (hasRejectedDocs) {
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Pièces à corriger</span>
+                  </div>
+                );
+              }
+              if (totalUploaded < 4) {
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">Pièces à fournir</span>
+                  </div>
+                );
+              }
+              if (applicationStatus === 'processing') {
+                return (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                     <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Dossier en cours</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Dossier transmis</span>
-                  </>
-                )}
-              </div>
-            )}
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Dossier transmis</span>
+                </div>
+              );
+            })()}
           </div>
 
           <nav className="flex flex-col gap-1 flex-1">
