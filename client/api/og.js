@@ -66,6 +66,7 @@ export default async function handler(req, res) {
     <meta property="og:description" content="${ogDescription}" />
     <meta property="og:image" content="${ogImageUrl}" />
     <meta property="og:url" content="${ogUrl}" />
+    <meta property="fb:app_id" content="966882299" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Mon Permis Plus" />
     <meta name="twitter:card" content="summary_large_image" />
