@@ -182,21 +182,23 @@ export default function ClientAuth({ onBack, initialMode = 'login', onAuthSucces
 
         {authMode === 'login' ? (
           <>
-            <button
-              onClick={onBack}
-              className="relative z-10 inline-flex items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none mb-8 hover:text-brand-orange hover:shadow-md cursor-pointer"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Retour à l'accueil
-            </button>
-
-            <div className="relative z-10 flex items-center justify-between bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-8 shadow-sm">
-              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-9 rounded-lg" />
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider align-middle">
+            <div className="relative z-10 flex justify-between items-center mb-8">
+              <button
+                onClick={onBack}
+                className="inline-flex items-center gap-2 text-[11px] text-slate-600 bg-white/70 hover:bg-white/90 border border-slate-200 shadow-sm px-4 py-2 rounded-full font-bold transition-all focus:outline-none hover:text-brand-orange hover:shadow-md cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Retour à l'accueil
+              </button>
+              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold px-2.5 py-1.5 rounded-full uppercase tracking-wider align-middle select-none">
                 🔒 SSL
               </span>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-center bg-slate-950 border border-slate-900 px-5 py-3 rounded-2xl mb-8 shadow-sm">
+              <img src={advisor?.logoUrl || "/logo.png"} alt="Mon Permis Logo" className="h-9 rounded-lg" />
             </div>
 
             <div className="relative z-10 mb-8">
