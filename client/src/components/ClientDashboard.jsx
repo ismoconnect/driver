@@ -871,7 +871,9 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 h-full md:h-full ${
           activeTab === 'chat' 
             ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl md:p-6` 
-            : `rounded-none border-0 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl p-2 sm:p-5 overflow-y-auto scrollbar-none`
+            : activeTab === 'overview'
+            ? `rounded-none border-0 md:border-0 md:bg-transparent md:shadow-none p-2 sm:p-5 overflow-y-auto`
+            : `rounded-none border-0 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl p-2 sm:p-5 overflow-y-auto`
         }`}>
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1262,35 +1264,29 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
           to { transform: scale(1); opacity: 1; }
         }
 
-        .scrollbar-none::-webkit-scrollbar {
-          display: none !important;
-        }
-        .scrollbar-none {
-          -ms-overflow-style: none !important;
-          scrollbar-width: none !important;
-        }
-
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: transparent !important;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.25) !important;
-          border-radius: 9999px !important;
-          border: 2px solid transparent !important;
-          background-clip: padding-box !important;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.45) !important;
-          border: 2px solid transparent !important;
-          background-clip: padding-box !important;
-        }
-        * {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(156, 163, 175, 0.25) transparent;
+        @media (min-width: 768px) {
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          ::-webkit-scrollbar-track {
+            background: transparent !important;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.65) !important;
+            border-radius: 9999px !important;
+            border: 2px solid transparent !important;
+            background-clip: padding-box !important;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 2px solid transparent !important;
+            background-clip: padding-box !important;
+          }
+          * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.65) transparent;
+          }
         }
 
         .light-theme {
@@ -1471,8 +1467,17 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         }
 
         .light-theme main pre { background-color: #f8fafc !important; color: #334155 !important; border-color: #e2e8f0 !important; }
-        .light-theme ::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
-        .light-theme ::-webkit-scrollbar-track  { background: transparent !important; }
+        @media (min-width: 768px) {
+          .light-theme ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.65) !important;
+          }
+          .light-theme ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.95) !important;
+          }
+          .light-theme * {
+            scrollbar-color: rgba(0, 0, 0, 0.65) transparent !important;
+          }
+        }
       `}</style>
 
       {/* MODAL DE CONFIRMATION DE CHANGEMENT DE FORMULE GLOBAL */}

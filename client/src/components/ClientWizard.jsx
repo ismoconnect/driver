@@ -47,7 +47,7 @@ export default function ClientWizard({
 
   return (
     <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden min-h-0">
-      <div className="overflow-y-auto scrollbar-hidden">
+      <div className="overflow-y-auto">
         {/* Header */}
         <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
           <div className="flex items-start justify-between gap-4">

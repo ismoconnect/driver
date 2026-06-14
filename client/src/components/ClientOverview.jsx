@@ -63,7 +63,7 @@ export default function ClientOverview({
   const isSubmitted = formData.isSubmitted || applicationStatus !== 'new';
 
   return (
-    <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto scrollbar-hidden min-h-0">
+    <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto min-h-0">
       
       {/* Header card info */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-1.5 sm:pb-3">
