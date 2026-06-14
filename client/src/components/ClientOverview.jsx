@@ -5,6 +5,7 @@ import { db } from '../firebase';
 export default function ClientOverview({
   user,
   formData,
+  isSubmitted: propIsSubmitted,
   activeTab,
   setActiveTab,
   setWizardStep,
@@ -60,10 +61,10 @@ export default function ClientOverview({
     return details.firstPayment;
   };
 
-  const isSubmitted = formData.isSubmitted || applicationStatus !== 'new';
+  const isSubmitted = propIsSubmitted !== undefined ? propIsSubmitted : (formData.isSubmitted || applicationStatus !== 'new');
 
   return (
-    <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto min-h-0">
+    <div className="flex-1 flex flex-col gap-2.5 sm:gap-4 relative z-10 animate-[bubbleIn_0.5s_ease-out] overflow-y-auto md:overflow-y-visible min-h-0 md:min-h-fit">
       
       {/* Header card info */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-1.5 sm:pb-3">
@@ -432,7 +433,6 @@ export default function ClientOverview({
         </div>
       </div>
 
-      {/* COMPACT BILLING / BANQUE COMPONENT */}
       {isSubmitted && applicationStatus !== 'completed' && (!paymentValidated || (getSplitPaymentDetails().isSplit && !soldeValidated)) && (
         <div className="bg-slate-950/60 border border-brand-orange/30 rounded-3xl p-3 md:p-3.5 w-full mt-1.5 text-left relative overflow-hidden shadow-2xl">
           <div className="border-b border-white/10 pb-2 md:pb-1.5 mb-2">
@@ -607,7 +607,7 @@ export default function ClientOverview({
 
       {/* COMPOSANT DE TÉLÉVERSEMENT DES PIÈCES JUSTIFICATIVES */}
       {isSubmitted && (
-        <div className={`bg-slate-950/60 border border-white/5 rounded-3xl p-4 sm:p-5 w-full mt-1.5 text-left relative overflow-hidden shadow-2xl`}>
+        <div id="docs-section" className={`bg-slate-950/60 border border-white/5 rounded-3xl p-4 sm:p-5 w-full mt-1.5 text-left relative overflow-hidden shadow-2xl`}>
           <div className="border-b border-white/10 pb-2.5 mb-3">
             <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-orange mb-1 flex items-center gap-1.5">
               <span>🪪</span> Vos pièces justificatives ({Object.values(uploads || {}).filter(Boolean).length} / 4 fournies)
@@ -689,13 +689,13 @@ export default function ClientOverview({
       )}
 
       {/* legal disclaimer compliance */}
-      <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span className="text-[10px] text-white/40 leading-normal max-w-xl text-center sm:text-left">
-          ⚖️ **Mentions légales & Conformité** : Procédure 100% encadrée par les directives administratives européennes et les articles de réciprocité en vigueur. Enregistré au registre officiel belge.
+      <div className="border-t border-white/10 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pb-8 md:pr-28">
+        <span className="text-[10px] text-white/45 leading-relaxed max-w-xl text-center sm:text-left">
+          ⚖️ <strong className="text-white/60">Mentions légales & Conformité</strong> : Procédure 100% encadrée par les directives administratives européennes et les articles de réciprocité en vigueur. Enregistré au registre officiel belge.
         </span>
-        <div className="flex items-center gap-3">
-          <span className="text-[9px] bg-white/10 px-2.5 py-1 rounded text-white/50 font-bold border border-white/5">CE 2006/126</span>
-          <span className="text-[9px] bg-white/10 px-2.5 py-1 rounded text-white/50 font-bold border border-white/5">SPF MOBILITÉ</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] bg-white/5 px-2.5 py-1 rounded-md text-white/40 font-bold border border-white/5 tracking-wider uppercase">CE 2006/126</span>
+          <span className="text-[9px] bg-white/5 px-2.5 py-1 rounded-md text-white/40 font-bold border border-white/5 tracking-wider uppercase">SPF MOBILITÉ</span>
         </div>
       </div>    </div>
   );

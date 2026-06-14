@@ -17,9 +17,23 @@ export default function ClientWizard({
   setMandatAccepted,
   handleSubmitDemand,
   handleInputChange,
-  uploadToCloudinary
+  uploadToCloudinary,
+  deleteDocument
 }) {
   
+  React.useEffect(() => {
+    // Scroll scrollable containers to top on step change
+    const scrollableContainers = document.querySelectorAll('.overflow-y-auto, .overflow-auto');
+    scrollableContainers.forEach(el => {
+      el.scrollTop = 0;
+    });
+    const dashboardContainer = document.querySelector('.h-screen');
+    if (dashboardContainer) {
+      dashboardContainer.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0 });
+  }, [wizardStep]);
+
   const isMobile = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
   const validateStep1 = () => {
@@ -46,10 +60,10 @@ export default function ClientWizard({
   };
 
   return (
-    <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden min-h-0">
-      <div className="overflow-y-auto">
+    <form onSubmit={handleSubmitDemand} className="flex-1 flex flex-col justify-start gap-3 overflow-hidden md:overflow-visible min-h-0 md:min-h-fit pb-16">
+      <div className="overflow-y-auto md:overflow-y-visible">
         {/* Header */}
-        <div className="border-b border-white/10 pb-2 mb-3 md:pb-5 md:mb-6">
+        <div className="border-b-2 border-white/30 pb-2 mb-3 md:pb-5 md:mb-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-base sm:text-2xl font-display font-extrabold text-white">
@@ -99,9 +113,9 @@ export default function ClientWizard({
 
         {/* STEP 1: IDENTITY */}
         {wizardStep === 1 && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 animate-[bubbleIn_0.4s_ease-out]">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 gap-y-5 sm:gap-y-8 animate-[bubbleIn_0.4s_ease-out]">
             <div className="col-span-1">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Prénom</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Prénom</label>
               <input 
                 required
                 type="text" 
@@ -109,12 +123,12 @@ export default function ClientWizard({
                 value={formData.firstName}
                 onChange={handleInputChange}
                 placeholder="Ex. Sarah" 
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white"
+                className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-sm md:text-base focus:outline-none transition-colors text-white"
               />
             </div>
 
             <div className="col-span-1">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nom de famille</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Nom de famille</label>
               <input 
                 required
                 type="text" 
@@ -122,24 +136,24 @@ export default function ClientWizard({
                 value={formData.lastName}
                 onChange={handleInputChange}
                 placeholder="Ex. Peeters" 
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white"
+                className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-sm md:text-base focus:outline-none transition-colors text-white"
               />
             </div>
 
             <div className="col-span-1">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date de naissance</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Date de naissance</label>
               <input 
                 required
                 type="date" 
                 name="birthDate"
                 value={formData.birthDate}
                 onChange={handleInputChange}
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white/80"
+                className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-sm md:text-base focus:outline-none transition-colors text-white/80"
               />
             </div>
 
             <div className="col-span-1">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Téléphone</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Téléphone</label>
               <input 
                 required
                 type="tel" 
@@ -147,12 +161,12 @@ export default function ClientWizard({
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="Ex. +32 495 12 34 56" 
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white"
+                className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-sm md:text-base focus:outline-none transition-colors text-white"
               />
             </div>
 
             <div className="col-span-2">
-              <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Adresse de résidence en Belgique</label>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 sm:mb-2.5">Adresse de résidence en Belgique</label>
               <input 
                 required
                 type="text" 
@@ -160,18 +174,16 @@ export default function ClientWizard({
                 value={formData.address}
                 onChange={handleInputChange}
                 placeholder="Rue de la Loi 16, 1000 Bruxelles" 
-                className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-3 py-1.5 sm:px-4 sm:py-3 text-[11px] sm:text-sm focus:outline-none transition-colors text-white"
+                className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-sm md:text-base focus:outline-none transition-colors text-white"
               />
             </div>
-
-
           </div>
         )}
 
         {/* STEP 2: DOCUMENT UPLOADS */}
         {wizardStep === 2 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-4 animate-[bubbleIn_0.4s_ease-out]">
-            <div className="col-span-2 bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-[10px] sm:text-xs p-3 rounded-2xl mb-2 flex items-start gap-2.5 shadow-sm">
+            <div className="col-span-2 bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-[10px] sm:text-xs md:text-sm p-3 rounded-2xl mb-2 flex items-start gap-2.5 shadow-sm">
               <span className="text-sm flex-shrink-0">💡</span>
               <span><strong>Optionnel pour l'instant :</strong> Vous pouvez continuer sans téléverser vos documents maintenant et les ajouter plus tard depuis votre espace candidat.</span>
             </div>
@@ -183,8 +195,8 @@ export default function ClientWizard({
             ].map(({ field, label, badge, accept, emoji }) => (
               <div key={field} className={`bg-slate-950/40 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2 sm:p-3 flex flex-col justify-between`}>
                 <div>
-                  <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">{badge}</span>
-                  <h4 className="text-white font-semibold text-[10px] sm:text-xs mt-0.5 leading-tight">{label}</h4>
+                  <span className="text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400">{badge}</span>
+                  <h4 className="text-white font-semibold text-[10px] sm:text-xs md:text-sm mt-0.5 leading-tight">{label}</h4>
                 </div>
 
                 <div className="mt-2 sm:mt-4">
@@ -206,16 +218,23 @@ export default function ClientWizard({
                           <span className="text-lg sm:text-3xl">📄</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-2">
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-1.5">
                         <a href={uploads[field]} target="_blank" rel="noopener noreferrer"
-                          className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:bg-white/30">
+                          className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-white/30">
                           Voir ↗
                         </a>
-                        <label className="text-[8px] sm:text-[10px] font-bold text-white bg-brand-orange/80 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg hover:bg-brand-orange cursor-pointer">
+                        <label className="text-[8px] sm:text-[10px] font-bold text-slate-950 bg-brand-orange px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-brand-orange-dark cursor-pointer">
                           Changer
                           <input type="file" accept={accept} className="hidden"
                             onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                         </label>
+                        <button
+                          type="button"
+                          onClick={() => deleteDocument(field)}
+                          className="text-[8px] sm:text-[10px] font-bold text-white bg-red-600 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-red-700 cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
                       </div>
                       <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 px-1.5 py-0.5 sm:px-2 sm:py-1 flex items-center gap-1">
                         <span className="text-[8px] sm:text-[9px] text-white font-bold font-sans">✓ Prêt</span>
@@ -262,10 +281,10 @@ export default function ClientWizard({
 
         {/* STEP 3: EXPERIENCE & CONFIG */}
         {wizardStep === 3 && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 animate-[bubbleIn_0.4s_ease-out]">
-            <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-xl p-2 sm:p-2.5`}>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange mb-1">🛣️ Circuit d'obtention</p>
-              <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 gap-y-5 sm:gap-y-8 animate-[bubbleIn_0.4s_ease-out]">
+            <div className={`col-span-2 bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-xl p-3 md:p-4`}>
+              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-brand-orange mb-2">🛣️ Circuit d'obtention</p>
+              <div className="flex flex-wrap gap-2">
                 {[
                   { icon: '📋', label: 'Affiliation Candidat', done: true },
                   { icon: '📖', label: 'Examen Théorique', done: selectedPath === 'perception' || selectedPath === 'pratique' || selectedPath === 'direct', active: selectedPath === 'theorique' || !selectedPath },
@@ -273,7 +292,7 @@ export default function ClientWizard({
                   { icon: '🚗', label: 'Examen Pratique', done: selectedPath === 'direct', active: selectedPath === 'pratique', locked: selectedPath === 'perception' || selectedPath === 'theorique' || !selectedPath },
                   { icon: '🏆', label: 'Permis Définitif', active: selectedPath === 'direct', locked: selectedPath !== 'direct' || !selectedPath },
                 ].map((item, i) => (
-                  <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[9.5px] font-semibold border ${
+                  <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] md:text-xs font-semibold border ${
                     item.done ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                       : item.active ? 'bg-brand-orange/15 border-brand-orange/40 text-brand-orange animate-pulse' 
                       : 'bg-white/5 border-white/10 text-white/30'
@@ -288,16 +307,16 @@ export default function ClientWizard({
             </div>
 
             <div className="col-span-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
                     Catégorie de permis
                   </label>
                   <select
                     name="licenseCategory"
                     value={formData.licenseCategory || 'Permis B (Voiture)'}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white"
+                    className="w-full bg-slate-950/80 border border-white/40 rounded-xl px-3 py-2.5 sm:py-3.5 text-xs md:text-[15px] focus:outline-none transition-colors text-white"
                   >
                     <optgroup label="Voitures & Véhicules légers" className="bg-slate-900 text-white font-bold">
                       <option value="Permis B (Voiture)">Permis B (Voiture)</option>
@@ -329,14 +348,14 @@ export default function ClientWizard({
                 </div>
 
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
                     Échecs à l'examen
                   </label>
                   <select
                     name="failedAttempts"
                     value={formData.failedAttempts}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-950/80 border border-white/15 focus:border-brand-orange rounded-xl px-2.5 py-1.5 text-xs focus:outline-none transition-colors text-white"
+                    className="w-full bg-slate-950/80 border border-white/40 focus:border-brand-orange rounded-xl px-3 py-2.5 sm:py-3.5 text-xs md:text-[15px] focus:outline-none transition-colors text-white"
                   >
                     <option value="Jamais">Aucun</option>
                     <option value="1 fois">1 échec</option>
@@ -346,14 +365,14 @@ export default function ClientWizard({
                 </div>
 
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
                     Type de transmission
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, transmission: 'Manuel' }))}
-                      className={`py-1.5 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
+                      className={`py-2.5 sm:py-3.5 rounded-xl border text-xs md:text-[15px] font-semibold transition-all duration-300 cursor-pointer ${
                         formData.transmission === 'Manuel'
                           ? 'border-brand-orange bg-brand-orange/10 text-white'
                           : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -364,7 +383,7 @@ export default function ClientWizard({
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, transmission: 'Automatique' }))}
-                      className={`py-1.5 rounded-xl border text-xs font-semibold transition-all duration-300 cursor-pointer ${
+                      className={`py-2.5 sm:py-3.5 rounded-xl border text-xs md:text-[15px] font-semibold transition-all duration-300 cursor-pointer ${
                         formData.transmission === 'Automatique'
                           ? 'border-brand-orange bg-brand-orange/10 text-white'
                           : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
@@ -376,91 +395,91 @@ export default function ClientWizard({
                 </div>
               </div>
 
-              <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">
                 Formule d'obtention souhaitée
               </label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedPath('theorique')}
-                  className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                  className={`p-3 md:p-4 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                     selectedPath === 'theorique'
                       ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                       : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                   }`}
                 >
                   <div>
-                    <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
+                    <h4 className="text-[11px] md:text-base font-bold text-white flex items-center gap-1">
                       <span>📖</span> <span className="truncate">Théorique</span>
                     </h4>
-                    <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 2 — Examen Théorique.</p>
+                    <p className="text-[8px] md:text-sm text-white/50 leading-tight mt-1">Phase 2 — Examen Théorique.</p>
                   </div>
-                  <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center w-full">
-                    <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 2</span>
-                    <span className="text-[10px] font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
+                  <div className="mt-2 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                    <span className="text-[7.5px] md:text-xs uppercase font-bold text-brand-orange">Phase 2</span>
+                    <span className="text-[11px] md:text-base font-black text-white">{advisor.theoriqueAmount || "550,00 €"}</span>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedPath('perception')}
-                  className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                  className={`p-3 md:p-4 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                     selectedPath === 'perception'
                       ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                       : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                   }`}
                 >
                   <div>
-                    <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
+                    <h4 className="text-[11px] md:text-base font-bold text-white flex items-center gap-1">
                       <span>👁️</span> <span className="truncate">Perception</span>
                     </h4>
-                    <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phase 3 — Perception du Risque.</p>
+                    <p className="text-[8px] md:text-sm text-white/50 leading-tight mt-1">Phase 3 — Perception du Risque.</p>
                   </div>
-                  <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center w-full">
-                    <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 3</span>
-                    <span className="text-[10px] font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
+                  <div className="mt-2 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                    <span className="text-[7.5px] md:text-xs uppercase font-bold text-brand-orange">Phase 3</span>
+                    <span className="text-[11px] md:text-base font-black text-white">{advisor.perceptionAmount || "350,00 €"}</span>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedPath('pratique')}
-                  className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                  className={`p-3 md:p-4 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                     selectedPath === 'pratique'
                       ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                       : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                   }`}
                 >
                   <div>
-                    <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
+                    <h4 className="text-[11px] md:text-base font-bold text-white flex items-center gap-1">
                       <span>🚗</span> <span className="truncate">Pratique</span>
                     </h4>
-                    <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2-4 — Dispense pratique.</p>
+                    <p className="text-[8px] md:text-sm text-white/50 leading-tight mt-1">Phases 2-4 — Dispense pratique.</p>
                   </div>
-                  <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center w-full">
-                    <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 4</span>
-                    <span className="text-[10px] font-black text-white">{advisor.pratiqueAmount || "2100,00 €"}</span>
+                  <div className="mt-2 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                    <span className="text-[7.5px] md:text-xs uppercase font-bold text-brand-orange">Phase 4</span>
+                    <span className="text-[11px] md:text-base font-black text-white">{advisor.pratiqueAmount || "2100,00 €"}</span>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedPath('direct')}
-                  className={`p-1.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
+                  className={`p-3 md:p-4 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between cursor-pointer ${
                     selectedPath === 'direct'
                       ? 'border-brand-orange bg-brand-orange/10 text-white shadow-lg'
                       : 'border-white/15 bg-slate-950/50 text-white/60 hover:border-white/30'
                   }`}
                 >
                   <div>
-                    <h4 className="text-[10px] font-bold text-white flex items-center gap-0.5">
+                    <h4 className="text-[11px] md:text-base font-bold text-white flex items-center gap-1">
                       <span>🏆</span> <span className="truncate">Permis Direct</span>
                     </h4>
-                    <p className="text-[7.5px] text-white/50 leading-tight mt-0.5">Phases 2–5 — Homologation complète.</p>
+                    <p className="text-[8px] md:text-sm text-white/50 leading-tight mt-1">Phases 2–5 — Homologation complète.</p>
                   </div>
-                  <div className="mt-1 pt-0.5 border-t border-white/5 flex justify-between items-center w-full">
-                    <span className="text-[7px] uppercase font-bold text-brand-orange">Phase 5</span>
-                    <span className="text-[10px] font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
+                  <div className="mt-2 pt-1 border-t border-white/5 flex justify-between items-center w-full">
+                    <span className="text-[7.5px] md:text-xs uppercase font-bold text-brand-orange">Phase 5</span>
+                    <span className="text-[11px] md:text-base font-black text-white">{advisor.directLicenseAmount || "1200,00 €"}</span>
                   </div>
                 </button>
               </div>
@@ -470,58 +489,58 @@ export default function ClientWizard({
 
         {/* STEP 4: MANDAT DE LÉGALITÉ & CONFIRMATION */}
         {wizardStep === 4 && (
-          <div className="grid grid-cols-2 gap-2 animate-[bubbleIn_0.4s_ease-out]">
-            <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-2.5`}>
-              <h4 className="text-[9px] font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-1">
+          <div className="grid grid-cols-2 gap-4 animate-[bubbleIn_0.4s_ease-out]">
+            <div className={`bg-slate-950/60 border ${theme === 'dark' ? 'border-white' : 'border-emerald-500'} rounded-2xl p-4 md:p-5`}>
+              <h4 className="text-[10px] md:text-sm font-bold uppercase tracking-wider text-brand-orange mb-3 flex items-center gap-1.5">
                 <span>📋</span> Récapitulatif
               </h4>
-              <div className="space-y-1.5 text-[9px]">
+              <div className="space-y-2 md:space-y-3 text-[10px] md:text-sm">
                 <div>
-                  <span className="text-white/40 block text-[8px]">Candidat</span>
-                  <span className="text-white font-semibold truncate block">{formData.firstName} {formData.lastName}</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Candidat</span>
+                  <span className="text-white font-semibold truncate block md:text-base">{formData.firstName} {formData.lastName}</span>
                 </div>
                 <div>
-                  <span className="text-white/40 block text-[8px]">Date de naissance</span>
-                  <span className="text-white font-semibold">{formData.birthDate || '—'}</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Date de naissance</span>
+                  <span className="text-white font-semibold md:text-base">{formData.birthDate || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-white/40 block text-[8px]">Téléphone</span>
-                  <span className="text-white font-semibold">{formData.phone || '—'}</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Téléphone</span>
+                  <span className="text-white font-semibold md:text-base">{formData.phone || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-white/40 block text-[8px]">Permis souhaité</span>
-                  <span className="text-brand-orange font-semibold">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} — {formData.transmission}</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Permis souhaité</span>
+                  <span className="text-brand-orange font-semibold md:text-base">{formData.licenseCategory?.startsWith('Permis') ? formData.licenseCategory : `Permis ${formData.licenseCategory || 'B'}`} — {formData.transmission}</span>
                 </div>
                 <div>
-                  <span className="text-white/40 block text-[8px]">Adresse</span>
-                  <span className="text-white font-semibold truncate block">{formData.address || '—'}</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Adresse</span>
+                  <span className="text-white font-semibold truncate block md:text-base">{formData.address || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-white/40 block text-[8px]">Pièces justificatives</span>
-                  <span className="text-emerald-400 font-semibold">{Object.values(uploads).filter(Boolean).length} / 4 ✓</span>
+                  <span className="text-white/40 block text-[8px] md:text-xs">Pièces justificatives</span>
+                  <span className="text-emerald-400 font-semibold md:text-base">{Object.values(uploads).filter(Boolean).length} / 4 ✓</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-2.5 flex-1">
-                <h4 className="font-bold text-[9px] text-brand-orange flex items-center gap-1 mb-1.5 leading-tight">
+            <div className="flex flex-col gap-4">
+              <div className="bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-4 md:p-5 flex-1">
+                <h4 className="font-bold text-[10px] md:text-sm text-brand-orange flex items-center gap-1.5 mb-2 md:mb-3 leading-tight">
                   🛡️ Mandat SPF Belgique
                 </h4>
-                <p className="text-[8.5px] text-white/70 leading-snug">
+                <p className="text-[9.5px] md:text-sm text-white/70 leading-relaxed">
                   En soumettant ce dossier, vous conférez mandat de représentation pour l'enregistrement officiel de votre équivalence de permis auprès du SPF Mobilité. <span className="text-brand-orange font-semibold">Aucun examen requis.</span>
                 </p>
               </div>
 
-              <label className="flex items-start gap-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-2.5 rounded-2xl cursor-pointer transition-all duration-300">
+              <label className="flex items-start gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-orange/30 p-3 md:p-4 rounded-2xl cursor-pointer transition-all duration-300">
                 <input
                   type="checkbox"
                   required
                   checked={mandatAccepted}
                   onChange={(e) => setMandatAccepted(e.target.checked)}
-                  className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
+                  className="mt-0.5 w-4 h-4 md:w-5 md:h-5 rounded border-white/20 bg-slate-950 accent-brand-orange flex-shrink-0 cursor-pointer"
                 />
-                <span className="text-[8.5px] text-white/80 leading-snug select-none min-w-0">
+                <span className="text-[9.5px] md:text-sm text-white/80 leading-relaxed select-none min-w-0">
                   Je certifie l'exactitude de ces informations et donne mandat à <strong>Mon Permis</strong>. <span className="text-brand-orange font-bold">(Requis)</span>
                 </span>
               </label>
@@ -531,19 +550,7 @@ export default function ClientWizard({
       </div>
 
       {/* Actions buttons */}
-      <div className="flex-shrink-0 mt-2.5 pt-1.5 border-t border-white/10 flex justify-between">
-        {wizardStep > 1 ? (
-          <button
-            type="button"
-            onClick={() => setWizardStep(prev => prev - 1)}
-            className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            ← Retour
-          </button>
-        ) : (
-          <div />
-        )}
-
+      <div className="flex-shrink-0 mt-6 pt-4 border-t-2 border-white/30 flex items-center justify-start gap-4">
         {wizardStep < 4 ? (
           <button
             key="btn-continue"
@@ -553,7 +560,7 @@ export default function ClientWizard({
               else if (wizardStep === 2 && validateStep2()) setWizardStep(3);
               else if (wizardStep === 3 && validateStep3()) setWizardStep(4);
             }}
-            className="px-6 py-2 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-slate-950 text-xs font-bold shadow-md transition-all cursor-pointer"
+            className="px-6 py-2 md:px-8 md:py-3 rounded-xl bg-brand-orange hover:bg-brand-orange-dark text-slate-950 text-xs md:text-sm font-bold shadow-md transition-all cursor-pointer"
           >
             Continuer ➔
           </button>
@@ -562,13 +569,23 @@ export default function ClientWizard({
             key="btn-submit"
             type="submit"
             disabled={!mandatAccepted}
-            className={`px-6 py-2 rounded-xl text-xs font-bold shadow-md transition-all ${
+            className={`px-6 py-2 md:px-8 md:py-3 rounded-xl text-xs md:text-sm font-bold shadow-md transition-all ${
               mandatAccepted 
                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer hover:scale-[1.02]' 
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
             }`}
           >
             Transmettre ma Demande Agréée ➔
+          </button>
+        )}
+
+        {wizardStep > 1 && (
+          <button
+            type="button"
+            onClick={() => setWizardStep(prev => prev - 1)}
+            className="px-4 py-2 md:px-5 md:py-3 text-xs md:text-sm font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            ← Retour
           </button>
         )}
       </div>

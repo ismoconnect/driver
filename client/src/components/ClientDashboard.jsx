@@ -10,6 +10,8 @@ import ClientAuth from './ClientAuth';
 import ClientOverview from './ClientOverview';
 import ClientWizard from './ClientWizard';
 import ClientChat from './ClientChat';
+import ClientDocuments from './ClientDocuments';
+import ClientProfile from './ClientProfile';
 
 export default function ClientDashboard({ onBack, initialMode = 'login', onAuthSuccess, onSwitchMode, initialTab, advisor: propAdvisor }) {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   }); // Default to wizard on entry or restore from localStorage
   const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
   const [wizardError, setWizardError] = useState('');
+  const [rejectedDocs, setRejectedDocs] = useState({});
 
 
   // Client Theme State (light / dark mode)
@@ -42,6 +45,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   useEffect(() => {
     localStorage.setItem('clientTheme', theme);
   }, [theme]);
+
+  // Scroll to top on activeTab changes
+  useEffect(() => {
+    const scrollableContainers = document.querySelectorAll('.overflow-y-auto, .overflow-auto');
+    scrollableContainers.forEach(el => {
+      el.scrollTop = 0;
+    });
+    const dashboardContainer = document.querySelector('.h-screen');
+    if (dashboardContainer) {
+      dashboardContainer.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0 });
+  }, [activeTab]);
 
   // Sync activeTab state when URL path parameter (initialTab) changes
   useEffect(() => {
@@ -74,7 +90,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [paymentValidated, setPaymentValidated] = useState(false);
   const [soldeValidated, setSoldeValidated] = useState(false);
   const [soldeInitiated, setSoldeInitiated] = useState(false);
-  const [selectedPath, setSelectedPath] = useState('theorique');
+  const [selectedPath, setSelectedPath] = useState('');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const [attestationUrl, setAttestationUrl] = useState('');
@@ -285,9 +301,10 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setSoldeValidated(leadData?.soldeValidated || false);
             setSoldeInitiated(leadData?.soldeInitiated || false);
             setAttestationUrl(leadData?.attestationUrl || '');
-            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'theorique') : 'theorique');
+            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'theorique') : '');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
+            setRejectedDocs(leadData?.rejectedDocs || {});
             
             if (leadData?.uploads) {
               setUploads(leadData.uploads);
@@ -314,9 +331,12 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setAttestationUrl(data.attestationUrl || '');
             if (data.isSubmitted) {
               setSelectedPath(data.selectedPath || 'theorique');
+            } else {
+              setSelectedPath('');
             }
             setPerceptionPaid(data.perceptionPaid === true);
             setApplicationStatus(data.status || 'new');
+            setRejectedDocs(data.rejectedDocs || {});
           }
         });
 
@@ -415,6 +435,21 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       alert('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setUploading(prev => ({ ...prev, [fieldName]: false }));
+    }
+  };
+
+  const deleteDocument = async (fieldName) => {
+    const updatedUploads = { ...uploads, [fieldName]: null };
+    setUploads(updatedUploads);
+    if (user) {
+      try {
+        const leadRef = doc(db, 'leads', user.uid);
+        await setDoc(leadRef, {
+          uploads: updatedUploads,
+        }, { merge: true });
+      } catch (err) {
+        console.error('Error deleting document:', err);
+      }
     }
   };
 
@@ -707,9 +742,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     );
   }
 
+  const isGrandLayout = ['overview', 'wizard', 'documents', 'profile'].includes(activeTab);
+
   // Render Secured Dashboard if logged in
   return (
-    <div className={`h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
+    <div className={`h-screen ${isGrandLayout ? 'md:overflow-y-auto overflow-hidden' : 'overflow-hidden'} ${theme === 'dark' ? 'bg-slate-950 text-white dark-theme' : 'bg-slate-50 text-slate-900 light-theme'} flex flex-col font-sans selection:bg-brand-orange selection:text-white relative transition-colors duration-300`}>
       {/* --- DASHBOARD HEADER --- */}
       <header className="bg-slate-900 border-b-2 border-emerald-500 px-4 py-2 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-opacity-80 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -757,7 +794,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </header>
 
       {/* --- DASHBOARD WRAPPER --- */}
-      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 min-h-0 ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <div className={`flex-1 flex flex-col md:flex-row w-full gap-6 pb-24 md:pb-8 ${isGrandLayout ? 'min-h-0 md:min-h-fit' : 'min-h-0'} ${activeTab === 'chat' ? 'p-0 md:p-8' : 'p-4 sm:p-6 lg:p-8'}`}>
         
         {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex w-64 flex-shrink-0 flex-col sticky top-24 pr-6 border-r border-white/10 self-start">
@@ -852,6 +889,30 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 w-full ${
+                activeTab === 'documents'
+                  ? 'bg-brand-orange text-white shadow-[0_4px_16px_rgba(255,152,0,0.35)]'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${activeTab === 'documents' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 group-hover:text-white/70'}`}>4</span>
+              <span>Mes documents</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 w-full ${
+                activeTab === 'profile'
+                  ? 'bg-brand-orange text-white shadow-[0_4px_16px_rgba(255,152,0,0.35)]'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${activeTab === 'profile' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 group-hover:text-white/70'}`}>5</span>
+              <span>Mon profil</span>
+            </button>
           </nav>
 
           <div className="mt-4 pt-4 border-t border-white/10">
@@ -868,11 +929,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         </aside>
 
         {/* --- MAIN MAIN AREA --- */}
-        <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 h-full md:h-full ${
+        <main className={`flex-1 min-w-0 relative flex flex-col min-h-0 ${isGrandLayout ? 'h-auto md:h-auto' : 'h-full md:h-full'} ${
           activeTab === 'chat' 
             ? `rounded-none border-0 p-4 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl md:p-6` 
-            : activeTab === 'overview'
-            ? `rounded-none border-0 md:border-0 md:bg-transparent md:shadow-none p-2 sm:p-5 overflow-y-auto`
+            : isGrandLayout
+            ? `rounded-none border-0 md:border-0 md:bg-transparent md:shadow-none p-2 sm:p-5 overflow-y-auto md:overflow-y-visible`
             : `rounded-none border-0 md:rounded-[32px] md:border ${theme === 'dark' ? 'md:border-white' : 'md:border-slate-950'} md:bg-slate-900 md:shadow-2xl p-2 sm:p-5 overflow-y-auto`
         }`}>
           <div className="absolute top-0 right-0 w-80 h-80 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
@@ -881,6 +942,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             <ClientOverview
               user={user}
               formData={formData}
+              isSubmitted={isSubmitted}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               setWizardStep={setWizardStep}
@@ -899,6 +961,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               uploads={uploads}
               uploading={uploading}
               uploadToCloudinary={uploadToCloudinary}
+              deleteDocument={deleteDocument}
             />
           )}
 
@@ -1154,6 +1217,16 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                   <button onClick={() => setActiveTab('chat')} className="px-6 py-2.5 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer">
                     Contacter mon conseiller
                   </button>
+                  {(!uploads?.idFront || !uploads?.idBack || !uploads?.photo || !uploads?.signature) && (
+                    <button 
+                      onClick={() => {
+                        setActiveTab('documents');
+                      }}
+                      className="px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer"
+                    >
+                      📁 Ajoutez vos documents
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1175,6 +1248,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
                 handleSubmitDemand={handleSubmitDemand}
                 handleInputChange={handleInputChange}
                 uploadToCloudinary={uploadToCloudinary}
+                deleteDocument={deleteDocument}
               />
             )
           )}
@@ -1192,6 +1266,30 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               handleSendMessage={handleSendMessage}
               handleClientChatFileUpload={handleClientChatFileUpload}
               chatEndRef={chatEndRef}
+            />
+          )}
+
+          {activeTab === 'documents' && (
+            <ClientDocuments
+              uploads={uploads}
+              uploading={uploading}
+              uploadToCloudinary={uploadToCloudinary}
+              deleteDocument={deleteDocument}
+              theme={theme}
+              isSubmitted={isSubmitted}
+              applicationStatus={applicationStatus}
+              rejectedDocs={rejectedDocs}
+              setActiveTab={setActiveTab}
+              setWizardStep={setWizardStep}
+            />
+          )}
+
+          {activeTab === 'profile' && (
+            <ClientProfile
+              formData={formData}
+              setFormData={setFormData}
+              user={user}
+              theme={theme}
             />
           )}
         </main>
