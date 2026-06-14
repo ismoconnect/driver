@@ -1269,6 +1269,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             width: 8px;
             height: 8px;
           }
+          ::-webkit-scrollbar-button {
+            display: none !important;
+            height: 0 !important;
+            width: 0 !important;
+          }
           ::-webkit-scrollbar-track {
             background: transparent !important;
           }
