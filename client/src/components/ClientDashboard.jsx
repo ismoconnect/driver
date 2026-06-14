@@ -1326,19 +1326,19 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t-2 border-x border-emerald-500 rounded-t-3xl px-4 py-2 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t-2 border-x border-emerald-500 rounded-t-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`group flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+          className={`group flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
             activeTab === 'overview' 
               ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
               : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'overview' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <svg className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'overview' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 4L9 7" />
           </svg>
-          <span className="text-[10px] uppercase tracking-wider font-semibold">Circuit</span>
+          <span className="text-[9px] uppercase tracking-wider font-semibold">Circuit</span>
         </button>
         
         <button
@@ -1346,34 +1346,62 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setActiveTab('wizard');
             setWizardStep(1);
           }}
-          className={`group relative flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+          className={`group relative flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
             activeTab === 'wizard' 
               ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
               : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'wizard' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <svg className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'wizard' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span className="text-[10px] uppercase tracking-wider font-semibold">Demande</span>
+          <span className="text-[9px] uppercase tracking-wider font-semibold">Demande</span>
           {!isSubmitted && (
-            <span className="absolute top-2 right-5 w-2 h-2 rounded-full bg-brand-orange animate-ping" />
+            <span className="absolute top-1 right-2.5 w-1.5 h-1.5 rounded-full bg-brand-orange animate-ping" />
           )}
         </button>
 
         <button
           onClick={() => setActiveTab('chat')}
-          className={`group relative flex flex-col items-center gap-1 py-2 px-5 rounded-2xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+          className={`group relative flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
             activeTab === 'chat' 
               ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
               : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <svg className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'chat' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <svg className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'chat' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <span className="text-[10px] uppercase tracking-wider font-semibold">Conseiller</span>
-          <span className="absolute top-2.5 right-6 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900" />
+          <span className="text-[9px] uppercase tracking-wider font-semibold">Chat</span>
+          <span className="absolute top-1 right-2.5 w-1.5 h-1.5 rounded-full bg-emerald-400 border border-slate-900" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab('documents')}
+          className={`group relative flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'documents' 
+              ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+              : 'text-white/40 hover:text-white/70'
+          }`}
+        >
+          <svg className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'documents' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          <span className="text-[9px] uppercase tracking-wider font-semibold">Docs</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`group relative flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer ${
+            activeTab === 'profile' 
+              ? 'text-brand-orange bg-brand-orange/10 font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+              : 'text-white/40 hover:text-white/70'
+          }`}
+        >
+          <svg className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${activeTab === 'profile' ? 'text-brand-orange' : 'text-white/40 group-hover:text-white/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span className="text-[9px] uppercase tracking-wider font-semibold">Profil</span>
         </button>
       </nav>
 

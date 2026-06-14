@@ -241,7 +241,14 @@ function AppRoutes() {
       waBtn.rel = 'noopener noreferrer';
       waBtn.setAttribute('aria-label', 'Discuter sur WhatsApp');
 
-      const bottomOffset = hasMessenger ? '96px' : '24px';
+      const isMobile = window.innerWidth < 768;
+      const isMemberSpace = window.location.pathname.startsWith('/mon-espace');
+      let bottomOffset = '24px';
+      if (isMemberSpace) {
+        bottomOffset = isMobile ? '90px' : '24px';
+      } else {
+        bottomOffset = (hasMessenger && isPublicRoute) ? '96px' : '24px';
+      }
 
       Object.assign(waBtn.style, {
         position: 'fixed',
@@ -278,7 +285,7 @@ function AppRoutes() {
       document.body.appendChild(waBtn);
     }
 
-    if (hasMessenger) {
+    if (hasMessenger && isPublicRoute) {
       const btn = document.createElement('a');
       btn.id = 'messenger-floating-btn';
       btn.href = `https://m.me/${messengerPageId}`;
