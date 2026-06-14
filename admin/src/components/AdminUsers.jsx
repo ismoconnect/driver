@@ -134,10 +134,7 @@ const AdminUsers = ({
 
                     {/* Contact */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-300 font-medium">{lead.email}</p>
-                      {lead.phone && (
-                        <p className="text-xs text-slate-500 mt-0.5">{lead.phone}</p>
-                      )}
+                      <p className="text-sm text-slate-300 font-medium">{lead.phone || lead.email}</p>
                     </td>
 
                     {/* Date inscription */}
@@ -258,15 +255,9 @@ const AdminUsers = ({
                 {/* Section intermédiaire : Coordonnées */}
                 <div className="grid grid-cols-1 gap-2 text-xs text-slate-300">
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-500 w-4">📧</span>
-                    <span className="truncate select-all font-medium">{lead.email}</span>
+                    <span className="text-slate-500 w-4">{lead.phone ? '📞' : '📧'}</span>
+                    <span className="truncate select-all font-medium">{lead.phone || lead.email}</span>
                   </div>
-                  {lead.phone && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 w-4">📞</span>
-                      <span className="select-all font-medium">{lead.phone}</span>
-                    </div>
-                  )}
                   <div className="flex items-center gap-2 text-slate-400">
                     <span className="text-slate-500 w-4">📅</span>
                     <span>{lead.date} <span className="text-slate-600">|</span> {hasLead ? '📋 Dossier créé' : '👤 Inscription seule'}</span>
