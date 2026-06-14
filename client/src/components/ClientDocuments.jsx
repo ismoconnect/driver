@@ -282,26 +282,43 @@ export default function ClientDocuments({
                     </div>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-white/35 hover:border-brand-orange/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors gap-2 bg-slate-950/20">
+                  <label className="cursor-pointer border-2 border-dashed border-white/35 hover:border-brand-orange/60 hover:bg-white/[0.02] rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all gap-2 bg-slate-950/20">
+                    <input type="file" accept={accept} className="hidden"
+                      onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                     <span className="text-2xl text-white/20">{emoji}</span>
                     <span className="text-xs text-white/50 font-medium">Aucun fichier sélectionné</span>
 
                     <div className="flex gap-2 w-full mt-2 justify-center">
-                      <label className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-xl transition-colors border-2 border-white/35">
+                      <span className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-xl transition-colors border-2 border-white/35">
                         📁 Choisir un fichier
-                        <input type="file" accept={accept} className="hidden"
-                          onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                      </label>
+                      </span>
 
                       {isMobile() && accept.includes('image') && (
-                        <label className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-xs font-bold rounded-xl transition-colors border-2 border-brand-orange/40">
+                        <span
+                          role="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const camInput = document.getElementById(`cam-${field}`);
+                            if (camInput) camInput.click();
+                          }}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-xs font-bold rounded-xl transition-colors border-2 border-brand-orange/40"
+                        >
                           📷 Prendre une photo
-                          <input type="file" accept="image/*" capture="environment" className="hidden"
-                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                        </label>
+                        </span>
                       )}
                     </div>
-                  </div>
+                    {isMobile() && accept.includes('image') && (
+                      <input
+                        type="file"
+                        id={`cam-${field}`}
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => uploadToCloudinary(field, e.target.files[0])}
+                      />
+                    )}
+                  </label>
                 )}
               </div>
             </div>

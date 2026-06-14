@@ -241,7 +241,9 @@ export default function ClientWizard({
                       </div>
                     </div>
                   ) : (
-                    <div className="border border-dashed border-white/15 hover:border-brand-orange rounded-xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center transition-colors gap-1.5 sm:gap-2">
+                    <label className="cursor-pointer border border-dashed border-white/15 hover:border-brand-orange hover:bg-white/[0.02] rounded-xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center transition-all gap-1.5 sm:gap-2 w-full">
+                      <input type="file" accept={accept} className="hidden"
+                        onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
                       <span className="hidden sm:block text-xl text-white/30">{emoji}</span>
                       <span className="hidden sm:block text-[10px] text-white/55 font-medium">
                         {isMobile() ? 'Choisir' : 'Glisser ou cliquer'}
@@ -249,29 +251,40 @@ export default function ClientWizard({
 
                       {isMobile() ? (
                         <div className="flex flex-col gap-1.5 w-full">
-                          <label className="relative cursor-pointer w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold rounded-lg transition-colors">
+                          <span className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold rounded-lg transition-colors">
                             📁 Fichier
-                            <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer"
-                              onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                          </label>
+                          </span>
                           {accept.includes('image') && (
-                            <label className="relative cursor-pointer w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[9px] font-bold rounded-lg transition-colors border border-brand-orange/30">
+                            <span
+                              role="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const camInput = document.getElementById(`cam-wiz-${field}`);
+                                if (camInput) camInput.click();
+                              }}
+                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-brand-orange/20 hover:bg-brand-orange/30 text-brand-orange text-[9px] font-bold rounded-lg transition-colors border border-brand-orange/30"
+                            >
                               📷 Photo
-                              <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer"
-                                onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                            </label>
+                            </span>
                           )}
                         </div>
                       ) : (
-                        <label className="relative cursor-pointer w-full">
-                          <input type="file" accept={accept} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                          <span className="block text-[10px] font-bold text-brand-orange underline underline-offset-2">
-                            Parcourir...
-                          </span>
-                        </label>
+                        <span className="block text-[10px] font-bold text-brand-orange underline underline-offset-2">
+                          Parcourir...
+                        </span>
                       )}
-                    </div>
+                      {isMobile() && accept.includes('image') && (
+                        <input
+                          type="file"
+                          id={`cam-wiz-${field}`}
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => uploadToCloudinary(field, e.target.files[0])}
+                        />
+                      )}
+                    </label>
                   )}
                 </div>
               </div>
