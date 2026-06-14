@@ -251,12 +251,16 @@ function AppRoutes() {
       if (hasMessenger) {
         if (isMemberSpace && isMobile) {
           bottomOffset = isChatTab ? '225px' : '155px';
+        } else if (isMemberSpace && isChatTab) {
+          bottomOffset = '170px';
         } else {
           bottomOffset = '96px';
         }
       } else {
         if (isMemberSpace && isMobile) {
           bottomOffset = isChatTab ? '155px' : '85px';
+        } else if (isMemberSpace && isChatTab) {
+          bottomOffset = '100px';
         } else {
           bottomOffset = '24px';
         }
@@ -308,7 +312,12 @@ function AppRoutes() {
       const isMobile = window.innerWidth < 768;
       const isMemberSpace = location.pathname.startsWith('/mon-espace');
       const isChatTab = location.pathname.endsWith('/chat');
-      const bottomPos = (isMemberSpace && isMobile) ? (isChatTab ? '155px' : '85px') : '24px';
+      let bottomPos = '24px';
+      if (isMemberSpace && isMobile) {
+        bottomPos = isChatTab ? '155px' : '85px';
+      } else if (isMemberSpace && isChatTab) {
+        bottomPos = '100px';
+      }
 
       // Inline styles for a premium glassmorphic, animated floating button matching our design guidelines
       Object.assign(btn.style, {
