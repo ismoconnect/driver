@@ -729,10 +729,8 @@ const Dashboard = ({ onLogout, initialTab }) => {
       });
     }
 
-    // Tri : leads soumis en premier, puis par date décroissante
+    // Tri : par date et heure d'arrivée décroissante (le plus récent en premier)
     combined.sort((a, b) => {
-      if (a.rawLead?.isSubmitted && !b.rawLead?.isSubmitted) return -1;
-      if (!a.rawLead?.isSubmitted && b.rawLead?.isSubmitted) return 1;
       return new Date(b.rawLead?.createdAt || b.rawUser?.createdAt || 0)
            - new Date(a.rawLead?.createdAt || a.rawUser?.createdAt || 0);
     });
