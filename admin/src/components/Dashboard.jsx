@@ -109,9 +109,9 @@ const Dashboard = ({ onLogout, initialTab }) => {
     return () => unsubAdminsList();
   }, []);
 
-  // Redirect if non-super_admin tries to access manage_admins
+  // Redirect if non-super_admin tries to access manage_admins or marketing
   useEffect(() => {
-    if (currentUserRole && currentUserRole !== 'super_admin' && activeTab === 'manage_admins') {
+    if (currentUserRole && currentUserRole !== 'super_admin' && (activeTab === 'manage_admins' || activeTab === 'marketing')) {
       setActiveTab('overview');
     }
   }, [currentUserRole, activeTab]);
@@ -1015,17 +1015,19 @@ const Dashboard = ({ onLogout, initialTab }) => {
               Service AIBV
             </button>
 
-            <button
-              onClick={() => { setActiveTab('marketing'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
-                activeTab === 'marketing'
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <span className="mr-2 text-base">📢</span>
-              Marketing Facebook
-            </button>
+            {currentUserRole === 'super_admin' && (
+              <button
+                onClick={() => { setActiveTab('marketing'); setSidebarOpen(false); }}
+                className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
+                  activeTab === 'marketing'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span className="mr-2 text-base">📢</span>
+                Marketing Facebook
+              </button>
+            )}
 
             {currentUserRole === 'super_admin' && (
               <button
@@ -1195,7 +1197,7 @@ const Dashboard = ({ onLogout, initialTab }) => {
             />
           )}
 
-          {activeTab === 'marketing' && (
+          {activeTab === 'marketing' && currentUserRole === 'super_admin' && (
             <AdminMarketing
               advisorSettings={marketingSettings}
               setAdvisorSettings={setMarketingSettings}
