@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp, updateDoc, deleteField } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { sendNewMessageNotification, sendFormulaSelectedEmail } from '../utils/notifications';
 
@@ -36,6 +36,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [wizardStep, setWizardStep] = useState(1); // Default to Step 1 on entry
   const [wizardError, setWizardError] = useState('');
   const [rejectedDocs, setRejectedDocs] = useState({});
+  const [validatedDocs, setValidatedDocs] = useState({});
 
 
   // Client Theme State (light / dark mode)
@@ -90,7 +91,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
   const [paymentValidated, setPaymentValidated] = useState(false);
   const [soldeValidated, setSoldeValidated] = useState(false);
   const [soldeInitiated, setSoldeInitiated] = useState(false);
-  const [selectedPath, setSelectedPath] = useState('');
+  const [selectedPath, setSelectedPath] = useState('theorique');
   const [perceptionPaid, setPerceptionPaid] = useState(false);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const [attestationUrl, setAttestationUrl] = useState('');
@@ -301,10 +302,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setSoldeValidated(leadData?.soldeValidated || false);
             setSoldeInitiated(leadData?.soldeInitiated || false);
             setAttestationUrl(leadData?.attestationUrl || '');
-            setSelectedPath(leadData?.isSubmitted ? (leadData?.selectedPath || 'theorique') : '');
+            setSelectedPath(leadData?.selectedPath || 'theorique');
             setPerceptionPaid(leadData?.perceptionPaid || false);
             setApplicationStatus(leadData?.status || userData?.status || (leadData?.isSubmitted ? 'processing' : 'new'));
             setRejectedDocs(leadData?.rejectedDocs || {});
+            setValidatedDocs(leadData?.validatedDocs || {});
             
             if (leadData?.uploads) {
               setUploads(leadData.uploads);
@@ -329,14 +331,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
             setSoldeValidated(data.soldeValidated === true);
             setSoldeInitiated(data.soldeInitiated === true);
             setAttestationUrl(data.attestationUrl || '');
-            if (data.isSubmitted) {
-              setSelectedPath(data.selectedPath || 'theorique');
-            } else {
-              setSelectedPath('');
-            }
+            setSelectedPath(data.selectedPath || 'theorique');
             setPerceptionPaid(data.perceptionPaid === true);
             setApplicationStatus(data.status || 'new');
             setRejectedDocs(data.rejectedDocs || {});
+            setValidatedDocs(data.validatedDocs || {});
           }
         });
 
@@ -421,11 +420,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
         setUploads(updatedUploads);
         if (user) {
           const leadRef = doc(db, 'leads', user.uid);
-          await setDoc(leadRef, {
-            uploads: updatedUploads,
-            uid: user.uid,
-            email: user.email,
-          }, { merge: true });
+          await updateDoc(leadRef, {
+            [`uploads.${fieldName}`]: data.secure_url,
+            [`rejectedDocs.${fieldName}`]: deleteField(),
+            [`validatedDocs.${fieldName}`]: deleteField()
+          });
         }
       } else {
         alert('Erreur lors du téléversement. Veuillez réessayer.');
@@ -444,9 +443,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
     if (user) {
       try {
         const leadRef = doc(db, 'leads', user.uid);
-        await setDoc(leadRef, {
-          uploads: updatedUploads,
-        }, { merge: true });
+        await updateDoc(leadRef, {
+          [`uploads.${fieldName}`]: deleteField(),
+          [`rejectedDocs.${fieldName}`]: deleteField(),
+          [`validatedDocs.${fieldName}`]: deleteField()
+        });
       } catch (err) {
         console.error('Error deleting document:', err);
       }
@@ -1302,6 +1303,7 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               isSubmitted={isSubmitted}
               applicationStatus={applicationStatus}
               rejectedDocs={rejectedDocs}
+              validatedDocs={validatedDocs}
               setActiveTab={setActiveTab}
               setWizardStep={setWizardStep}
             />
@@ -1313,6 +1315,11 @@ export default function ClientDashboard({ onBack, initialMode = 'login', onAuthS
               setFormData={setFormData}
               user={user}
               theme={theme}
+              isSubmitted={isSubmitted}
+              applicationStatus={applicationStatus}
+              rejectedDocs={rejectedDocs}
+              uploads={uploads}
+              validatedDocs={validatedDocs}
             />
           )}
         </main>

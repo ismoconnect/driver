@@ -20,6 +20,8 @@ export default function ClientWizard({
   uploadToCloudinary,
   deleteDocument
 }) {
+  const [previewUrl, setPreviewUrl] = React.useState(null);
+  const [previewLabel, setPreviewLabel] = React.useState('');
   
   React.useEffect(() => {
     // Scroll scrollable containers to top on step change
@@ -219,10 +221,13 @@ export default function ClientWizard({
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-1.5">
-                        <a href={uploads[field]} target="_blank" rel="noopener noreferrer"
-                          className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-white/30">
-                          Voir ↗
-                        </a>
+                        <button
+                          type="button"
+                          onClick={() => { setPreviewUrl(uploads[field]); setPreviewLabel(label); }}
+                          className="text-[8px] sm:text-[10px] font-bold text-white bg-white/20 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-white/30 cursor-pointer border-0"
+                        >
+                          Voir
+                        </button>
                         <label className="text-[8px] sm:text-[10px] font-bold text-slate-950 bg-brand-orange px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-lg hover:bg-brand-orange-dark cursor-pointer">
                           Changer
                           <input type="file" accept={accept} className="hidden"
@@ -602,6 +607,46 @@ export default function ClientWizard({
           </button>
         )}
       </div>
+      {/* Lightbox globale */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-bold cursor-pointer bg-transparent border-0"
+            >
+              ✕ Fermer
+            </button>
+            <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+              <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                <span className="text-white font-bold text-sm">{previewLabel}</span>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-brand-orange bg-brand-orange/10 px-3 py-1.5 rounded-lg hover:bg-brand-orange/20 transition-colors cursor-pointer text-center"
+                >
+                  ⬇️ Ouvrir / Télécharger
+                </a>
+              </div>
+              {previewUrl.toLowerCase().includes('.pdf') ? (
+                <div className="w-full h-[70vh] bg-slate-950">
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-full border-0"
+                    title="Aperçu du document"
+                  />
+                </div>
+              ) : (
+                <img src={previewUrl} alt={previewLabel} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

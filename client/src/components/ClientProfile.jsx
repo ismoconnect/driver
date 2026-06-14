@@ -4,7 +4,12 @@ export default function ClientProfile({
   formData,
   setFormData,
   user = {},
-  theme
+  theme,
+  isSubmitted = false,
+  applicationStatus = 'new',
+  rejectedDocs = {},
+  uploads = {},
+  validatedDocs = {}
 }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -33,6 +38,32 @@ export default function ClientProfile({
     const l = formData.lastName?.charAt(0) || '';
     return (f + l).toUpperCase() || 'U';
   };
+
+  const hasRejectedDocs = Object.keys(rejectedDocs || {}).length > 0 && Object.values(rejectedDocs || {}).some(msg => msg && msg.trim() !== '');
+  const totalUploaded = Object.values(uploads || {}).filter(Boolean).length;
+
+  const getStatusTextAndColor = () => {
+    if (!isSubmitted) return { text: 'Non initialisé', class: 'text-white/40' };
+    if (applicationStatus === 'completed') return { text: 'Dossier validé', class: 'text-emerald-400' };
+    if (hasRejectedDocs) return { text: 'Pièces à corriger', class: 'text-red-400' };
+    if (totalUploaded < 4) return { text: 'Pièces à fournir', class: 'text-amber-500' };
+    if (applicationStatus === 'processing') return { text: "En cours d'analyse", class: 'text-amber-400' };
+    return { text: 'Dossier transmis', class: 'text-blue-400' };
+  };
+
+  const getRegistrationDate = () => {
+    if (formData.createdAt) {
+      const date = formData.createdAt.seconds 
+        ? new Date(formData.createdAt.seconds * 1000) 
+        : new Date(formData.createdAt);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+    }
+    return '14 Juin 2026';
+  };
+
+  const statusInfo = getStatusTextAndColor();
 
   return (
     <div className="flex-1 flex flex-col justify-start gap-6 animate-[bubbleIn_0.4s_ease-out] pb-16">
@@ -76,15 +107,17 @@ export default function ClientProfile({
           <div className="w-full border-t border-white/5 mt-6 pt-6 text-left space-y-3">
             <div className="flex justify-between text-xs">
               <span className="text-white/40">Statut du dossier :</span>
-              <span className="text-emerald-400 font-semibold">Dossier Transmis</span>
+              <span className={`${statusInfo.class} font-semibold`}>{statusInfo.text}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-white/40">Date d'inscription :</span>
-              <span className="text-white font-medium">14 Juin 2026</span>
+              <span className="text-white font-medium">{getRegistrationDate()}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-white/40">ID Candidat :</span>
-              <span className="text-white font-mono text-[10px] font-medium">MP-48209</span>
+              <span className="text-white font-mono text-[10px] font-medium">
+                {user.uid ? `MPB-${user.uid.slice(0, 5).toUpperCase()}` : 'NON-INITIALISÉ'}
+              </span>
             </div>
           </div>
         </div>

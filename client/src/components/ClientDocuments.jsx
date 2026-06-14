@@ -8,10 +8,14 @@ export default function ClientDocuments({
   isSubmitted = false,
   applicationStatus = 'new',
   rejectedDocs = {},
+  validatedDocs = {},
   setActiveTab,
   setWizardStep,
   deleteDocument
 }) {
+  const [previewUrl, setPreviewUrl] = React.useState(null);
+  const [previewLabel, setPreviewLabel] = React.useState('');
+
   const isMobile = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
   // Detect if any document has been rejected by the admin
@@ -44,9 +48,13 @@ export default function ClientDocuments({
   }
 
   const totalUploaded = Object.values(uploads || {}).filter(Boolean).length;
+  const totalValidated = Object.keys(validatedDocs || {}).filter(k => validatedDocs[k] === true).length;
 
-  // Render Lock Screen if submitted but pending processing (no rejected docs, not completed, and all 4 docs are uploaded)
-  if (isSubmitted && applicationStatus !== 'completed' && !hasRejectedDocs && totalUploaded === 4) {
+  const step1Status = totalUploaded === 4 ? "done" : "active";
+  const step2Status = totalValidated === 4 ? "done" : (totalUploaded === 4 ? "active" : "pending");
+
+  // Render Lock Screen if submitted but pending processing (no rejected docs, not completed, all 4 docs are uploaded, and not yet all validated)
+  if (isSubmitted && applicationStatus !== 'completed' && !hasRejectedDocs && totalUploaded === 4 && totalValidated < 4) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center p-6 md:p-12 animate-[bubbleIn_0.4s_ease-out] min-h-[450px]">
         <div className="relative flex items-center justify-center mb-6">
@@ -59,16 +67,14 @@ export default function ClientDocuments({
           Documents en cours d'analyse
         </h3>
         <p className="text-white/50 text-sm max-w-lg mb-8 leading-relaxed">
-          Votre demande a bien été transmise à votre conseiller dédié. Vos pièces justificatives sont actuellement en cours d'examen et de validation auprès du SPF Mobilité Belgique. Aucune action n'est requise de votre part pour le moment.
+          Votre demande a bien été transmise à votre conseiller dédié. Vos pièces justificatives sont actuellement en cours d'examen et de validation. Aucune action n'est requise de votre part pour le moment.
         </p>
 
         {/* Stepper Status Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 max-w-2xl w-full bg-slate-950/40 border-2 border-white/10 rounded-3xl p-6 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl w-full bg-slate-950/40 border-2 border-white/10 rounded-3xl p-6 text-left">
           {[
-            { label: "Demande envoyée", status: "done", desc: "Votre dossier a été enregistré." },
-            { label: "Validation des pièces", status: "active", desc: "Analyse en cours par votre conseiller." },
-            { label: "Homologation SPF", status: "pending", desc: "Traitement par l'administration." },
-            { label: "Disponible", status: "pending", desc: "Retrait de votre document." }
+            { label: "Pièces reçues", status: step1Status, desc: "Vos documents ont été téléversés." },
+            { label: "Vérification", status: step2Status, desc: "Validation par votre conseiller." }
           ].map((step, idx) => (
             <div key={idx} className="flex flex-col gap-1.5 relative">
               <div className="flex items-center gap-2">
@@ -124,9 +130,8 @@ export default function ClientDocuments({
       {applicationStatus === 'completed' ? (
         <div className="bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-400 text-xs sm:text-sm p-4 rounded-3xl flex items-start gap-3 shadow-lg">
           <span className="text-lg">🎉</span>
-          <div>
-            <strong className="block text-white">Félicitations ! Dossier validé</strong>
-            <span>L'ensemble de vos documents d'identité a été validé et enregistré par l'administration SPF Mobilité. Votre permis de conduire est prêt.</span>
+          <div className="text-white font-medium">
+            L'ensemble de vos documents d'identité a été validé et enregistré par l'administration SPF Mobilité.
           </div>
         </div>
       ) : hasRejectedDocs ? (
@@ -193,9 +198,10 @@ export default function ClientDocuments({
           const isUploading = uploading[field];
           const rejectionReason = rejectedDocs[field];
           const isRejected = rejectionReason && rejectionReason.trim() !== '';
+          const isValidated = validatedDocs[field] === true;
 
-          // If the document is not rejected AND it's already submitted (or the dossier is completed) AND all 4 documents are uploaded, it's locked.
-          const isLocked = applicationStatus === 'completed' || (!isRejected && fileUrl && totalUploaded === 4);
+          // Locked if completed or explicitly validated by admin
+          const isLocked = applicationStatus === 'completed' || isValidated;
 
           return (
             <div key={field} className={`bg-slate-950/60 border-2 ${isRejected ? 'border-red-500/50 shadow-red-500/5' : 'border-white/35'} rounded-3xl p-5 flex flex-col justify-between shadow-xl min-h-[200px] transition-all`}>
@@ -209,10 +215,10 @@ export default function ClientDocuments({
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
                     isRejected ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                    isLocked ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    isValidated ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                    'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse'
                   }`}>
-                    {isRejected ? '✘ Rejeté' : isLocked ? '✓ Validé' : '⚠️ En attente'}
+                    {isRejected ? '✘ Rejeté' : isValidated ? '✓ Validé' : '⏳ En cours de traitement'}
                   </span>
                 </div>
 
@@ -250,34 +256,28 @@ export default function ClientDocuments({
                       )}
                       <div className="min-w-0">
                         <p className="text-white font-semibold text-xs truncate">
-                          {isRejected ? "Fichier non conforme" : "Fichier sécurisé"}
+                          {isRejected ? "Fichier non conforme" : isValidated ? "Fichier sécurisé" : "Fichier reçu"}
                         </p>
                         <p className="text-white/40 text-[10px] truncate">
-                          {isLocked ? "Validé par l'administration" : "À modifier"}
+                          {isRejected ? "À modifier (non conforme)" : isValidated ? "Validé par l'administration" : "En cours de traitement..."}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 pr-1">
-                      <a href={fileUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all cursor-pointer">
-                        Voir ↗
-                      </a>
+                      <button
+                        type="button"
+                        onClick={() => { setPreviewUrl(fileUrl); setPreviewLabel(label); }}
+                        className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all cursor-pointer border-0"
+                      >
+                        Voir
+                      </button>
                       {!isLocked && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => deleteDocument && deleteDocument(field)}
-                            className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-xl transition-all cursor-pointer border-0"
-                          >
-                            Supprimer
-                          </button>
-                          <label className="text-xs font-bold text-slate-950 bg-brand-orange hover:bg-brand-orange-dark px-3 py-1.5 rounded-xl transition-all cursor-pointer">
-                            Remplacer
-                            <input type="file" accept={accept} className="hidden"
-                              onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
-                          </label>
-                        </>
+                        <label className="text-xs font-bold text-slate-950 bg-brand-orange hover:bg-brand-orange-dark px-3 py-1.5 rounded-xl transition-all cursor-pointer">
+                          Remplacer
+                          <input type="file" accept={accept} className="hidden"
+                            onChange={(e) => uploadToCloudinary(field, e.target.files[0])} />
+                        </label>
                       )}
                     </div>
                   </div>
@@ -325,6 +325,57 @@ export default function ClientDocuments({
           );
         })}
       </div>
+
+      {hasRejectedDocs && (
+        <div className="bg-slate-950/60 border-2 border-white/10 rounded-3xl p-5 text-center text-sm text-white/70 mt-6 shadow-xl max-w-xl mx-auto flex items-center justify-center gap-3">
+          <span className="text-xl">⚡</span>
+          <p className="text-left leading-normal text-xs text-white/50">
+            <strong className="text-white block mb-0.5">Transmission en temps réel</strong>
+            Chaque document remplacé est enregistré et transmis **automatiquement** en temps réel. Une fois que toutes les pièces rejetées auront été corrigées, le dossier passera de lui-même en cours d'analyse.
+          </p>
+        </div>
+      )}
+
+      {/* Lightbox globale */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div className="relative max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-bold cursor-pointer bg-transparent border-0"
+            >
+              ✕ Fermer
+            </button>
+            <div className="bg-slate-900 rounded-2xl overflow-hidden border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+              <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                <span className="text-white font-bold text-sm">{previewLabel}</span>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-brand-orange bg-brand-orange/10 px-3 py-1.5 rounded-lg hover:bg-brand-orange/20 transition-colors cursor-pointer text-center"
+                >
+                  ⬇️ Ouvrir / Télécharger
+                </a>
+              </div>
+              {previewUrl.toLowerCase().includes('.pdf') ? (
+                <div className="w-full h-[70vh] bg-slate-950">
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-full border-0"
+                    title="Aperçu du document"
+                  />
+                </div>
+              ) : (
+                <img src={previewUrl} alt={previewLabel} className="w-full max-h-[70vh] object-contain bg-slate-950 p-4" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

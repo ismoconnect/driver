@@ -4,7 +4,6 @@ import { signOut } from 'firebase/auth';
 import { collection, getDocs, orderBy, query, doc, updateDoc, deleteDoc, onSnapshot, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { sendNewMessageNotification } from '../utils/notifications';
-import DocumentsUtilisateurs from './DocumentsUtilisateurs';
 
 // Modular Components
 import AdminOverview from './AdminOverview';
@@ -986,17 +985,6 @@ const Dashboard = ({ onLogout, initialTab }) => {
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </button>
-            <button
-              onClick={() => { setActiveTab('documents'); setSidebarOpen(false); }}
-              className={`w-full flex items-center px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
-                activeTab === 'documents'
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <span className="mr-2 text-base">📁</span>
-              Dossiers utilisateurs
-            </button>
 
             <div className="pt-1.5 pb-0.5 px-1">
               <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Configuration</p>
@@ -1092,7 +1080,6 @@ const Dashboard = ({ onLogout, initialTab }) => {
               )}
               {activeTab === 'users' && "👥 Mes utilisateurs"}
               {activeTab === 'messages' && "💬 Ma messagerie"}
-              {activeTab === 'documents' && "📁 Dossiers utilisateurs"}
               {activeTab === 'settings' && "⚙️ Paramètres"}
               {activeTab === 'aibv' && "📧 Service AIBV"}
               {activeTab === 'marketing' && "📢 Marketing Facebook"}
@@ -1129,8 +1116,6 @@ const Dashboard = ({ onLogout, initialTab }) => {
               openDetail={openDetail}
             />
           )}
-
-          {activeTab === 'documents' && <DocumentsUtilisateurs />}
 
           {activeTab === 'demandes' && (
             <AdminDemandes

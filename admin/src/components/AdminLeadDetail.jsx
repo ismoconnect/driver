@@ -91,6 +91,93 @@ const AdminLeadDetail = ({
   };
 
   const uploads = selectedLead.rawLead?.uploads || {};
+  const rejectedDocs = selectedLead.rawLead?.rejectedDocs || {};
+  const validatedDocs = selectedLead.rawLead?.validatedDocs || {};
+
+  const handleValidateDoc = async (field) => {
+    setUpdating(true);
+    try {
+      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+      const updatedRejectedDocs = { ...rejectedDocs };
+      delete updatedRejectedDocs[field];
+
+      const updatedValidatedDocs = { ...validatedDocs };
+      updatedValidatedDocs[field] = true;
+      
+      await updateDoc(doc(db, "leads", leadId), {
+        rejectedDocs: updatedRejectedDocs,
+        validatedDocs: updatedValidatedDocs
+      });
+    } catch (err) {
+      console.error("Error validating document:", err);
+      alert("Erreur lors de la validation du document.");
+    }
+    setUpdating(false);
+  };
+
+  const handleValidateAllDocs = async () => {
+    setUpdating(true);
+    try {
+      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+      const updatedValidatedDocs = {};
+      allKeys.forEach(k => {
+        if (uploads[k] && uploads[k].startsWith('http')) {
+          updatedValidatedDocs[k] = true;
+        }
+      });
+      await updateDoc(doc(db, "leads", leadId), {
+        rejectedDocs: {},
+        validatedDocs: updatedValidatedDocs
+      });
+    } catch (err) {
+      console.error("Error validating all documents:", err);
+      alert("Erreur lors de la validation globale des documents.");
+    }
+    setUpdating(false);
+  };
+
+  const handleResetAllDocs = async () => {
+    setUpdating(true);
+    try {
+      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+      await updateDoc(doc(db, "leads", leadId), {
+        rejectedDocs: {},
+        validatedDocs: {}
+      });
+    } catch (err) {
+      console.error("Error resetting all documents:", err);
+      alert("Erreur lors de la réinitialisation globale des documents.");
+    }
+    setUpdating(false);
+  };
+
+  const handleRejectDoc = async (field) => {
+    const reason = prompt("Veuillez saisir le motif du rejet pour ce document :");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("Le motif du rejet est obligatoire.");
+      return;
+    }
+    setUpdating(true);
+    try {
+      const leadId = selectedLead.rawLead?.id || selectedLead.uid;
+      const updatedRejectedDocs = { ...rejectedDocs };
+      updatedRejectedDocs[field] = reason.trim();
+
+      const updatedValidatedDocs = { ...validatedDocs };
+      delete updatedValidatedDocs[field];
+      
+      await updateDoc(doc(db, "leads", leadId), {
+        rejectedDocs: updatedRejectedDocs,
+        validatedDocs: updatedValidatedDocs
+      });
+    } catch (err) {
+      console.error("Error rejecting document:", err);
+      alert("Erreur lors du rejet du document.");
+    }
+    setUpdating(false);
+  };
+
   const DOC_META = {
     idFront:   { label: "Carte d'Identité Recto", icon: '🪪', color: 'emerald' },
     idBack:    { label: "Carte d'Identité Verso",  icon: '🪪', color: 'emerald' },
@@ -295,12 +382,34 @@ const AdminLeadDetail = ({
 
       {/* === FICHIERS TÉLÉVERSÉS === */}
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 ml-1">
-          Fichiers Téléversés
-          <span className="ml-3 text-emerald-400 font-black">
-            {allKeys.filter(k => uploads[k] && uploads[k].startsWith('http')).length}/{allKeys.length}
-          </span>
-        </h3>
+        <div className="flex justify-between items-center mb-4 ml-1">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
+            Fichiers Téléversés
+            <span className="ml-3 text-emerald-400 font-black">
+              {allKeys.filter(k => uploads[k] && uploads[k].startsWith('http')).length}/{allKeys.length}
+            </span>
+          </h3>
+          {allKeys.some(k => uploads[k] && uploads[k].startsWith('http')) && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={updating}
+                onClick={handleResetAllDocs}
+                className="text-xs font-bold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                🔄 Remettre en attente
+              </button>
+              <button
+                type="button"
+                disabled={updating}
+                onClick={handleValidateAllDocs}
+                className="text-xs font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                ✓ Valider tous les documents
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {allKeys.map(key => {
@@ -314,29 +423,95 @@ const AdminLeadDetail = ({
             };
             const c = colorMap[meta.color];
 
+            const rejectionReason = rejectedDocs[key];
+            const isRejected = rejectionReason && rejectionReason.trim() !== '';
+            const isValidated = validatedDocs[key] === true;
+
             return (
               <div key={key} className="flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{meta.label}</span>
                 {isValid ? (
-                  <button
-                    onClick={() => { setPreviewUrl(url); setPreviewLabel(`${selectedLead.name} — ${meta.label}`); }}
-                    className={`relative group rounded-2xl overflow-hidden border ${c.ring} bg-slate-800 hover:border-opacity-60 transition-all hover:scale-[1.02] hover:shadow-lg`}
-                  >
-                    {!url.toLowerCase().includes('.pdf') ? (
-                      <img src={url} alt={meta.label} className="w-full h-28 object-cover" />
-                    ) : (
-                      <div className={`w-full h-28 flex flex-col items-center justify-center gap-2 ${c.thumb}`}>
-                        <span className="text-3xl">📄</span>
-                        <span className="text-[10px] font-bold text-slate-400">PDF</span>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => { setPreviewUrl(url); setPreviewLabel(`${selectedLead.name} — ${meta.label}`); }}
+                      className={`relative group rounded-2xl overflow-hidden border ${isRejected ? 'border-red-500/40' : isValidated ? 'border-emerald-500/40' : 'border-amber-500/40'} bg-slate-800 hover:border-opacity-60 transition-all hover:scale-[1.02] hover:shadow-lg`}
+                    >
+                      {!url.toLowerCase().includes('.pdf') ? (
+                        <img src={url} alt={meta.label} className="w-full h-28 object-cover" />
+                      ) : (
+                        <div className={`w-full h-28 flex flex-col items-center justify-center gap-2 ${c.thumb}`}>
+                          <span className="text-3xl">📄</span>
+                          <span className="text-[10px] font-bold text-slate-400">PDF</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-lg">🔍 Voir</span>
                       </div>
+                      <div className={`${isRejected ? 'bg-red-500/20 text-red-400' : isValidated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'} py-1 text-center`}>
+                        <span className="text-[10px] font-bold">
+                          {isRejected ? '✘ Rejeté' : isValidated ? '✓ Validé' : '⚠️ En attente'}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      {isValidated ? (
+                        <>
+                          <span className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 text-center flex items-center justify-center select-none">
+                            ✓ Validé
+                          </span>
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => handleRejectDoc(key)}
+                            className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-white bg-red-600 hover:bg-red-700 border-transparent cursor-pointer transition-all"
+                          >
+                            Rejeter
+                          </button>
+                        </>
+                      ) : isRejected ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => handleValidateDoc(key)}
+                            className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 border-transparent cursor-pointer transition-all"
+                          >
+                            Valider
+                          </button>
+                          <span className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 text-center flex items-center justify-center select-none">
+                            ✘ Rejeté
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => handleValidateDoc(key)}
+                            className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 border-transparent cursor-pointer transition-all"
+                          >
+                            Valider
+                          </button>
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => handleRejectDoc(key)}
+                            className="flex-1 py-1.5 rounded-xl text-[10px] font-bold text-white bg-red-600 hover:bg-red-700 border-transparent cursor-pointer transition-all"
+                          >
+                            Rejeter
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {isRejected && (
+                      <p className="text-[9px] text-red-400 italic bg-red-500/5 border border-red-500/10 rounded-lg p-1.5 leading-normal">
+                        <strong>Raison :</strong> {rejectionReason}
+                      </p>
                     )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-lg">🔍 Voir</span>
-                    </div>
-                    <div className={`${c.badge} py-1 text-center`}>
-                      <span className="text-[10px] font-bold">✓ Reçu</span>
-                    </div>
-                  </button>
+                  </div>
                 ) : url ? (
                   <div className="w-full rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 flex flex-col items-center justify-center gap-2 py-6 px-2 text-center">
                     <span className="text-xl">⚠️</span>
